@@ -147,9 +147,31 @@ Se eligió entre Neón, Cosmos pastel, Cinemático y Geométrico plano mirando b
 - **Agujero negro:** distorsión por lente gravitatoria, que curva la luz del fondo, y disco de acreción.
 - **Riesgo principal:** es el estilo más difícil de pulir. Se valida primero, en el hito 0.
 
+**Cómo medimos "cinemático":**
+- Se usa el scorecard de 10 categorías de la skill `threejs-aaa-graphics-builder`. Cada categoría va de 0 a 3 y la skill trae imágenes de referencia para calibrar.
+- Antes de puntuar, cada categoría se traduce a nuestro género:
+  - "Héroe" es tu estrella con su sistema.
+  - "Obstáculos" son los cuerpos errantes, los cazadores y el agujero negro.
+  - "Interactuables" son la materia capturable y los planetas huérfanos.
+  - "Mundo" es el espacio con su nebulosa y su fondo.
+- **Umbral para aprobar el hito 0:** nivel "premium", es decir, todas las categorías ≥ 2 y promedio ≥ 2,3, sin fallas automáticas.
+- **Objetivo para la demo:** nivel "showcase".
+- **La última palabra la tiene el ojo de Lucas.** El puntaje sirve para que el avance sea consistente y no dependa del gusto de cada día.
+
 ## 8. Arquitectura técnica
 
 **Stack:** TypeScript, Three.js (WebGL2), Vite y Electron, con electron-builder para el instalador.
+
+**Librerías elegidas** (la evaluación está en Notion, en "Tecnologías y criterios para buscar repos"):
+- **Base:** electron-vite (plantilla `vanilla-ts`) y pmndrs/postprocessing, con el bloom y la lente como efecto propio.
+- **Asteroides y partículas:** @three.ez/instanced-mesh y three.quarks.
+- **Steam:** steamworks-ffi-node, con @pipelab/steamworks.js como plan B.
+- **Ajuste y medición:** tweakpane y stats-gl.
+- **Shaders:** propios, tomando como referencia space-3d y threejs-procedural-planets.
+
+**Seguridad:** Steamworks corre sólo en el proceso principal de Electron y el juego le habla por IPC y preload. Se mantiene `contextIsolation` activo, aunque algunas guías de Steamworks proponen desactivarlo.
+
+**Skills de Claude en el proyecto:** `threejs-aaa-graphics-builder` y `threejs-debug-profiler`, de majidmanzarpour/threejs-game-skills (MIT).
 
 **Principio clave:** la **simulación** está separada del **dibujo**.
 - La simulación es TypeScript puro, sin dependencias, determinista dada una semilla, y avanza a paso fijo de 60 por segundo.
@@ -177,6 +199,25 @@ Se eligió entre Neón, Cosmos pastel, Cinemático y Geométrico plano mirando b
 - Hasta ~2.000 asteroides y ~300 cuerpos activos.
 - Calidad ajustable (baja, media y alta), que también baja sola si la placa no da.
 
+**Presupuesto por cuadro** (orientativo: a 60 FPS hay 16,67 ms; la CPU y la GPU trabajan en paralelo y se miden por separado):
+
+| Parte | CPU | GPU |
+|---|---|---|
+| Simulación y física | ≤ 3 ms | — |
+| Render principal | ≤ 2 ms (armar la escena) | ≤ 8 ms |
+| Postprocesado (bloom y lente) | — | ≤ 3 ms |
+| Interfaz y controles | ≤ 1 ms | — |
+| Margen | el resto | ~5 ms |
+
+- Se mide el **tiempo de cuadro p99**, además del promedio. Sin tirones cuando explota un planeta.
+- Dentro del bucle no se crean objetos nuevos.
+
+**Laboratorio visual** (`src/dev/visual-lab/`, sólo para desarrollo):
+- Es una pantalla aparte de la partida. Permite generar planetas, ajustar atmósferas, probar shaders, disparar una supernova y mover el agujero negro con paneles de Tweakpane.
+- Es el banco de trabajo del agente: modificar, ejecutar, capturar, puntuar y corregir.
+- `src/dev/benchmarks/` guarda escenarios fijos de estrés (2.000 asteroides y 300 cuerpos) para medir siempre lo mismo.
+- Ninguno de los dos entra en el ejecutable final.
+
 **Robustez:**
 - El guardado es atómico (archivo temporal y después reemplazo) y deja una copia de respaldo.
 - Si la carga falla, se usa el respaldo.
@@ -199,8 +240,8 @@ Se eligió entre Neón, Cosmos pastel, Cinemático y Geométrico plano mirando b
 
 | Hito | Semanas | Entregable | Criterio de "listo" |
 |---|---|---|---|
-| 0 · Prueba visual | 1–2 | Escena cinemática: estrella, planetas con luz y atmósfera, nebulosa, lente y órbitas básicas | Lucas: "eso es lo que busco" |
-| 1 · Juguete divertido | 3–6 | Captura, anillos, honda, alineaciones y 1 enemigo | Divierte 5 minutos sin contenido |
+| 0 · Prueba visual y técnica | 1–2 | Escena cinemática (estrella, planetas con luz y atmósfera, nebulosa, agujero negro con lente) + laboratorio visual + banco de estrés + primera interacción: mover tu estrella y capturar asteroides que quedan orbitando | Lucas: "eso es lo que busco" · scorecard premium · 60 FPS en el banco de estrés |
+| 1 · Juguete divertido | 3–6 | Simulación determinista, anillos, honda, alineaciones y 1 enemigo, joystick + "hola Steam" (logro de prueba en Windows y Steam Deck) | Divierte 5 minutos sin contenido · Steam anda en el Deck |
 | 2 · Partida completa | 7–12 | Sistema 1, etapas, ~15 mejoras, jefe, polvo estelar y guardado | Partida de 15 minutos de principio a fin |
 | 3 · Demo y vidriera | 13–16 | Pulido, nombre definitivo, página de Steam, GIFs y tráiler, demo | Demo lista para el Next Fest |
 | 4 · Versión 1.0 | 17–24 | Sistemas 2 y 3, jefes, ~50 mejoras, logros, nube y opciones | A la venta |
