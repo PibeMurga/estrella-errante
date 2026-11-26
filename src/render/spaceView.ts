@@ -124,6 +124,7 @@ export function createSpaceView(canvas: HTMLCanvasElement, opts: SpaceViewOption
       ctx.starX = world.star.prevX + (world.star.x - world.star.prevX) * alpha;
       ctx.starY = world.star.prevY + (world.star.y - world.star.prevY) * alpha;
       rig.update(ctx.starX, ctx.starY, ctx.dt);
+      rig.followMass(world.star.mass, ctx.dt);
       syncCamera();
       for (const l of layers) l.update(ctx);
     },

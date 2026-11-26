@@ -61,6 +61,22 @@ describe('CameraRig', () => {
     expect(Number.isFinite(rig.position.x) && Number.isFinite(rig.position.z)).toBe(true);
   });
 
+  it('se aleja de a poco a medida que la estrella gana masa', () => {
+    const rig = new CameraRig({ distance: 150 });
+    rig.snap(0, 0);
+    const d0 = rig.distance;
+    rig.followMass(1, 1000);
+    expect(rig.distance).toBeCloseTo(d0, 6);
+    rig.followMass(100, 0.1);
+    const d1 = rig.distance;
+    expect(d1).toBeGreaterThan(d0);
+    rig.followMass(100, 1000);
+    expect(rig.distance).toBeGreaterThan(d1);
+    expect(rig.distance).toBeLessThan(d0 * 2);
+    rig.followMass(Number.NaN, 0.1);
+    expect(Number.isFinite(rig.distance)).toBe(true);
+  });
+
   it('un rayo por encima del horizonte no toca el plano ni cambia la salida', () => {
     const rig = new CameraRig({ tiltDeg: 5 });
     rig.aspect = 16 / 9;

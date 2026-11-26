@@ -18,6 +18,7 @@ export class CameraRig {
   readonly up: V3 = { x: 0, y: 1, z: 0 };
   aspect = 16 / 9;
   private opts: CameraRigOptions;
+  private zoom = 1;   // multiplica la distancia: crece con la masa de la estrella
 
   constructor(opts: Partial<CameraRigOptions> = {}) {
     this.opts = { ...DEFAULT_RIG, ...opts };
@@ -25,6 +26,17 @@ export class CameraRig {
   }
 
   get options(): Readonly<CameraRigOptions> { return this.opts; }
+
+  // Distancia real de la cámara al foco.
+  get distance(): number { return this.opts.distance * this.zoom; }
+
+  // Se aleja de a poco cuando la estrella crece, para que se sienta la escala.
+  followMass(mass: number, dt: number): void {
+    if (!Number.isFinite(mass) || !(dt > 0)) return;
+    const want = 1 + 0.06 * (Math.sqrt(Math.max(mass, 1)) - 1);
+    this.zoom += (want - this.zoom) * (1 - Math.exp(-0.6 * dt));
+    this.recompute();
+  }
 
   setOptions(opts: Partial<CameraRigOptions>): void {
     this.opts = { ...this.opts, ...opts };
@@ -59,7 +71,7 @@ export class CameraRig {
   }
 
   private recompute(): void {
-    const e = (this.opts.tiltDeg * Math.PI) / 180, d = this.opts.distance;
+    const e = (this.opts.tiltDeg * Math.PI) / 180, d = this.distance;
     const fx = this.focus.x, fz = -this.focus.y;
     const p = this.position;
     p.x = fx; p.y = d * Math.sin(e); p.z = fz + d * Math.cos(e);
