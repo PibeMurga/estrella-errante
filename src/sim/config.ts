@@ -127,7 +127,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   debrisReserve: 120,
   rocheFactor: 6,
   tidalDebris: 14,
-  preBrokenChance: 0.04,
+  preBrokenChance: 0.015,
   encounterGap: 1.3,
   crashSizeRatio: 1.35,
   crashChance: 0.8,

@@ -3,46 +3,53 @@ import { DEAD, KIND_ICE, KIND_ROCKY, type World } from '../../sim/world';
 import type { Layer } from '../layer';
 import { NOISE_GLSL } from '../shaders/noise';
 
-// Planetas partidos por marea: dos mitades de corteza que se separan de a poco, con el interior de roca en estratos,
-// un borde incandescente fino y un núcleo al rojo que se van enfriando. Los escombros son asteroides de la simulación.
-// Cada instancia tiene su eje local Y alineado con el eje de la ruptura (hacia el agujero negro).
+// Planetas partidos: dos pedazos de corteza, no necesariamente iguales (el corte cae en cualquier altura),
+// que se separan y vuelcan de a poco. La cara del corte es plana: se dibuja con las caras traseras de la esfera,
+// pero la textura y el calor se calculan sobre el plano del corte (intersección del rayo de la cámara con ese plano),
+// así se ve roca maciza y no una cáscara hueca. Los escombros son asteroides de la simulación.
+// Cada instancia tiene su eje local Y alineado con el eje de la ruptura.
 
-const VERT = /* glsl */ `uniform float uSide; varying vec3 vN; varying vec3 vP; varying vec3 vO; varying vec3 vCut; varying float vSeed; varying float vHeat; varying float vIce;
+const VERT = /* glsl */ `uniform float uSide; varying vec3 vN; varying vec3 vP; varying vec3 vO; varying vec3 vCut; varying vec3 vCamO; varying float vSeed; varying float vHeat; varying float vIce;
 void main(){
   mat4 m = modelMatrix * instanceMatrix;
   vSeed = instanceColor.r * 97.0; vHeat = instanceColor.g; vIce = instanceColor.b;
   vO = position; vec4 w = m*vec4(position,1.); vP = w.xyz; vN = normalize(mat3(m)*normal);
   vCut = normalize(mat3(m)*vec3(0., -uSide, 0.));   // normal de la cara del corte: al volcar, el sol la ilumina distinto
+  vCamO = (inverse(m) * vec4(cameraPosition, 1.)).xyz;   // la cámara en el espacio del planeta
   gl_Position = projectionMatrix*viewMatrix*w;
 }`;
 
 const FRAG = /* glsl */ `uniform vec3 uSunPos; uniform vec3 uLight; uniform float uSide; uniform float uTime;
-varying vec3 vN; varying vec3 vP; varying vec3 vO; varying vec3 vCut; varying float vSeed; varying float vHeat; varying float vIce;
+varying vec3 vN; varying vec3 vP; varying vec3 vO; varying vec3 vCut; varying vec3 vCamO; varying float vSeed; varying float vHeat; varying float vIce;
 void main(){
   vec3 p = normalize(vO);
   vec3 L = normalize(uSunPos - vP);
-  float cut = p.y*uSide + .13*snoise(p*5.+vSeed) + .05*snoise(p*16.+vSeed);
-  if (cut < .07) discard;
-  float edge = 1. - smoothstep(.07, .11, cut);
+  float off = (fract(vSeed * .371) - .5) * .9;   // altura del corte: misma cuenta que cutOffset() en TypeScript
+  float cut = (p.y - off)*uSide + .2*snoise(p*2.3+vSeed) + .08*snoise(p*7.+vSeed) + .03*snoise(p*19.+vSeed);
+  if (cut < .05) discard;
+  float edge = 1. - smoothstep(.05, .1, cut);
   vec3 glow = vec3(1.6, .4, .08);
   if (!gl_FrontFacing) {
-    // Interior: roca de fractura irregular, iluminada por el sol según hacia dónde mira el corte,
-    // con estratos apenas insinuados y grietas de magma que se apagan al enfriarse.
-    float n1 = fbm(p*7.+vSeed, 4)*.5+.5, n2 = fbm(p*23.+vSeed*1.7, 3)*.5+.5;
-    float strata = smoothstep(.4, .6, sin(p.y*13. + n1*6.)*.5+.5) * .2;
-    vec3 rockIn = mix(mix(vec3(.15,.13,.11), vec3(.29,.26,.22), n1), mix(vec3(.34,.40,.47), vec3(.58,.65,.72), n1), vIce);
+    // Cara del corte: punto donde el rayo de la cámara cruza el plano del corte.
+    vec3 d = vO - vCamO; float s = (off - vCamO.y) / (abs(d.y) > 1e-5 ? d.y : 1e-5);
+    vec3 P = (s > 0. && s < 1.) ? vCamO + d*s : vO;
+    float rr = length(P.xz);
+    float n1 = fbm(P*5.+vSeed, 4)*.5+.5, n2 = fbm(P*19.+vSeed*1.7, 3)*.5+.5;
+    float strata = smoothstep(.4, .6, sin(rr*16. + n1*5.)*.5+.5) * .18;   // capas del manto, insinuadas
+    vec3 rockIn = mix(mix(vec3(.15,.13,.11), vec3(.30,.27,.23), n1), mix(vec3(.30,.36,.43), vec3(.55,.62,.70), n1), vIce);
     rockIn *= (.7 + .55*n2) * (1. - strata);
     float ndc = max(dot(vCut, L), 0.);
-    float crack = smoothstep(.9, .98, 1. - abs(snoise(p*9. + vSeed + vec3(0., uTime*.02, 0.))));
-    float heat = 1. - smoothstep(.0, .35, abs(p.y));
-    vec3 c = rockIn * (uLight*ndc*.85 + .015) + glow*(1.1*crack*heat*vHeat + .2*(1.-n1)*vHeat*vHeat*vHeat);
+    float crack = smoothstep(.86, .97, 1. - abs(snoise(P*3.5 + vSeed + vec3(0., uTime*.02, 0.))));
+    float core = 1. - smoothstep(.0, .55, rr);        // el centro conserva el calor
+    vec3 c = rockIn * (uLight*ndc*.85 + .015) + glow*(1.1*crack*(.3+.7*core)*vHeat*vHeat + .35*core*vHeat*vHeat);   // las grietas se apagan antes que el centro
     gl_FragColor = vec4(c, 1.); return;
   }
   float ndl = dot(normalize(vN), L);
   float lit = max(ndl, 0.) * smoothstep(-.04, .12, ndl);
-  float f = fbm(p*4.+vSeed, 5)*.5+.5;
-  vec3 alb = mix(mix(vec3(.29,.27,.25), vec3(.16,.15,.14), f), mix(vec3(.55,.63,.75), vec3(.88,.92,.95), f), vIce);
-  float vein = smoothstep(.93, .99, 1. - abs(snoise(p*7.+vSeed))) * (1. - smoothstep(.07, .16, cut));
+  float f = fbm(p*4.+vSeed, 5)*.5+.5, g = fbm(p*15.+vSeed*1.3, 3)*.5+.5;
+  vec3 alb = mix(mix(vec3(.29,.27,.25), vec3(.16,.15,.14), f), mix(vec3(.40,.46,.53), vec3(.80,.85,.90), f), vIce);
+  alb *= .78 + .4*g;                                  // grano de superficie: que no se vea liso
+  float vein = smoothstep(.93, .99, 1. - abs(snoise(p*7.+vSeed))) * (1. - smoothstep(.05, .16, cut));
   vec3 col = alb * uLight * lit + alb*.004;
   col += glow * (edge*.6 + vein*.25) * vHeat;
   gl_FragColor = vec4(col, 1.);
@@ -69,17 +76,30 @@ const bound = new Sphere();
 
 const smooth = (a: number, b: number, x: number): number => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
-// Separación de las mitades (en radios del planeta) según los segundos desde la ruptura:
+// Separación entre los pedazos (en radios del planeta) según los segundos desde la ruptura:
 // un tirón al partirse y después una deriva muy lenta que sigue durante minutos.
 export function halfSeparation(t: number): number {
-  return 0.32 * smooth(0, 2.5, t) + 0.9 * (1 - Math.exp(-t / 300));
+  return 0.45 * smooth(0, 2.5, t) + 1.4 * (1 - Math.exp(-t / 300));
+}
+// Altura del corte sobre el eje (−0,45 a 0,45 radios): pedazos de distinto tamaño. Igual que en el shader.
+export function cutOffset(seed: number): number {
+  const v = seed * 97 * 0.371;
+  return (v - Math.floor(v) - 0.5) * 0.9;
+}
+// Fracción del volumen del planeta que queda del lado alto de un corte a altura h.
+export function capVolume(h: number): number {
+  const H = 1 - h;
+  return (H * H * (3 - H)) / 4;
+}
+// Distancia del centro de masa de ese pedazo al centro de la esfera.
+export function capCentroid(h: number): number {
+  return (3 * (1 + h) * (1 + h)) / (4 * (2 + h));
 }
 // Vuelco de cada mitad (radianes): cada una gira despacio sobre su propio centro de masa, en sentidos opuestos,
 // y con el tiempo deja ver la cara del corte. Arranca suave y no se detiene.
 export function halfTumble(t: number, rate: number): number {
   return rate * (t - 4 * (1 - Math.exp(-t / 4)));
 }
-const CAP_CENTER = 0.42;   // centro de masa de cada mitad, en radios, sobre su eje
 // Calor del borde y del núcleo: al rojo vivo al partirse, después queda un rescoldo que se apaga en unos minutos.
 export function breakHeat(t: number): number {
   return 0.75 * Math.exp(-t / 12) + 0.25 * Math.exp(-t / 240);
@@ -128,23 +148,29 @@ export function createBrokenPlanetsLayer(world: World, sunPos: Vector3): Layer {
         const y = w.prevY[i] + (w.y[i] - w.prevY[i]) * a;
         const r = w.radius[i];
         pos.set(x, 0, -y);
-        bound.center.copy(pos); bound.radius = r * 3.2;
+        bound.center.copy(pos); bound.radius = r * 4.2;
         if (!frustum.intersectsSphere(bound)) continue;
         dir.set(w.breakAx[i]!, 0, -w.breakAy[i]!).normalize();
         qAlign.setFromUnitVectors(yAxis, dir);
         qSpin.setFromAxisAngle(yAxis, ctx.time * 0.05 + i);
         q.multiplyQuaternions(qAlign, qSpin);
-        const sep = halfSeparation(t) * r, heat = breakHeat(t);
-        col.setRGB((i * 0.6180339) % 1, heat, w.kind[i] === KIND_ICE ? 1 : 0);
+        const sep = halfSeparation(t) * r, heat = breakHeat(t);   // sep: lo que se aleja cada pedazo si fueran iguales
+        const seed = (i * 0.6180339) % 1;
+        col.setRGB(seed, heat, w.kind[i] === KIND_ICE ? 1 : 0);
         scl.setScalar(r);
-        // Cada mitad vuelca sobre su centro de masa: se ubica ese centro y se corre la esfera según el giro.
+        // Cada pedazo vuelca sobre su centro de masa. El chico se aleja y gira más que el grande
+        // (se reparten el empujón según su masa), y el centro de masa del conjunto queda quieto.
+        const h0 = cutOffset(seed);
         const rate = 0.006 + 0.009 * ((i * 0.7548776) % 1);
         for (let h = 0; h < 2; h++) {
           const sd = h === 0 ? 1 : -1;
-          qTumble.setFromAxisAngle(xAxis, sd * halfTumble(t, rate));
+          const hh = sd * h0;                       // altura del corte vista desde este pedazo
+          const mine = capVolume(hh), cen = capCentroid(hh);
+          const push = sep * 2 * (1 - mine);
+          qTumble.setFromAxisAngle(xAxis, sd * halfTumble(t, rate * Math.sqrt(0.5 / Math.max(mine, 0.1))));
           qHalf.multiplyQuaternions(q, qTumble);
-          off.set(0, sd * CAP_CENTER * r, 0).applyQuaternion(qHalf);
-          half.copy(pos).addScaledVector(dir, sd * (sep + CAP_CENTER * r)).sub(off);
+          off.set(0, sd * cen * r, 0).applyQuaternion(qHalf);
+          half.copy(pos).addScaledVector(dir, sd * (push + cen * r)).sub(off);
           m4.compose(half, qHalf, scl);
           const m = h === 0 ? top : bottom;
           m.setMatrixAt(k, m4); m.setColorAt(k, col);
