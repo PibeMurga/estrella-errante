@@ -77,4 +77,16 @@ describe('InputController', () => {
     const r = new InputController(el, toWorld).poll(3, 4);
     expect(Number.isFinite(r.targetX) && Number.isFinite(r.targetY)).toBe(true);
   });
+
+  it('con dos joysticks responde al que se mueve aunque el primero esté quieto', () => {
+    const pad0 = { axes: [0, 0] };
+    const pad1 = { axes: [1, 0] };
+    vi.stubGlobal('navigator', { getGamepads: () => [pad0, pad1] });
+    const { el } = fakeElement();
+    const input = new InputController(el, toWorld, 40);
+    expect(input.poll(0, 0)).toMatchObject({ targetX: 40, targetY: 0 });
+    expect(input.poll(5, 0)).toMatchObject({ targetX: 45, targetY: 0 });
+    pad1.axes = [0, 0];
+    expect(input.poll(7, 1)).toMatchObject({ targetX: 7, targetY: 1 });
+  });
 });

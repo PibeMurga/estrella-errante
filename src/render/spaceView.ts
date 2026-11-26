@@ -21,6 +21,7 @@ export interface Diagnostics {
   lensEnabled: number;
   lensRadius: number;
   planetTypes: number;
+  planetOctaves: number;
 }
 
 export interface SpaceView {
@@ -71,7 +72,7 @@ export function createSpaceView(canvas: HTMLCanvasElement, opts: SpaceViewOption
 
   const diagnostics: Diagnostics = {
     frames: 0, quality: quality.level, calls: 0, triangles: 0, orbiting: 0,
-    canvasWidth: 0, canvasHeight: 0, lastFrameMs: 0, lensEnabled: 0, lensRadius: 0, planetTypes: built.planetTypes,
+    canvasWidth: 0, canvasHeight: 0, lastFrameMs: 0, lensEnabled: 0, lensRadius: 0, planetTypes: built.planetTypes, planetOctaves: quality.planetOctaves,
   };
   const ctx: FrameContext = {
     world: opts.world, alpha: 1, time: 0, dt: 0, frame: 0, starX: opts.world.star.x, starY: opts.world.star.y,
@@ -148,6 +149,8 @@ export function createSpaceView(canvas: HTMLCanvasElement, opts: SpaceViewOption
     setQuality(level) {
       quality = QUALITY[level];
       diagnostics.quality = level;
+      diagnostics.planetOctaves = quality.planetOctaves;
+      for (const l of layers) l.applyQuality?.(quality);
       resize();
     },
     screenToWorld(px, py, out) {

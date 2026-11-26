@@ -36,12 +36,18 @@ describe('FrameTimeRecorder', () => {
 describe('QualityGovernor', () => {
   const opts = { budgetMs: 18, windowFrames: 180, cooldownFrames: 300 };
 
-  it('baja un nivel cuando el p95 supera el presupuesto, una sola vez por ventana', () => {
+  it('baja un nivel cuando el rendimiento empeora respecto de lo normal, una sola vez por ventana', () => {
     const g = new QualityGovernor('high', opts);
     const changes: (string | null)[] = [];
+    for (let i = 0; i < 180; i++) g.sample(16);
     for (let i = 0; i < 300; i++) { const c = g.sample(30); if (c) changes.push(c); }
     expect(changes).toEqual(['medium']);
     expect(g.current).toBe('medium');
+  });
+
+  it('con el cuadro limitado a 30 Hz desde el arranque no baja la calidad', () => {
+    const g = new QualityGovernor('high', opts);
+    for (let i = 0; i < 3000; i++) expect(g.sample(33.3)).toBeNull();
   });
 
   it('no cambia si los cuadros entran en el presupuesto', () => {

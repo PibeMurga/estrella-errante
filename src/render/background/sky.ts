@@ -59,5 +59,9 @@ export function createSky(quality: QualitySettings, rng: Rng): Layer {
     update(ctx) { group.position.copy(ctx.camera.position); },
     resize(ctx) { starMat.uniforms['uPR']!.value = ctx.dpr; },
     applyParams(p) { skyMat.uniforms['uIntensity']!.value = p.nebulaIntensity; },
+    applyQuality(q) {
+      skyMat.uniforms['uOctaves']!.value = q.skyOctaves;
+      g.setDrawRange(0, Math.min(N, q.starCount));
+    },
   };
 }

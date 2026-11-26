@@ -23,3 +23,12 @@ test('con el agujero negro detrás de la cámara la lente se apaga', async ({ pa
   await page.waitForTimeout(400);
   expect(await page.evaluate(() => window.__GAME__!.diagnostics.lensEnabled)).toBe(0);
 });
+
+test('bajar la calidad baja el detalle de los planetas, no sólo la resolución', async ({ page }) => {
+  await page.goto('/lab.html');
+  await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
+  expect(await page.evaluate(() => window.__GAME__!.diagnostics.planetOctaves)).toBe(8);
+  await page.evaluate(() => window.__LAB__!.setQuality('low'));
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.__GAME__!.diagnostics.planetOctaves)).toBe(4);
+});

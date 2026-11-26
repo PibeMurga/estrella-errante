@@ -114,6 +114,7 @@ export function createPlanetsLayer(world: World, segments: number, octaves: numb
   const light = LIGHT_BASE.clone();
   const time = { value: 0 };
   const entries: Entry[] = [];
+  const materials: ShaderMaterial[] = [];
 
   for (let type = 0; type < PLANET_TYPES; type++) {
     const list: number[] = [];
@@ -126,6 +127,7 @@ export function createPlanetsLayer(world: World, segments: number, octaves: numb
     const n = indices.length;
     const common = { uTime: time, uSunPos: { value: sunPos }, uLight: { value: light } };
     const mat = new ShaderMaterial({ uniforms: { ...common, uType: { value: type }, uOct: { value: octaves } }, vertexShader: VERT, fragmentShader: NOISE_GLSL + FRAG });
+    materials.push(mat);
     const hi = new InstancedMesh(geoHi, mat, n);
     const lo = new InstancedMesh(geoLo, mat, n);
     hi.frustumCulled = false; lo.frustumCulled = false;
@@ -198,6 +200,9 @@ export function createPlanetsLayer(world: World, segments: number, octaves: numb
     },
     applyParams(p) {
       light.copy(LIGHT_BASE).multiplyScalar(p.lightIntensity / 2.4);
+    },
+    applyQuality(q) {
+      for (const m of materials) m.uniforms['uOct']!.value = q.planetOctaves;
     },
   };
 }

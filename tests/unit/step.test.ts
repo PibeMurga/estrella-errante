@@ -213,3 +213,23 @@ describe('lunas y cinturones de planetas', () => {
     expect(w.orbitingCount).toBe(1);
   });
 });
+
+describe('cruce de borde (revisión final)', () => {
+  it('al reaparecer del otro lado, la posición anterior se corre igual (sin interpolar por el medio)', () => {
+    const w = emptyWorld();
+    const hw = DEFAULT_CONFIG.arenaHalfWidth;
+    const i = addBody(w, rock(hw - 0.01, 80, 0.5, 60, 0));
+    step(w, NO_INPUT);
+    expect(Math.abs(w.x[i] - w.prevX[i])).toBeLessThan(2);
+  });
+
+  it('las lunas de un planeta que cruza el borde tampoco saltan', () => {
+    const w = emptyWorld(10);
+    const hw = DEFAULT_CONFIG.arenaHalfWidth;
+    const p = addBody(w, { x: hw - 0.01, y: 80, vx: 60, vy: 0, radius: 5, kind: KIND_GAS });
+    const m = addSatellite(w, p, 12, 0, 0.8, KIND_MOON, 0.5);
+    step(w, NO_INPUT);
+    expect(Math.abs(w.x[p] - w.prevX[p])).toBeLessThan(2);
+    expect(Math.abs(w.x[m] - w.prevX[m])).toBeLessThan(2);
+  });
+});

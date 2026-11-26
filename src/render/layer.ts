@@ -27,4 +27,5 @@ export interface Layer {
   prerender?(renderer: WebGLRenderer, ctx: FrameContext): void;
   resize?(ctx: FrameContext): void;
   applyParams?(params: ViewParams): void;
+  applyQuality?(quality: QualitySettings): void;
 }

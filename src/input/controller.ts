@@ -26,6 +26,7 @@ export class InputController {
 
   poll(starX: number, starY: number): Intent {
     const pads = typeof navigator !== 'undefined' && navigator.getGamepads ? navigator.getGamepads() : [];
+    // Se revisan todos los joysticks: manda el primero que tenga el stick movido.
     for (let k = 0; k < pads.length; k++) {
       const p = pads[k];
       if (!p) continue;
@@ -37,12 +38,13 @@ export class InputController {
         this.intent.hasTarget = true;
         return this.intent;
       }
-      if (this.usingGamepad) {
-        this.intent.targetX = starX;
-        this.intent.targetY = starY;
-        this.intent.hasTarget = true;
-        return this.intent;
-      }
+    }
+    // Ningún stick activo: si se venía jugando con joystick, la estrella frena.
+    if (this.usingGamepad) {
+      this.intent.targetX = starX;
+      this.intent.targetY = starY;
+      this.intent.hasTarget = true;
+      return this.intent;
     }
     if (this.hasPointer && this.toWorld(this.pointerX, this.pointerY, this.world)) {
       this.intent.targetX = this.world.x;

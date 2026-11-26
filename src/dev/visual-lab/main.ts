@@ -62,6 +62,7 @@ if (!view.ok) {
     params: p,
     apply: () => view.applyParams(),
     setTilt: (deg: number) => { lab.tilt = deg; view.rig.setOptions({ tiltDeg: deg }); pane.refresh(); },
+    setQuality: (level: QualityLevel) => { lab.quality = level; view.setQuality(level); pane.refresh(); },
   };
 
   const input = new InputController(canvas, (sx, sy, out) => view.screenToWorld(sx, sy, out));

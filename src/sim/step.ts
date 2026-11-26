@@ -55,8 +55,9 @@ export function step(w: World, intent: Intent): void {
       if (st === FREE) {
         x = w.x[i] + w.vx[i] * DT;
         y = w.y[i] + w.vy[i] * DT;
-        if (x > hw) x -= 2 * hw; else if (x < -hw) x += 2 * hw;
-        if (y > hh) y -= 2 * hh; else if (y < -hh) y += 2 * hh;
+        // Al reaparecer del otro lado se corre también la posición anterior, así el dibujo no interpola por el medio.
+        if (x > hw) { x -= 2 * hw; w.prevX[i] -= 2 * hw; } else if (x < -hw) { x += 2 * hw; w.prevX[i] += 2 * hw; }
+        if (y > hh) { y -= 2 * hh; w.prevY[i] -= 2 * hh; } else if (y < -hh) { y += 2 * hh; w.prevY[i] += 2 * hh; }
       } else {
         // Luna o escombro: gira alrededor de su planeta (que ya se movió en este paso, porque se creó antes).
         const p = w.parent[i]!;
@@ -64,6 +65,9 @@ export function step(w: World, intent: Intent): void {
         w.orbitAngle[i] = ang;
         x = w.x[p] + Math.cos(ang) * w.orbitR[i];
         y = w.y[p] + Math.sin(ang) * w.orbitR[i];
+        // Si el planeta reapareció del otro lado, el satélite acompaña el salto también en su posición anterior.
+        if (x - w.prevX[i] > hw) w.prevX[i] += 2 * hw; else if (w.prevX[i] - x > hw) w.prevX[i] -= 2 * hw;
+        if (y - w.prevY[i] > hh) w.prevY[i] += 2 * hh; else if (w.prevY[i] - y > hh) w.prevY[i] -= 2 * hh;
       }
       w.x[i] = x;
       w.y[i] = y;
