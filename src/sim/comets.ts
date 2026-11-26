@@ -25,14 +25,14 @@ export function spawnComet(w: World, x: number, y: number): number {
   return -1;
 }
 
-// Aparece en un punto al azar de alguno de los cuatro bordes.
+// Aparece lejos, en un punto al azar del borde de la zona que rodea a la estrella (siempre fuera de cámara).
 function spawnOnEdge(w: World): void {
   const hw = w.config.arenaHalfWidth, hh = w.config.arenaHalfHeight, r = w.rng;
   const side = Math.floor(r.next() * 4);
   const t = r.range(-1, 1);
   const x = side === 0 ? -hw : side === 1 ? hw : t * hw;
   const y = side === 2 ? -hh : side === 3 ? hh : t * hh;
-  spawnComet(w, x, y);
+  spawnComet(w, w.star.x + x * 0.98, w.star.y + y * 0.98);
 }
 
 // Revive asteroides de la reserva (cuerpos DEAD de tipo asteroide) alrededor de (x, y).
@@ -94,8 +94,12 @@ export function stepComets(w: World): void {
     const h = heading + clamp(turn, -c.cometTurn * DT, c.cometTurn * DT);
     const sp = hunting ? c.cometSpeed : c.cometFleeSpeed;
     cm.vx[k] = Math.cos(h) * sp; cm.vy[k] = Math.sin(h) * sp;
-    x = clamp(x + cm.vx[k]! * DT, -c.arenaHalfWidth, c.arenaHalfWidth);
-    y = clamp(y + cm.vy[k]! * DT, -c.arenaHalfHeight, c.arenaHalfHeight);
+    x += cm.vx[k]! * DT;
+    y += cm.vy[k]! * DT;
+    // Sin bordes: la vuelta se calcula alrededor de la estrella.
+    const hw = c.arenaHalfWidth, hh = c.arenaHalfHeight;
+    if (x - s.x > hw) { x -= 2 * hw; cm.prevX[k] = cm.prevX[k]! - 2 * hw; } else if (x - s.x < -hw) { x += 2 * hw; cm.prevX[k] = cm.prevX[k]! + 2 * hw; }
+    if (y - s.y > hh) { y -= 2 * hh; cm.prevY[k] = cm.prevY[k]! - 2 * hh; } else if (y - s.y < -hh) { y += 2 * hh; cm.prevY[k] = cm.prevY[k]! + 2 * hh; }
     cm.x[k] = x; cm.y[k] = y;
 
     if (!hunting) {
@@ -128,6 +132,10 @@ export function stepComets(w: World): void {
       const v = Math.hypot(cm.vx[k]!, cm.vy[k]!) || 1;
       w.x[carried] = x - (cm.vx[k]! / v) * 4;
       w.y[carried] = y - (cm.vy[k]! / v) * 4;
+      // Si el cometa dio la vuelta, lo arrastrado acompaña el salto también en su posición anterior.
+      const hw = c.arenaHalfWidth, hh = c.arenaHalfHeight;
+      if (w.x[carried] - w.prevX[carried] > hw) w.prevX[carried] += 2 * hw; else if (w.prevX[carried] - w.x[carried] > hw) w.prevX[carried] -= 2 * hw;
+      if (w.y[carried] - w.prevY[carried] > hh) w.prevY[carried] += 2 * hh; else if (w.prevY[carried] - w.y[carried] > hh) w.prevY[carried] -= 2 * hh;
     }
 
     // Rayo del eclipse: 3 de daño, una sola vez por rayo.

@@ -62,8 +62,8 @@ export interface SimConfig {
 }
 
 export const DEFAULT_CONFIG: SimConfig = {
-  arenaHalfWidth: 450,
-  arenaHalfHeight: 280,
+  arenaHalfWidth: 560,
+  arenaHalfHeight: 360,
   asteroidCount: 3200,
   planetCount: 40,
   spawnClearRadius: 15,
@@ -85,8 +85,8 @@ export const DEFAULT_CONFIG: SimConfig = {
   blackHole: true,
   bhStartRadius: 5,
   bhStartSpeed: 1.5,
-  bhAccel: 0.02,
-  bhMaxSpeed: 6,
+  bhAccel: 0.08,
+  bhMaxSpeed: 16,
   bhPull: 9000,
   bhMaxAccel: 80,
   bhRange: 140,

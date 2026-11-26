@@ -76,17 +76,6 @@ describe('estrella', () => {
     expect(w.star.y).toBe(0);
   });
 
-  it('el objetivo se limita a la arena', () => {
-    const w = emptyWorld();
-    for (let i = 0; i < 4000; i++) {
-      step(w, { targetX: 1e6, targetY: -1e6, hasTarget: true });
-      expect(Math.abs(w.star.x)).toBeLessThanOrEqual(DEFAULT_CONFIG.arenaHalfWidth);
-      expect(Math.abs(w.star.y)).toBeLessThanOrEqual(DEFAULT_CONFIG.arenaHalfHeight);
-    }
-    expect(w.star.x).toBeCloseTo(DEFAULT_CONFIG.arenaHalfWidth, 1);
-    expect(w.star.y).toBeCloseTo(-DEFAULT_CONFIG.arenaHalfHeight, 1);
-  });
-
   it('guarda la posición anterior para interpolar', () => {
     const w = emptyWorld();
     const i = addBody(w, rock(50, 80, 0.5, 60, 0));

@@ -1,6 +1,7 @@
 // Cámara inclinada que sigue a la estrella. Matemática pura (sin three) para poder probarla.
-export interface CameraRigOptions { tiltDeg: number; distance: number; fovDeg: number; follow: number }
-export const DEFAULT_RIG: CameraRigOptions = { tiltDeg: 35, distance: 150, fovDeg: 36, follow: 1.6 };
+// maxZoom: tope del alejamiento, para que la cámara nunca alcance a ver la costura donde el mapa da la vuelta.
+export interface CameraRigOptions { tiltDeg: number; distance: number; fovDeg: number; follow: number; maxZoom: number }
+export const DEFAULT_RIG: CameraRigOptions = { tiltDeg: 35, distance: 150, fovDeg: 36, follow: 1.6, maxZoom: 2 };
 
 interface V3 { x: number; y: number; z: number }
 
@@ -33,7 +34,7 @@ export class CameraRig {
   // Se aleja de a poco cuando la estrella crece, para que se sienta la escala.
   followMass(mass: number, dt: number): void {
     if (!Number.isFinite(mass) || !(dt > 0)) return;
-    const want = 1 + 0.06 * (Math.sqrt(Math.max(mass, 1)) - 1);
+    const want = Math.min(this.opts.maxZoom, 1 + 0.06 * (Math.sqrt(Math.max(mass, 1)) - 1));
     this.zoom += (want - this.zoom) * (1 - Math.exp(-0.6 * dt));
     this.recompute();
   }

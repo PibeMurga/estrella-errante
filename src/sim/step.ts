@@ -186,8 +186,11 @@ export function step(w: World, intent: Intent): void {
     const dx = s.x - bh.x, dy = s.y - bh.y;
     const d = Math.hypot(dx, dy);
     if (d > 1e-6) { bh.vx = (dx / d) * bh.speed; bh.vy = (dy / d) * bh.speed; }
-    bh.x = clamp(bh.x + bh.vx * DT, -hw, hw);
-    bh.y = clamp(bh.y + bh.vy * DT, -hh, hh);
+    bh.x += bh.vx * DT;
+    bh.y += bh.vy * DT;
+    // Sin bordes: la vuelta del mapa se calcula alrededor de la estrella.
+    if (bh.x - s.x > hw) { bh.x -= 2 * hw; bh.prevX -= 2 * hw; } else if (bh.x - s.x < -hw) { bh.x += 2 * hw; bh.prevX += 2 * hw; }
+    if (bh.y - s.y > hh) { bh.y -= 2 * hh; bh.prevY -= 2 * hh; } else if (bh.y - s.y < -hh) { bh.y += 2 * hh; bh.prevY += 2 * hh; }
     // Su gravedad también tira de la estrella.
     const gx = bh.x - s.x, gy = bh.y - s.y;
     const g2 = gx * gx + gy * gy;
@@ -204,8 +207,8 @@ export function step(w: World, intent: Intent): void {
   let desY = 0;
   let maxDv = acc * c.starBrake * DT;
   if (intent.hasTarget && Number.isFinite(intent.targetX) && Number.isFinite(intent.targetY)) {
-    const dx = clamp(intent.targetX, -hw, hw) - s.x;
-    const dy = clamp(intent.targetY, -hh, hh) - s.y;
+    const dx = intent.targetX - s.x;
+    const dy = intent.targetY - s.y;
     const dist = Math.hypot(dx, dy);
     if (dist > 1e-6) {
       const speed = Math.min(c.starMaxSpeed, Math.sqrt(2 * acc * 0.8 * dist), (c.starMaxSpeed * dist) / c.starSlowRadius);
@@ -224,8 +227,6 @@ export function step(w: World, intent: Intent): void {
   if (sp > c.starMaxSpeed) { s.vx *= c.starMaxSpeed / sp; s.vy *= c.starMaxSpeed / sp; }
   s.x += s.vx * DT;
   s.y += s.vy * DT;
-  if (s.x > hw) { s.x = hw; s.vx = 0; } else if (s.x < -hw) { s.x = -hw; s.vx = 0; }
-  if (s.y > hh) { s.y = hh; s.vy = 0; } else if (s.y < -hh) { s.y = -hh; s.vy = 0; }
   if (bh.active && Math.hypot(s.x - bh.x, s.y - bh.y) < bh.radius + starSize(s.mass) * 0.5) {
     w.over = OVER_SWALLOWED;
     w.tick++;
@@ -245,9 +246,10 @@ export function step(w: World, intent: Intent): void {
       if (st === FREE) {
         x = w.x[i] + w.vx[i] * DT;
         y = w.y[i] + w.vy[i] * DT;
-        // Al reaparecer del otro lado se corre también la posición anterior, así el dibujo no interpola por el medio.
-        if (x > hw) { x -= 2 * hw; w.prevX[i] -= 2 * hw; } else if (x < -hw) { x += 2 * hw; w.prevX[i] += 2 * hw; }
-        if (y > hh) { y -= 2 * hh; w.prevY[i] -= 2 * hh; } else if (y < -hh) { y += 2 * hh; w.prevY[i] += 2 * hh; }
+        // Sin bordes: lo que se aleja más de media arena de la estrella reaparece del lado opuesto de la estrella,
+        // siempre fuera de cámara. La posición anterior se corre igual, así el dibujo no interpola por el medio.
+        if (x - s.x > hw) { x -= 2 * hw; w.prevX[i] -= 2 * hw; } else if (x - s.x < -hw) { x += 2 * hw; w.prevX[i] += 2 * hw; }
+        if (y - s.y > hh) { y -= 2 * hh; w.prevY[i] -= 2 * hh; } else if (y - s.y < -hh) { y += 2 * hh; w.prevY[i] += 2 * hh; }
         if (bh.active) {
           const gx = bh.x - x, gy = bh.y - y;
           const g2 = gx * gx + gy * gy;

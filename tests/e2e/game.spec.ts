@@ -57,3 +57,22 @@ test('se adapta al cambiar el tamaño de la ventana', async ({ page }) => {
     return d.canvasWidth === Math.floor(800 * dpr) && d.canvasHeight === Math.floor(600 * dpr);
   }, undefined, { timeout: 10_000 });
 });
+
+test('sin bordes: lejos del centro sigue habiendo cuerpos alrededor y nada falla', async ({ page }) => {
+  const errors = await boot(page);
+  await page.evaluate(() => {
+    const w = window.__GAME__!.world;
+    w.star.x = w.star.prevX = 5000; w.star.y = w.star.prevY = -3000;
+    w.bh.active = false;
+  });
+  await page.waitForTimeout(5000);   // la cámara sigue a la estrella con suavidad
+  const near = await page.evaluate(() => {
+    const w = window.__GAME__!.world;
+    let n = 0;
+    for (let i = 0; i < w.count; i++) if (w.state[i] === 0 && Math.hypot(w.x[i]! - w.star.x, w.y[i]! - w.star.y) < 150) n++;
+    return n;
+  });
+  expect(near).toBeGreaterThan(20);
+  expect(errors).toEqual([]);
+  await page.screenshot({ path: 'artifacts/e2e/lejos.png' });
+});
