@@ -1,0 +1,35 @@
+{
+  "name": "enjambre-gravitatorio",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Enjambre gravitatorio",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "dev:web": "vite src/renderer --port 5174 --strictPort",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test --project=web",
+    "test:electron": "npm run build && playwright test --project=electron",
+    "bench": "playwright test --project=bench --headed",
+    "shots": "playwright test --project=shots"
+  },
+  "dependencies": {
+    "postprocessing": "^6.39.6",
+    "stats-gl": "^4.2.3",
+    "three": "^0.187.0",
+    "tweakpane": "^4.0.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@types/node": "^24.19.2",
+    "@types/three": "^0.187.0",
+    "electron": "^45.5.0",
+    "electron-vite": "^6.0.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
+  }
+}
