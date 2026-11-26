@@ -2,6 +2,7 @@ import { AmbientLight, Vector3 } from 'three';
 import type { Rng } from '../sim/rng';
 import type { World } from '../sim/world';
 import { createSky } from './background/sky';
+import { createBlackHoleLayer } from './blackhole/blackHole';
 import { createAsteroidLayer } from './bodies/asteroids';
 import { createPlanetsLayer } from './bodies/planets';
 import { createSunLayer } from './bodies/sun';
@@ -23,6 +24,7 @@ export function buildLayers(deps: LayerDeps): BuiltLayers {
       planets,
       createAsteroidLayer(deps.world, deps.rng),
       ambient,
+      createBlackHoleLayer(deps.pipeline),
     ],
     planetTypes: planets.typesShown,
   };

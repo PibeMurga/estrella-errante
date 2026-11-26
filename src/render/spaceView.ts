@@ -58,6 +58,7 @@ export function createSpaceView(canvas: HTMLCanvasElement, opts: SpaceViewOption
     lookTarget.set(rig.focus.x, 0, -rig.focus.y);
     camera.lookAt(lookTarget);
     camera.fov = rig.options.fovDeg;
+    camera.updateMatrixWorld();
   };
   syncCamera();
 

@@ -35,6 +35,14 @@ test('al mover el mouse la estrella captura asteroides', async ({ page }) => {
   await page.screenshot({ path: 'artifacts/e2e/capturas.png' });
 });
 
+test('el agujero negro en pantalla activa la lente', async ({ page }) => {
+  await boot(page);
+  const d = await page.evaluate(() => window.__GAME__!.diagnostics);
+  expect(d.lensEnabled).toBe(1);
+  expect(d.lensRadius).toBeGreaterThan(0);
+  await page.screenshot({ path: 'artifacts/e2e/agujero-negro.png' });
+});
+
 test('se adapta al cambiar el tamaño de la ventana', async ({ page }) => {
   await boot(page);
   await page.setViewportSize({ width: 800, height: 600 });

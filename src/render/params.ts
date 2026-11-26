@@ -21,9 +21,9 @@ export const DEFAULT_PARAMS: ViewParams = {
   sunIntensity: 1.45,
   lightIntensity: 2.4,
   lensEnabled: true,
-  einsteinScale: 1.2,
+  einsteinScale: 2.2,
   diskIntensity: 4,
-  blackHoleX: 118,
-  blackHoleY: 40,
+  blackHoleX: 70,
+  blackHoleY: 45,
   blackHoleRadius: 5,
 };
