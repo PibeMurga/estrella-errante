@@ -38,9 +38,13 @@ export function createBlackHoleLayer(pipeline: Pipeline): Layer {
     object: group,
     update(ctx) {
       const p = ctx.params, cam = ctx.camera, rig = ctx.rig;
-      toWorld(p.blackHoleX, p.blackHoleY, center);
+      // En partida manda la simulación; con el agujero negro apagado (laboratorio, banco) mandan los parámetros.
+      const bh = ctx.world.bh;
+      const radius = bh.active ? bh.radius : p.blackHoleRadius;
+      if (bh.active) toWorld(bh.prevX + (bh.x - bh.prevX) * ctx.alpha, bh.prevY + (bh.y - bh.prevY) * ctx.alpha, center);
+      else toWorld(p.blackHoleX, p.blackHoleY, center);
       group.position.copy(center);
-      group.scale.setScalar(p.blackHoleRadius / HORIZON);
+      group.scale.setScalar(radius / HORIZON);
       diskMat.uniforms['uTime']!.value = ctx.time;
 
       // Lente: sólo si el agujero negro está delante de la cámara y cerca de la pantalla.
@@ -52,7 +56,7 @@ export function createBlackHoleLayer(pipeline: Pipeline): Layer {
       if (!onScreen) return;
       lens.uCenter.value.set(ndc.x * 0.5 + 0.5, ndc.y * 0.5 + 0.5);
       lens.uAspect.value = ctx.width / ctx.height;
-      const er = p.blackHoleRadius * p.einsteinScale;
+      const er = radius * p.einsteinScale;
       edge.set(center.x + rig.right.x * er, center.y + rig.right.y * er, center.z + rig.right.z * er).project(cam);
       lens.uEinsteinR.value = Math.abs(edge.x - ndc.x) * 0.5 * (ctx.width / ctx.height);
     },

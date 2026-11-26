@@ -11,7 +11,7 @@ import { step } from '../../sim/step';
 import { createWorld } from '../../sim/world';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
-const world = createWorld({ ...DEFAULT_CONFIG, asteroidCount: 300, planetCount: 9 }, 7);
+const world = createWorld({ ...DEFAULT_CONFIG, asteroidCount: 300, planetCount: 9, blackHole: false }, 7);
 const view = createSpaceView(canvas, { world, quality: 'high' });
 
 if (!view.ok) {

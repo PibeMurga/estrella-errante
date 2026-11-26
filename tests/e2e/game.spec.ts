@@ -37,6 +37,8 @@ test('al mover el mouse la estrella captura asteroides', async ({ page }) => {
 
 test('el agujero negro en pantalla activa la lente', async ({ page }) => {
   await boot(page);
+  await page.evaluate(() => { const bh = window.__GAME__!.world.bh; bh.x = bh.prevX = 55; bh.y = bh.prevY = 35; });
+  await page.waitForTimeout(300);
   const d = await page.evaluate(() => window.__GAME__!.diagnostics);
   expect(d.lensEnabled).toBe(1);
   expect(d.lensRadius).toBeGreaterThan(0);

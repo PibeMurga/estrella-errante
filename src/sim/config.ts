@@ -22,6 +22,15 @@ export interface SimConfig {
   orbitCapacity: number;
   orbitEase: number;             // 0..1 por paso: qué tan rápido llega a su radio de órbita
   orbitSpeedK: number;           // rad/s en orbitMin
+  blackHole: boolean;            // se puede apagar para pruebas y laboratorio
+  bhStartRadius: number;
+  bhStartSpeed: number;          // unidades por segundo al aparecer
+  bhAccel: number;               // cuánto sube la velocidad por segundo
+  bhMaxSpeed: number;
+  bhPull: number;                // gravedad: a = bhPull·masa / d²
+  bhMaxAccel: number;            // tope de la aceleración (cerca del centro)
+  bhRange: number;               // más allá de esta distancia no atrae
+  bhMassGain: number;            // fracción de la masa tragada que suma el agujero negro
 }
 
 export const DEFAULT_CONFIG: SimConfig = {
@@ -45,4 +54,13 @@ export const DEFAULT_CONFIG: SimConfig = {
   orbitCapacity: 240,
   orbitEase: 0.08,
   orbitSpeedK: 2.2,
+  blackHole: true,
+  bhStartRadius: 5,
+  bhStartSpeed: 1.5,
+  bhAccel: 0.02,
+  bhMaxSpeed: 6,
+  bhPull: 9000,
+  bhMaxAccel: 80,
+  bhRange: 140,
+  bhMassGain: 0.004,
 };

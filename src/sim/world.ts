@@ -4,6 +4,10 @@ import { createRng, type Rng } from './rng';
 export const FREE = 0;
 export const ORBITING = 1;       // orbita la estrella del jugador
 export const ORBIT_PLANET = 2;   // orbita un planeta (luna o escombro de su cinturón)
+export const DEAD = 3;           // tragado o destruido: no se mueve ni se dibuja
+export const OVER_NONE = 0;
+export const OVER_SWALLOWED = 1; // la tragó el agujero negro
+export const OVER_DIMMED = 2;    // se apagó: chocó sin mundos que la protejan
 export const KIND_ASTEROID = 0;
 export const KIND_ROCKY = 1;
 export const KIND_ICE = 2;
@@ -16,12 +20,20 @@ export interface Star {
   mass: number; captureRadius: number;
 }
 
+export interface BlackHole {
+  x: number; y: number; prevX: number; prevY: number;
+  vx: number; vy: number; speed: number;
+  radius: number; mass: number; active: boolean;
+}
+
 export interface World {
   readonly config: SimConfig;
   readonly capacity: number;
   tick: number;
   count: number;
   readonly star: Star;
+  readonly bh: BlackHole;
+  over: number;        // OVER_NONE mientras se juega
   readonly x: Float64Array; readonly y: Float64Array;
   readonly prevX: Float64Array; readonly prevY: Float64Array;
   readonly vx: Float64Array; readonly vy: Float64Array;
@@ -117,6 +129,8 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0,
       mass: config.starStartMass, captureRadius: captureRadiusFor(config, config.starStartMass),
     },
+    bh: { x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0, speed: config.bhStartSpeed, radius: config.bhStartRadius, mass: 1, active: config.blackHole },
+    over: OVER_NONE,
     x: f(), y: f(), prevX: f(), prevY: f(), vx: f(), vy: f(), radius: f(), mass: f(),
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
     parent: new Int32Array(capacity).fill(-1),
@@ -162,6 +176,10 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       }
     }
   }
+  // El agujero negro aparece en un borde, del lado izquierdo o derecho (se sortea al final para no alterar el mapa).
+  const side = rng.next() < 0.5 ? -1 : 1;
+  w.bh.x = w.bh.prevX = side * hw * 0.95;
+  w.bh.y = w.bh.prevY = rng.range(-hh * 0.5, hh * 0.5);
   return w;
 }
 
@@ -174,7 +192,7 @@ export function hashWorld(w: World): number {
     buf[0] = v;
     for (let k = 0; k < 8; k++) { h ^= bytes[k]; h = Math.imul(h, 0x01000193) >>> 0; }
   };
-  mix(w.star.x); mix(w.star.y); mix(w.star.mass);
+  mix(w.star.x); mix(w.star.y); mix(w.star.mass); mix(w.bh.x); mix(w.bh.y); mix(w.bh.mass);
   for (let i = 0; i < w.count; i++) { mix(w.x[i]); mix(w.y[i]); mix(w.state[i]); }
   return h >>> 0;
 }

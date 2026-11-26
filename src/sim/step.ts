@@ -1,6 +1,6 @@
 import { DT } from './config';
 import { stageFor } from './stages';
-import { captureRadiusFor, FREE, ORBIT_PLANET, ORBITING, starSize, type World } from './world';
+import { captureRadiusFor, DEAD, FREE, ORBIT_PLANET, ORBITING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
 
 export interface Intent { targetX: number; targetY: number; hasTarget: boolean }
 
@@ -11,12 +11,37 @@ export function step(w: World, intent: Intent): void {
   const s = w.star;
   const hw = c.arenaHalfWidth;
   const hh = c.arenaHalfHeight;
+  const bh = w.bh;
   w.capturedCount = 0;
 
   s.prevX = s.x;
   s.prevY = s.y;
+  bh.prevX = bh.x;
+  bh.prevY = bh.y;
   w.prevX.set(w.x);
   w.prevY.set(w.y);
+  // Partida terminada: todo queda quieto (y sin interpolar) hasta que se reinicie.
+  if (w.over !== OVER_NONE) return;
+
+  // El agujero negro persigue a la estrella, cada vez un poco más rápido.
+  const range2 = c.bhRange * c.bhRange;
+  const G = c.bhPull * bh.mass;
+  if (bh.active) {
+    bh.speed = Math.min(c.bhMaxSpeed, bh.speed + c.bhAccel * DT);
+    const dx = s.x - bh.x, dy = s.y - bh.y;
+    const d = Math.hypot(dx, dy);
+    if (d > 1e-6) { bh.vx = (dx / d) * bh.speed; bh.vy = (dy / d) * bh.speed; }
+    bh.x = clamp(bh.x + bh.vx * DT, -hw, hw);
+    bh.y = clamp(bh.y + bh.vy * DT, -hh, hh);
+    // Su gravedad también tira de la estrella.
+    const gx = bh.x - s.x, gy = bh.y - s.y;
+    const g2 = gx * gx + gy * gy;
+    if (g2 < range2 && g2 > 1e-9) {
+      const a = Math.min(c.bhMaxAccel, G / Math.max(g2, 1)) * DT / Math.sqrt(g2);
+      s.vx += gx * a;
+      s.vy += gy * a;
+    }
+  }
 
   // Movimiento con inercia: acelera hacia una velocidad deseada y frena para llegar sin pasarse.
   const acc = c.starAccel / (1 + c.starMassInertia * s.mass);
@@ -46,10 +71,16 @@ export function step(w: World, intent: Intent): void {
   s.y += s.vy * DT;
   if (s.x > hw) { s.x = hw; s.vx = 0; } else if (s.x < -hw) { s.x = -hw; s.vx = 0; }
   if (s.y > hh) { s.y = hh; s.vy = 0; } else if (s.y < -hh) { s.y = -hh; s.vy = 0; }
+  if (bh.active && Math.hypot(s.x - bh.x, s.y - bh.y) < bh.radius + starSize(s.mass) * 0.5) {
+    w.over = OVER_SWALLOWED;
+    w.tick++;
+    return;
+  }
 
   const captureR = s.captureRadius;
   for (let i = 0; i < w.count; i++) {
     const st = w.state[i];
+    if (st === DEAD) continue;
     if (st === FREE || st === ORBIT_PLANET) {
       let x: number;
       let y: number;
@@ -59,6 +90,33 @@ export function step(w: World, intent: Intent): void {
         // Al reaparecer del otro lado se corre también la posición anterior, así el dibujo no interpola por el medio.
         if (x > hw) { x -= 2 * hw; w.prevX[i] -= 2 * hw; } else if (x < -hw) { x += 2 * hw; w.prevX[i] += 2 * hw; }
         if (y > hh) { y -= 2 * hh; w.prevY[i] -= 2 * hh; } else if (y < -hh) { y += 2 * hh; w.prevY[i] += 2 * hh; }
+        if (bh.active) {
+          const gx = bh.x - x, gy = bh.y - y;
+          const g2 = gx * gx + gy * gy;
+          if (g2 < range2) {
+            if (g2 < bh.radius * bh.radius * 1.44) {
+              // Tragado: suma masa al agujero negro y deja de existir.
+              w.state[i] = DEAD;
+              bh.mass += w.mass[i] * c.bhMassGain;
+              w.x[i] = x; w.y[i] = y;
+              continue;
+            }
+            const a = Math.min(c.bhMaxAccel, G / Math.max(g2, 1)) * DT / Math.sqrt(g2);
+            w.vx[i] += gx * a;
+            w.vy[i] += gy * a;
+          }
+        }
+      } else if (w.state[w.parent[i]!] === DEAD) {
+        // Su planeta fue tragado: la luna sigue suelta con la velocidad que tenía al girar.
+        const p = w.parent[i]!;
+        const ang = w.orbitAngle[i];
+        const v = w.orbitW[i] * w.orbitR[i];
+        w.vx[i] = w.vx[p] - Math.sin(ang) * v;
+        w.vy[i] = w.vy[p] + Math.cos(ang) * v;
+        w.state[i] = FREE;
+        w.parent[i] = -1;
+        x = w.x[i];
+        y = w.y[i];
       } else {
         // Luna o escombro: gira alrededor de su planeta (que ya se movió en este paso, porque se creó antes).
         const p = w.parent[i]!;
@@ -95,6 +153,7 @@ export function step(w: World, intent: Intent): void {
     }
   }
 
+  bh.radius = c.bhStartRadius * Math.cbrt(bh.mass);
   s.captureRadius = captureRadiusFor(c, s.mass);
   const st = stageFor(s.mass);
   if (st > w.stage) { w.stage = st; w.stageUps++; }
