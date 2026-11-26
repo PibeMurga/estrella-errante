@@ -22,6 +22,43 @@ export interface SimConfig {
   orbitCapacity: number;
   orbitEase: number;             // 0..1 por paso: qué tan rápido llega a su radio de órbita
   orbitSpeedK: number;           // rad/s en orbitMin
+  blackHole: boolean;            // se puede apagar para pruebas y laboratorio
+  bhStartRadius: number;
+  bhStartSpeed: number;          // unidades por segundo al aparecer
+  bhAccel: number;               // cuánto sube la velocidad por segundo
+  bhMaxSpeed: number;
+  bhPull: number;                // gravedad: a = bhPull·masa / d²
+  bhMaxAccel: number;            // tope de la aceleración (cerca del centro)
+  bhRange: number;               // más allá de esta distancia no atrae
+  bhMassGain: number;            // fracción de la masa tragada que suma el agujero negro
+  bhStarPull: number;            // fracción de la gravedad que siente la estrella (0..1)
+  hurtWorldsLost: number;        // mundos que se pierden al chocar con un planeta más grande
+  hurtInvuln: number;            // segundos sin recibir daño después de un choque
+  hurtBounce: number;            // velocidad del rebote
+  lostSpeed: number;             // velocidad con que salen despedidos los mundos perdidos
+  noCatchTime: number;           // segundos en que un mundo perdido no se puede volver a capturar
+  slingCooldown: number;         // segundos entre disparos de honda
+  slingSpeed: number;            // velocidad del mundo lanzado
+  slingLife: number;             // segundos de vuelo antes de volver
+  slingReturnSpeed: number;      // velocidad de vuelta (se suma la de la estrella)
+  slingLoseDist: number;         // si al empezar a volver está más lejos que esto, se pierde
+  eclipseMin: number;            // mundos alineados que hacen falta para un eclipse
+  eclipseWindowDeg: number;      // ancho de la alineación, en grados
+  eclipseDensity: number;        // hace falta esto veces lo que cabría por azar en la ventana (con muchos mundos)
+  eclipseCooldown: number;       // segundos entre eclipses
+  beamDuration: number;          // segundos que dura el rayo
+  beamLength: number;            // largo del rayo
+  beamHalfWidth: number;         // medio ancho del rayo para el daño
+  cometFirst: number;            // segundos hasta el primer cometa
+  cometEvery: number;            // segundos entre cometas
+  cometSpeed: number;            // al cazar (la estrella llega a starMaxSpeed)
+  cometFleeSpeed: number;
+  cometTurn: number;             // giro máximo, rad/s
+  cometHp: number;
+  cometFleeTime: number;         // segundos que huye después de robar
+  cometRadius: number;
+  cometDebris: number;           // asteroides que deja al morir
+  debrisReserve: number;         // cuerpos de reserva para los escombros (se crean muertos al armar el mapa)
 }
 
 export const DEFAULT_CONFIG: SimConfig = {
@@ -45,4 +82,41 @@ export const DEFAULT_CONFIG: SimConfig = {
   orbitCapacity: 240,
   orbitEase: 0.08,
   orbitSpeedK: 2.2,
+  blackHole: true,
+  bhStartRadius: 5,
+  bhStartSpeed: 1.5,
+  bhAccel: 0.02,
+  bhMaxSpeed: 6,
+  bhPull: 9000,
+  bhMaxAccel: 80,
+  bhRange: 140,
+  bhMassGain: 0.003,
+  bhStarPull: 0.6,
+  hurtWorldsLost: 3,
+  hurtInvuln: 1.5,
+  hurtBounce: 24,
+  lostSpeed: 18,
+  noCatchTime: 1.5,
+  slingCooldown: 0.35,
+  slingSpeed: 70,
+  slingLife: 2.2,
+  slingReturnSpeed: 50,
+  slingLoseDist: 220,
+  eclipseMin: 4,
+  eclipseWindowDeg: 7,
+  eclipseDensity: 2.5,
+  eclipseCooldown: 2.5,
+  beamDuration: 0.6,
+  beamLength: 150,
+  beamHalfWidth: 4,
+  cometFirst: 60,
+  cometEvery: 40,
+  cometSpeed: 24,
+  cometFleeSpeed: 30,
+  cometTurn: 1.6,
+  cometHp: 3,
+  cometFleeTime: 6,
+  cometRadius: 2.5,
+  cometDebris: 5,
+  debrisReserve: 60,
 };

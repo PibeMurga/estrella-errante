@@ -14,7 +14,7 @@ const q = query.get('quality');
 const quality: QualityLevel = q === 'low' || q === 'medium' ? q : 'high';
 const WARMUP = 2;
 
-const config = { ...DEFAULT_CONFIG, asteroidCount: 2000, planetCount: 300, orbitCapacity: 600 };
+const config = { ...DEFAULT_CONFIG, asteroidCount: 2000, planetCount: 300, orbitCapacity: 600, blackHole: false };
 const world = createWorld(config, 424242);
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const view = createSpaceView(canvas, { world, quality });

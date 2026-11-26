@@ -4,6 +4,14 @@ import { createRng, type Rng } from './rng';
 export const FREE = 0;
 export const ORBITING = 1;       // orbita la estrella del jugador
 export const ORBIT_PLANET = 2;   // orbita un planeta (luna o escombro de su cinturón)
+export const DEAD = 3;           // tragado o destruido: no se mueve ni se dibuja
+export const PROJECTILE = 4;     // lanzado con la honda
+export const RETURNING = 5;      // vuelve a la órbita después del lanzamiento
+export const CARRIED = 6;        // robado por un cometa, va arrastrado detrás
+export const MAX_COMETS = 6;
+export const OVER_NONE = 0;
+export const OVER_SWALLOWED = 1; // la tragó el agujero negro
+export const OVER_DIMMED = 2;    // se apagó: chocó sin mundos que la protejan
 export const KIND_ASTEROID = 0;
 export const KIND_ROCKY = 1;
 export const KIND_ICE = 2;
@@ -16,12 +24,45 @@ export interface Star {
   mass: number; captureRadius: number;
 }
 
+export interface BlackHole {
+  x: number; y: number; prevX: number; prevY: number;
+  vx: number; vy: number; speed: number;
+  radius: number; mass: number; active: boolean;
+}
+
+export interface Comets {
+  readonly x: Float64Array; readonly y: Float64Array;
+  readonly prevX: Float64Array; readonly prevY: Float64Array;
+  readonly vx: Float64Array; readonly vy: Float64Array;
+  readonly hp: Float32Array;
+  readonly mode: Uint8Array;     // 0 apagado, 1 caza, 2 huye
+  readonly timer: Float32Array;  // segundos de huida que quedan
+  readonly carry: Int32Array;    // mundo robado, o -1
+  readonly beamId: Int32Array;   // último rayo que lo dañó
+}
+
 export interface World {
   readonly config: SimConfig;
   readonly capacity: number;
   tick: number;
   count: number;
   readonly star: Star;
+  readonly bh: BlackHole;
+  readonly comets: Comets;
+  cometClock: number;  // segundos hasta el próximo cometa
+  cometSteals: number; // mundos robados por cometas (evento)
+  cometKills: number;  // cometas destruidos (evento)
+  readonly rng: Rng;   // azar de la partida (cometas, escombros)
+  over: number;        // OVER_NONE mientras se juega
+  invuln: number;      // segundos de invulnerabilidad que quedan
+  hits: number;        // choques con planetas (evento para el dibujo y la interfaz)
+  slingCd: number;     // segundos hasta poder volver a disparar
+  shots: number;       // disparos de honda (evento)
+  eclipses: number;    // eclipses producidos (evento)
+  eclipseAngle: number;     // dirección del último rayo
+  eclipseStrength: number;  // cuántos mundos lo formaron
+  eclipseCd: number;
+  beamTime: number;    // segundos que le quedan al rayo
   readonly x: Float64Array; readonly y: Float64Array;
   readonly prevX: Float64Array; readonly prevY: Float64Array;
   readonly vx: Float64Array; readonly vy: Float64Array;
@@ -30,7 +71,13 @@ export interface World {
   readonly orbitW: Float64Array;   // velocidad angular (rad/s) al orbitar un planeta
   readonly parent: Int32Array;     // planeta que orbita, o -1
   readonly state: Uint8Array; readonly kind: Uint8Array;
+  readonly noCatch: Float32Array;  // segundos en que no se puede capturar (mundos recién perdidos)
+  readonly life: Float32Array;     // segundos de vuelo que le quedan a un proyectil
   orbitingCount: number;
+  stage: number;       // etapa actual de la estrella (ver stages.ts)
+  stageUps: number;    // cuántas veces subió de etapa (el dibujo y la interfaz lo usan como evento)
+  maxMass: number;     // la mayor masa alcanzada en la partida
+  absorbed: number;    // cuerpos absorbidos con la órbita llena
   readonly captured: Int32Array;   // índices capturados en el último paso
   capturedCount: number;
 }
@@ -57,7 +104,7 @@ export function addBody(w: World, b: BodySpec): number {
   w.radius[i] = b.radius; w.mass[i] = b.radius * b.radius * b.radius;
   w.orbitR[i] = 0; w.orbitTarget[i] = 0; w.orbitAngle[i] = 0; w.orbitW[i] = 0;
   w.parent[i] = -1;
-  w.state[i] = FREE; w.kind[i] = b.kind;
+  w.state[i] = FREE; w.kind[i] = b.kind; w.noCatch[i] = 0;
   return i;
 }
 
@@ -107,7 +154,7 @@ function makeDensity(rng: Rng, hw: number, hh: number): (x: number, y: number) =
 }
 
 export function createWorld(config: SimConfig, seed: number, extraCapacity = 0): World {
-  const capacity = config.asteroidCount + config.planetCount * (1 + MAX_MOONS + MAX_DEBRIS) + extraCapacity;
+  const capacity = config.asteroidCount + config.planetCount * (1 + MAX_MOONS + MAX_DEBRIS) + config.debrisReserve + extraCapacity;
   const f = (): Float64Array => new Float64Array(capacity);
   const w: World = {
     config, capacity, tick: 0, count: 0,
@@ -115,11 +162,20 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0,
       mass: config.starStartMass, captureRadius: captureRadiusFor(config, config.starStartMass),
     },
+    bh: { x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0, speed: config.bhStartSpeed, radius: config.bhStartRadius, mass: 1, active: config.blackHole },
+    comets: {
+      x: new Float64Array(MAX_COMETS), y: new Float64Array(MAX_COMETS), prevX: new Float64Array(MAX_COMETS), prevY: new Float64Array(MAX_COMETS),
+      vx: new Float64Array(MAX_COMETS), vy: new Float64Array(MAX_COMETS), hp: new Float32Array(MAX_COMETS), mode: new Uint8Array(MAX_COMETS),
+      timer: new Float32Array(MAX_COMETS), carry: new Int32Array(MAX_COMETS).fill(-1), beamId: new Int32Array(MAX_COMETS),
+    },
+    cometClock: config.cometFirst, cometSteals: 0, cometKills: 0, rng: createRng(seed ^ 0x9e3779b9),
+    over: OVER_NONE, invuln: 0, hits: 0, slingCd: 0, shots: 0,
+    eclipses: 0, eclipseAngle: 0, eclipseStrength: 0, eclipseCd: 0, beamTime: 0,
     x: f(), y: f(), prevX: f(), prevY: f(), vx: f(), vy: f(), radius: f(), mass: f(),
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
     parent: new Int32Array(capacity).fill(-1),
-    state: new Uint8Array(capacity), kind: new Uint8Array(capacity),
-    orbitingCount: 0, captured: new Int32Array(capacity), capturedCount: 0,
+    state: new Uint8Array(capacity), kind: new Uint8Array(capacity), noCatch: new Float32Array(capacity), life: new Float32Array(capacity),
+    orbitingCount: 0, stage: 0, stageUps: 0, maxMass: config.starStartMass, absorbed: 0, captured: new Int32Array(capacity), capturedCount: 0,
   };
   const rng = createRng(seed);
   const hw = config.arenaHalfWidth, hh = config.arenaHalfHeight;
@@ -160,6 +216,16 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       }
     }
   }
+  // Reserva de asteroides muertos: los cometas los reviven como escombros al morir.
+  for (let k = 0; k < config.debrisReserve; k++) {
+    const i = addBody(w, { x: 0, y: 0, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID });
+    if (i < 0) break;
+    w.state[i] = DEAD;
+  }
+  // El agujero negro aparece en un borde, del lado izquierdo o derecho (se sortea al final para no alterar el mapa).
+  const side = rng.next() < 0.5 ? -1 : 1;
+  w.bh.x = w.bh.prevX = side * hw * 0.95;
+  w.bh.y = w.bh.prevY = rng.range(-hh * 0.5, hh * 0.5);
   return w;
 }
 
@@ -172,7 +238,7 @@ export function hashWorld(w: World): number {
     buf[0] = v;
     for (let k = 0; k < 8; k++) { h ^= bytes[k]; h = Math.imul(h, 0x01000193) >>> 0; }
   };
-  mix(w.star.x); mix(w.star.y); mix(w.star.mass);
+  mix(w.star.x); mix(w.star.y); mix(w.star.mass); mix(w.bh.x); mix(w.bh.y); mix(w.bh.mass);
   for (let i = 0; i < w.count; i++) { mix(w.x[i]); mix(w.y[i]); mix(w.state[i]); }
   return h >>> 0;
 }

@@ -1,5 +1,11 @@
 import { join } from 'node:path';
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
+import { createSteamBridge, steamAppId } from './steam';
+
+// Steam: por ahora sin librería conectada (ver steam.ts). El juego funciona igual.
+const steam = createSteamBridge(() => null, steamAppId(process.env));
+ipcMain.handle('steam:status', () => steam.status());
+ipcMain.handle('steam:testAchievement', () => steam.testAchievement());
 
 function createWindow(): void {
   const win = new BrowserWindow({

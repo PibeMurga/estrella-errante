@@ -1,6 +1,6 @@
 import { type BufferAttribute, type BufferGeometry, Color, Frustum, IcosahedronGeometry, InstancedMesh, Matrix4, MeshStandardMaterial, Quaternion, Sphere, Vector3 } from 'three';
 import type { Rng } from '../../sim/rng';
-import { KIND_ASTEROID, type World } from '../../sim/world';
+import { KIND_ASTEROID, type World, DEAD } from '../../sim/world';
 import type { Layer } from '../layer';
 
 // Roca irregular: la deformación depende sólo de la posición, así los vértices repetidos no se separan.
@@ -61,6 +61,7 @@ export function createAsteroidLayer(world: World, rng: Rng): Layer {
       let v = 0;
       for (let s = 0; s < n; s++) {
         const i = indices[s]!;
+        if (w.state[i] === DEAD) continue;   // tragado
         pos.set(w.prevX[i] + (w.x[i] - w.prevX[i]) * a, lift[s]!, -(w.prevY[i] + (w.y[i] - w.prevY[i]) * a));
         bound.center.copy(pos); bound.radius = w.radius[i] * 1.3;
         if (!frustum.intersectsSphere(bound)) continue;   // fuera de cuadro: no se dibuja

@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG, DT, type SimConfig } from '../../src/sim/config';
 import { type Intent, step } from '../../src/sim/step';
 import {
-  addBody, addSatellite, captureRadiusFor, starSize, createWorld, FREE, hashWorld, KIND_ASTEROID, KIND_GAS, KIND_MOON, ORBIT_PLANET, ORBITING,
-} from '../../src/sim/world';
+  addBody, addSatellite, captureRadiusFor, starSize, createWorld, FREE, hashWorld, KIND_ASTEROID, KIND_GAS, KIND_MOON, ORBIT_PLANET, ORBITING, DEAD } from '../../src/sim/world';
 
 const NO_INPUT: Intent = { targetX: 0, targetY: 0, hasTarget: false };
 
@@ -130,16 +129,17 @@ describe('captura', () => {
     expect(w.orbitingCount).toBe(0);
   });
 
-  it('con la órbita llena, el resto queda libre', () => {
+  it('con la órbita llena, la estrella absorbe el resto: suma su masa y el cuerpo desaparece', () => {
     const w = emptyWorld(10, { orbitCapacity: 2 });
     addBody(w, rock(2, 0));
     addBody(w, rock(0, 2));
-    addBody(w, rock(-2, 0));
+    const last = addBody(w, rock(-2, 0));
+    const m0 = w.star.mass;
     step(w, NO_INPUT);
     expect(w.orbitingCount).toBe(2);
-    let free = 0;
-    for (let k = 0; k < w.count; k++) if (w.state[k] === FREE) free++;
-    expect(free).toBe(1);
+    expect(w.state[last]).toBe(DEAD);
+    expect(w.star.mass).toBeCloseTo(m0 + w.mass[0] + w.mass[1] + w.mass[last], 9);
+    expect(w.absorbed).toBe(1);
   });
 
   it('el capturado termina orbitando a su radio de órbita y gira', () => {

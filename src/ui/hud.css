@@ -1,0 +1,37 @@
+/* Visor de fósforo (opción C de la maqueta de interfaz): verde fósforo sobre el vidrio, ámbar para el peligro. Sin metal en partida. */
+.hud {
+  --ph: #7af5c9; --am: #ffb000;
+  position: fixed; inset: 0; pointer-events: none; user-select: none;
+  font-family: 'Cascadia Mono', 'Consolas', 'DejaVu Sans Mono', 'Liberation Mono', monospace;
+  color: var(--ph); text-shadow: 0 0 4px #7af5c9cc, 0 0 10px #7af5c944;
+  font-size: 12px; letter-spacing: 2px;
+}
+.hud .am { color: var(--am); text-shadow: 0 0 6px #ffb000aa; }
+.hud .dim { opacity: .6; }
+.hud .corner { position: absolute; width: 34px; height: 34px; border: 1.5px solid #7af5c9aa; box-shadow: 0 0 6px #7af5c955; }
+.hud .corner.tl { left: 20px; top: 20px; border-right: none; border-bottom: none; }
+.hud .corner.tr { right: 20px; top: 20px; border-left: none; border-bottom: none; }
+.hud .corner.bl { left: 20px; bottom: 20px; border-right: none; border-top: none; }
+.hud .corner.br { right: 20px; bottom: 20px; border-left: none; border-top: none; }
+
+.hud .stage { position: absolute; left: 50%; top: 26px; transform: translateX(-50%); text-align: center; font-size: 13px; letter-spacing: 3px; }
+.hud .seg { display: flex; gap: 2px; width: 340px; margin-top: 6px; }
+.hud .seg i { flex: 1; height: 9px; background: var(--ph); box-shadow: 0 0 5px #7af5c9aa; transition: background .3s; }
+.hud .seg i.o { background: #7af5c914; box-shadow: none; }
+
+.hud .clock { position: absolute; left: 30px; top: 66px; opacity: .9; line-height: 1.6; }
+.hud .bhinfo { position: absolute; right: 60px; top: 40px; text-align: right; line-height: 1.6; }
+.hud .bottom { position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%); display: flex; gap: 30px; align-items: center; }
+.hud .bottom .off { opacity: .35; }
+
+.hud .log { position: absolute; left: 30px; bottom: 70px; display: flex; flex-direction: column-reverse; gap: 4px; font-size: 11px; }
+
+/* Rumbo al agujero negro: flecha en el borde cuando está fuera de pantalla, corchetes cuando está a la vista. */
+.hud .arrow { position: absolute; left: 0; top: 0; display: none; align-items: center; gap: 6px; will-change: transform; }
+.hud .arrow svg { filter: drop-shadow(0 0 4px #ffb000); }
+.hud .brackets { position: absolute; left: 0; top: 0; display: none; will-change: transform; }
+.hud .brackets i { position: absolute; width: 12px; height: 12px; border: 1.5px solid #ffb000cc; box-shadow: 0 0 5px #ffb00066; }
+.hud .brackets i:nth-child(1) { left: -1px; top: -1px; border-right: none; border-bottom: none; }
+.hud .brackets i:nth-child(2) { right: -1px; top: -1px; border-left: none; border-bottom: none; }
+.hud .brackets i:nth-child(3) { left: -1px; bottom: -1px; border-right: none; border-top: none; }
+.hud .brackets i:nth-child(4) { right: -1px; bottom: -1px; border-left: none; border-top: none; }

@@ -11,7 +11,7 @@ import { step } from '../../sim/step';
 import { createWorld } from '../../sim/world';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
-const world = createWorld({ ...DEFAULT_CONFIG, asteroidCount: 300, planetCount: 9 }, 7);
+const world = createWorld({ ...DEFAULT_CONFIG, asteroidCount: 300, planetCount: 9, blackHole: false }, 7);
 const view = createSpaceView(canvas, { world, quality: 'high' });
 
 if (!view.ok) {
@@ -73,7 +73,7 @@ if (!view.ok) {
     last = now;
     const steps = lab.paused ? 0 : stepper.advance(elapsed);
     const intent = input.poll(world.star.x, world.star.y);
-    for (let i = 0; i < steps; i++) step(world, intent);
+    for (let i = 0; i < steps; i++) { step(world, intent); intent.fire = false; }
     view.update(world, lab.paused ? 1 : stepper.alpha, now / 1000);
     view.render();
     stats.update();

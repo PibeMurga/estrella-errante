@@ -10,5 +10,9 @@ test('la ventana de Electron abre aislada de Node', async () => {
   );
   expect(isolated).toBe(true);
   expect(await win.evaluate(() => window.platform?.kind)).toBe('electron');
+  // Steam todavía no está conectado: responde sin romper.
+  const steam = await win.evaluate(() => window.platform!.steam.status());
+  expect(steam.available).toBe(false);
+  expect(await win.evaluate(() => window.platform!.steam.testAchievement())).toBe(false);
   await app.close();
 });

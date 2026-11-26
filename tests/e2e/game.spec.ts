@@ -33,10 +33,15 @@ test('al mover el mouse la estrella captura asteroides', async ({ page }) => {
   const orbiting = await page.evaluate(() => window.__GAME__!.diagnostics.orbiting);
   expect(orbiting).toBeGreaterThan(0);
   await page.screenshot({ path: 'artifacts/e2e/capturas.png' });
+  // Con mundos en órbita, el clic los lanza con la honda.
+  await page.mouse.click(900, 300);
+  await page.waitForFunction(() => window.__GAME__!.world.shots > 0, undefined, { timeout: 5_000 });
 });
 
 test('el agujero negro en pantalla activa la lente', async ({ page }) => {
   await boot(page);
+  await page.evaluate(() => { const bh = window.__GAME__!.world.bh; bh.x = bh.prevX = 55; bh.y = bh.prevY = 35; });
+  await page.waitForTimeout(300);
   const d = await page.evaluate(() => window.__GAME__!.diagnostics);
   expect(d.lensEnabled).toBe(1);
   expect(d.lensRadius).toBeGreaterThan(0);
