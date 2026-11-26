@@ -1,10 +1,35 @@
 import { DT } from './config';
 import { stageFor } from './stages';
-import { captureRadiusFor, DEAD, FREE, ORBIT_PLANET, ORBITING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
+import { captureRadiusFor, DEAD, FREE, KIND_GAS, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_DIMMED, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
 
 export interface Intent { targetX: number; targetY: number; hasTarget: boolean }
 
 const clamp = (v: number, lo: number, hi: number): number => (v < lo ? lo : v > hi ? hi : v);
+
+// Choque con un planeta grande: sin mundos en órbita la estrella se apaga; si no, pierde algunos y rebota.
+function hurt(w: World, p: number): void {
+  const c = w.config, s = w.star;
+  if (w.orbitingCount === 0) { w.over = OVER_DIMMED; return; }
+  w.hits++;
+  w.invuln = c.hurtInvuln;
+  let nx = s.x - w.x[p], ny = s.y - w.y[p];
+  const nd = Math.hypot(nx, ny) || 1;
+  nx /= nd; ny /= nd;
+  s.vx = nx * c.hurtBounce;
+  s.vy = ny * c.hurtBounce;
+  let lost = 0;
+  for (let i = 0; i < w.count && lost < c.hurtWorldsLost; i++) {
+    if (w.state[i] !== ORBITING) continue;
+    const a = w.orbitAngle[i];
+    w.state[i] = FREE;
+    w.vx[i] = Math.cos(a) * c.lostSpeed + s.vx * 0.3;
+    w.vy[i] = Math.sin(a) * c.lostSpeed + s.vy * 0.3;
+    w.noCatch[i] = c.noCatchTime;
+    w.orbitingCount--;
+    s.mass = Math.max(c.starStartMass, s.mass - w.mass[i]);
+    lost++;
+  }
+}
 
 export function step(w: World, intent: Intent): void {
   const c = w.config;
@@ -22,6 +47,7 @@ export function step(w: World, intent: Intent): void {
   w.prevY.set(w.y);
   // Partida terminada: todo queda quieto (y sin interpolar) hasta que se reinicie.
   if (w.over !== OVER_NONE) return;
+  if (w.invuln > 0) w.invuln = Math.max(0, w.invuln - DT);
 
   // El agujero negro persigue a la estrella, cada vez un poco más rápido.
   const range2 = c.bhRange * c.bhRange;
@@ -78,6 +104,8 @@ export function step(w: World, intent: Intent): void {
   }
 
   const captureR = s.captureRadius;
+  const size = starSize(s.mass);
+  let hit = -1;
   for (let i = 0; i < w.count; i++) {
     const st = w.state[i];
     if (st === DEAD) continue;
@@ -131,6 +159,10 @@ export function step(w: World, intent: Intent): void {
       w.x[i] = x;
       w.y[i] = y;
       const d = Math.hypot(x - s.x, y - s.y);
+      // Un planeta más grande que la estrella la daña al tocarla.
+      const k = w.kind[i]!;
+      if (st === FREE && k >= KIND_ROCKY && k <= KIND_GAS && w.radius[i] > size && d < size + w.radius[i] && hit < 0 && w.invuln <= 0) hit = i;
+      if (w.noCatch[i]! > 0) { w.noCatch[i] = w.noCatch[i]! - DT; continue; }
       // Para robarle algo a un planeta, la estrella tiene que ser claramente más grande que él.
       const canSteal = st === FREE || starSize(s.mass) >= w.radius[w.parent[i]!] * c.stealSizeRatio;
       if (canSteal && d < captureR && w.radius[i] <= c.maxCaptureSize && w.orbitingCount < c.orbitCapacity) {
@@ -153,6 +185,7 @@ export function step(w: World, intent: Intent): void {
     }
   }
 
+  if (hit >= 0) hurt(w, hit);
   bh.radius = c.bhStartRadius * Math.cbrt(bh.mass);
   s.captureRadius = captureRadiusFor(c, s.mass);
   const st = stageFor(s.mass);

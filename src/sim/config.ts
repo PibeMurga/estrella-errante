@@ -31,6 +31,11 @@ export interface SimConfig {
   bhMaxAccel: number;            // tope de la aceleración (cerca del centro)
   bhRange: number;               // más allá de esta distancia no atrae
   bhMassGain: number;            // fracción de la masa tragada que suma el agujero negro
+  hurtWorldsLost: number;        // mundos que se pierden al chocar con un planeta más grande
+  hurtInvuln: number;            // segundos sin recibir daño después de un choque
+  hurtBounce: number;            // velocidad del rebote
+  lostSpeed: number;             // velocidad con que salen despedidos los mundos perdidos
+  noCatchTime: number;           // segundos en que un mundo perdido no se puede volver a capturar
 }
 
 export const DEFAULT_CONFIG: SimConfig = {
@@ -63,4 +68,9 @@ export const DEFAULT_CONFIG: SimConfig = {
   bhMaxAccel: 80,
   bhRange: 140,
   bhMassGain: 0.004,
+  hurtWorldsLost: 3,
+  hurtInvuln: 1.5,
+  hurtBounce: 24,
+  lostSpeed: 18,
+  noCatchTime: 1.5,
 };

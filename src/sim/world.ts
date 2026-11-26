@@ -34,6 +34,8 @@ export interface World {
   readonly star: Star;
   readonly bh: BlackHole;
   over: number;        // OVER_NONE mientras se juega
+  invuln: number;      // segundos de invulnerabilidad que quedan
+  hits: number;        // choques con planetas (evento para el dibujo y la interfaz)
   readonly x: Float64Array; readonly y: Float64Array;
   readonly prevX: Float64Array; readonly prevY: Float64Array;
   readonly vx: Float64Array; readonly vy: Float64Array;
@@ -42,6 +44,7 @@ export interface World {
   readonly orbitW: Float64Array;   // velocidad angular (rad/s) al orbitar un planeta
   readonly parent: Int32Array;     // planeta que orbita, o -1
   readonly state: Uint8Array; readonly kind: Uint8Array;
+  readonly noCatch: Float32Array;  // segundos en que no se puede capturar (mundos recién perdidos)
   orbitingCount: number;
   stage: number;       // etapa actual de la estrella (ver stages.ts)
   stageUps: number;    // cuántas veces subió de etapa (el dibujo y la interfaz lo usan como evento)
@@ -71,7 +74,7 @@ export function addBody(w: World, b: BodySpec): number {
   w.radius[i] = b.radius; w.mass[i] = b.radius * b.radius * b.radius;
   w.orbitR[i] = 0; w.orbitTarget[i] = 0; w.orbitAngle[i] = 0; w.orbitW[i] = 0;
   w.parent[i] = -1;
-  w.state[i] = FREE; w.kind[i] = b.kind;
+  w.state[i] = FREE; w.kind[i] = b.kind; w.noCatch[i] = 0;
   return i;
 }
 
@@ -130,11 +133,11 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       mass: config.starStartMass, captureRadius: captureRadiusFor(config, config.starStartMass),
     },
     bh: { x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0, speed: config.bhStartSpeed, radius: config.bhStartRadius, mass: 1, active: config.blackHole },
-    over: OVER_NONE,
+    over: OVER_NONE, invuln: 0, hits: 0,
     x: f(), y: f(), prevX: f(), prevY: f(), vx: f(), vy: f(), radius: f(), mass: f(),
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
     parent: new Int32Array(capacity).fill(-1),
-    state: new Uint8Array(capacity), kind: new Uint8Array(capacity),
+    state: new Uint8Array(capacity), kind: new Uint8Array(capacity), noCatch: new Float32Array(capacity),
     orbitingCount: 0, stage: 0, stageUps: 0, captured: new Int32Array(capacity), capturedCount: 0,
   };
   const rng = createRng(seed);
