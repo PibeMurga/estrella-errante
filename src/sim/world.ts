@@ -76,6 +76,8 @@ export interface World {
   readonly broken: Float32Array;   // segundos desde que el planeta se partió por marea (0 = entero)
   readonly breakAx: Float32Array; readonly breakAy: Float32Array;   // eje de la ruptura (hacia el agujero negro)
   tidalBreaks: number;             // planetas partidos por marea (evento)
+  planetCrashes: number;           // choques entre planetas (evento)
+  crashX: number; crashY: number; crashR: number;   // dónde fue el último choque y de qué tamaño (para la explosión)
   orbitingCount: number;
   stage: number;       // etapa actual de la estrella (ver stages.ts)
   stageUps: number;    // cuántas veces subió de etapa (el dibujo y la interfaz lo usan como evento)
@@ -178,7 +180,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
     parent: new Int32Array(capacity).fill(-1),
     state: new Uint8Array(capacity), kind: new Uint8Array(capacity), noCatch: new Float32Array(capacity), life: new Float32Array(capacity),
-    broken: new Float32Array(capacity), breakAx: new Float32Array(capacity), breakAy: new Float32Array(capacity), tidalBreaks: 0,
+    broken: new Float32Array(capacity), breakAx: new Float32Array(capacity), breakAy: new Float32Array(capacity), tidalBreaks: 0, planetCrashes: 0, crashX: 0, crashY: 0, crashR: 0,
     orbitingCount: 0, stage: 0, stageUps: 0, maxMass: config.starStartMass, absorbed: 0, captured: new Int32Array(capacity), capturedCount: 0,
   };
   const rng = createRng(seed);

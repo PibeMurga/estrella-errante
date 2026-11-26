@@ -1,5 +1,6 @@
 import { stepComets } from './comets';
 import { breakPlanet } from './tidal';
+import { stepEncounters } from './encounters';
 import { DT } from './config';
 import { stageFor } from './stages';
 import { CARRIED, captureRadiusFor, DEAD, FREE, KIND_GAS, KIND_ICE, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_DIMMED, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
@@ -335,6 +336,7 @@ export function step(w: World, intent: Intent): void {
     }
   }
 
+  stepEncounters(w);
   if (hit >= 0) hurt(w, hit);
   if (w.over !== OVER_NONE) { w.tick++; return; }   // se apagó en este paso: no pasa nada más
   if (w.eclipseCd <= 0 && w.orbitingCount >= c.eclipseMin) eclipse(w);

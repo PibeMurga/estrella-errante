@@ -62,6 +62,9 @@ export interface SimConfig {
   rocheFactor: number;           // un planeta rocoso o helado se parte a menos de (radio del agujero × esto + su radio)
   tidalDebris: number;           // escombros que suelta al partirse
   preBrokenChance: number;       // probabilidad de que un planeta rocoso o helado arranque ya partido
+  encounterGap: number;          // dos planetas libres no se acercan a menos de (suma de radios × esto): el chico bordea al grande
+  crashSizeRatio: number;        // sólo pueden chocar planetas rocosos o helados casi iguales (cociente de radios hasta esto)
+  crashChance: number;           // y de esos pares, sólo esta parte choca de verdad (el resto se esquiva)
 }
 
 export const DEFAULT_CONFIG: SimConfig = {
@@ -125,4 +128,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   rocheFactor: 6,
   tidalDebris: 14,
   preBrokenChance: 0.04,
+  encounterGap: 1.3,
+  crashSizeRatio: 1.35,
+  crashChance: 0.8,
 };

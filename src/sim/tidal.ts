@@ -3,11 +3,12 @@ import { DEAD, FREE, KIND_ASTEROID, type World } from './world';
 // Ruptura por marea: el planeta `i` se parte en el eje (ax, ay), que apunta al agujero negro.
 // Suelta escombros en dos chorros, uno hacia el agujero y otro hacia afuera (la corriente de marea),
 // y queda más chico, partido en dos mitades que se separan de a poco (eso lo dibuja el render).
-export function breakPlanet(w: World, i: number, ax: number, ay: number): void {
+// También lo usa el choque entre planetas (tidal = false: no cuenta como marea).
+export function breakPlanet(w: World, i: number, ax: number, ay: number, tidal = true): void {
   const c = w.config, r = w.rng;
   w.broken[i] = 1e-6;
   w.breakAx[i] = ax; w.breakAy[i] = ay;
-  w.tidalBreaks++;
+  if (tidal) w.tidalBreaks++;
   const R = w.radius[i];
   const px = -ay, py = ax;   // perpendicular al eje
   let left = c.tidalDebris;

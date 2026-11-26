@@ -9,6 +9,7 @@ import { createPlanetsLayer } from './bodies/planets';
 import { createSunLayer } from './bodies/sun';
 import { createBeamLayer } from './fx/beam';
 import { createCometsLayer } from './fx/comets';
+import { createImpactLayer } from './fx/impact';
 import type { Layer } from './layer';
 import type { Pipeline } from './pipeline';
 import type { QualitySettings } from './quality';
@@ -31,6 +32,7 @@ export function buildLayers(deps: LayerDeps): BuiltLayers {
       createBlackHoleLayer(deps.pipeline),
       createBeamLayer(),
       createCometsLayer(),
+      createImpactLayer(),
     ],
     planetTypes: planets.typesShown,
   };
