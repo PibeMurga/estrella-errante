@@ -1,7 +1,7 @@
 import { PerspectiveCamera, Scene, Vector3, type WebGLRenderer } from 'three';
 import { createRng } from '../sim/rng';
 import type { World } from '../sim/world';
-import { CameraRig } from './cameraRig';
+import { CameraRig, toWorld } from './cameraRig';
 import { getWebGL2, MSG_CONTEXT_LOST, MSG_NO_WEBGL2, showFatal } from './context';
 import type { FrameContext } from './layer';
 import { buildLayers } from './layers';
@@ -36,6 +36,8 @@ export interface SpaceView {
   setQuality(level: QualityLevel): void;
   // Píxel (CSS, relativo al canvas) → coordenadas de la simulación. false si cae por encima del horizonte.
   screenToWorld(px: number, py: number, out: { x: number; y: number }): boolean;
+  // Coordenadas de la simulación → píxel (CSS). Devuelve true si el punto está delante de la cámara y dentro de la pantalla.
+  worldToScreen(simX: number, simY: number, out: { x: number; y: number }): boolean;
 }
 
 export interface ViewFailure { readonly ok: false; readonly reason: string }
@@ -52,6 +54,7 @@ export function createSpaceView(canvas: HTMLCanvasElement, opts: SpaceViewOption
   const scene = new Scene();
   const rig = new CameraRig();
   rig.snap(opts.world.star.x, opts.world.star.y);
+  const projTmp = new Vector3();
   const camera = new PerspectiveCamera(rig.options.fovDeg, 16 / 9, 0.5, 6000);
   const lookTarget = new Vector3();
   const syncCamera = (): void => {
@@ -155,6 +158,14 @@ export function createSpaceView(canvas: HTMLCanvasElement, opts: SpaceViewOption
     },
     screenToWorld(px, py, out) {
       return rig.screenToSim((px / ctx.width) * 2 - 1, -((py / ctx.height) * 2 - 1), out);
+    },
+    worldToScreen(simX, simY, out) {
+      toWorld(simX, simY, projTmp);
+      const ahead = (projTmp.x - camera.position.x) * rig.forward.x + (projTmp.y - camera.position.y) * rig.forward.y + (projTmp.z - camera.position.z) * rig.forward.z > 0;
+      projTmp.project(camera);
+      out.x = (projTmp.x * 0.5 + 0.5) * ctx.width;
+      out.y = (-projTmp.y * 0.5 + 0.5) * ctx.height;
+      return ahead && Math.abs(projTmp.x) <= 1 && Math.abs(projTmp.y) <= 1;
     },
   };
 }
