@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG, DT, type SimConfig } from '../../src/sim/config';
 import { type Intent, step } from '../../src/sim/step';
 import {
-  addBody, captureRadiusFor, createWorld, FREE, hashWorld, KIND_ASTEROID, ORBITING,
+  addBody, addSatellite, captureRadiusFor, starSize, createWorld, FREE, hashWorld, KIND_ASTEROID, KIND_GAS, KIND_MOON, ORBIT_PLANET, ORBITING,
 } from '../../src/sim/world';
 
 const NO_INPUT: Intent = { targetX: 0, targetY: 0, hasTarget: false };
@@ -177,5 +177,39 @@ describe('determinismo', () => {
     const b = run();
     expect(a.hash).toBe(b.hash);
     expect(a.orbiting).toBeGreaterThan(0);
+  });
+});
+
+describe('lunas y cinturones de planetas', () => {
+  it('las lunas acompañan a su planeta y giran', () => {
+    const w = emptyWorld(10);
+    const p = addBody(w, { x: 100, y: 50, vx: 3, vy: -2, radius: 5, kind: KIND_GAS });
+    const m = addSatellite(w, p, 12, 0, 0.8, KIND_MOON, 0.5);
+    for (let k = 0; k < 120; k++) step(w, NO_INPUT);
+    expect(Math.hypot(w.x[m] - w.x[p], w.y[m] - w.y[p])).toBeCloseTo(12, 9);
+    expect(w.orbitAngle[m]).toBeCloseTo(1, 6);
+    expect(w.state[m]).toBe(ORBIT_PLANET);
+  });
+
+  it('no puede robarle lunas a un planeta más grande que ella', () => {
+    const w = emptyWorld(10);
+    const p = addBody(w, { x: 12, y: 0, vx: 0, vy: 0, radius: 5, kind: KIND_GAS });
+    const m = addSatellite(w, p, 9, Math.PI, 0.8, KIND_MOON, 0.2);
+    step(w, NO_INPUT);
+    expect(w.state[m]).toBe(ORBIT_PLANET);
+    expect(w.parent[m]).toBe(p);
+    expect(w.orbitingCount).toBe(0);
+  });
+
+  it('la estrella, si es mucho más grande, puede robarle una luna a un planeta', () => {
+    const w = emptyWorld(10);
+    w.star.mass = 100;
+    expect(starSize(w.star.mass)).toBeGreaterThanOrEqual(5 * DEFAULT_CONFIG.stealSizeRatio);
+    const p = addBody(w, { x: 12, y: 0, vx: 0, vy: 0, radius: 5, kind: KIND_GAS });
+    const m = addSatellite(w, p, 9, Math.PI, 0.8, KIND_MOON, 0.2);
+    step(w, NO_INPUT);
+    expect(w.state[m]).toBe(ORBITING);
+    expect(w.parent[m]).toBe(-1);
+    expect(w.orbitingCount).toBe(1);
   });
 });

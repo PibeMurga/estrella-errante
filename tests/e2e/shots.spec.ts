@@ -4,7 +4,7 @@ const dir = 'artifacts/hito-0';
 
 test('capturas para el puntaje visual', async ({ page }) => {
   test.setTimeout(120_000);
-  await page.goto('/');
+  await page.goto('/?seed=20261124');
   await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 120, undefined, { timeout: 60_000 });
   await page.screenshot({ path: `${dir}/1-inicio.png` });
 

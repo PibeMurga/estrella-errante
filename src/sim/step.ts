@@ -1,5 +1,5 @@
 import { DT } from './config';
-import { captureRadiusFor, FREE, ORBITING, type World } from './world';
+import { captureRadiusFor, FREE, ORBIT_PLANET, ORBITING, starSize, type World } from './world';
 
 export interface Intent { targetX: number; targetY: number; hasTarget: boolean }
 
@@ -48,16 +48,31 @@ export function step(w: World, intent: Intent): void {
 
   const captureR = s.captureRadius;
   for (let i = 0; i < w.count; i++) {
-    if (w.state[i] === FREE) {
-      let x = w.x[i] + w.vx[i] * DT;
-      let y = w.y[i] + w.vy[i] * DT;
-      if (x > hw) x -= 2 * hw; else if (x < -hw) x += 2 * hw;
-      if (y > hh) y -= 2 * hh; else if (y < -hh) y += 2 * hh;
+    const st = w.state[i];
+    if (st === FREE || st === ORBIT_PLANET) {
+      let x: number;
+      let y: number;
+      if (st === FREE) {
+        x = w.x[i] + w.vx[i] * DT;
+        y = w.y[i] + w.vy[i] * DT;
+        if (x > hw) x -= 2 * hw; else if (x < -hw) x += 2 * hw;
+        if (y > hh) y -= 2 * hh; else if (y < -hh) y += 2 * hh;
+      } else {
+        // Luna o escombro: gira alrededor de su planeta (que ya se movió en este paso, porque se creó antes).
+        const p = w.parent[i]!;
+        const ang = w.orbitAngle[i] + w.orbitW[i] * DT;
+        w.orbitAngle[i] = ang;
+        x = w.x[p] + Math.cos(ang) * w.orbitR[i];
+        y = w.y[p] + Math.sin(ang) * w.orbitR[i];
+      }
       w.x[i] = x;
       w.y[i] = y;
       const d = Math.hypot(x - s.x, y - s.y);
-      if (d < captureR && w.radius[i] <= c.maxCaptureSize && w.orbitingCount < c.orbitCapacity) {
+      // Para robarle algo a un planeta, la estrella tiene que ser claramente más grande que él.
+      const canSteal = st === FREE || starSize(s.mass) >= w.radius[w.parent[i]!] * c.stealSizeRatio;
+      if (canSteal && d < captureR && w.radius[i] <= c.maxCaptureSize && w.orbitingCount < c.orbitCapacity) {
         w.state[i] = ORBITING;
+        w.parent[i] = -1;
         w.orbitR[i] = d;
         w.orbitTarget[i] = clamp(d * 0.9, c.orbitMin, c.orbitMax);
         w.orbitAngle[i] = Math.atan2(y - s.y, x - s.x);

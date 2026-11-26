@@ -8,7 +8,10 @@ import { step } from '../sim/step';
 import { createWorld } from '../sim/world';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
-const world = createWorld(DEFAULT_CONFIG, 20261124);
+// Cada partida, un mapa distinto. Con ?seed=N se repite un mapa (lo usan las pruebas).
+const seedParam = Number(new URLSearchParams(location.search).get('seed'));
+const seed = Number.isFinite(seedParam) && seedParam > 0 ? seedParam : Math.floor(Math.random() * 2 ** 31);
+const world = createWorld(DEFAULT_CONFIG, seed);
 const view = createSpaceView(canvas, { world, quality: 'high' });
 
 if (!view.ok) {

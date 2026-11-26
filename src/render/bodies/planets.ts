@@ -1,6 +1,6 @@
 import { Color, Frustum, Group, InstancedMesh, Matrix4, Quaternion, ShaderMaterial, Sphere, SphereGeometry, Vector3 } from 'three';
 import type { Rng } from '../../sim/rng';
-import { KIND_GAS, KIND_ICE, KIND_ROCKY, type World } from '../../sim/world';
+import { KIND_GAS, KIND_ICE, KIND_MOON, KIND_ROCKY, type World } from '../../sim/world';
 import type { Layer } from '../layer';
 import { NOISE_GLSL } from '../shaders/noise';
 
@@ -9,6 +9,7 @@ export const PLANET_TYPES = 5;
 export function planetTypeFor(kind: number, index: number): number {
   if (kind === KIND_ICE) return 2;
   if (kind === KIND_GAS) return 3;
+  if (kind === KIND_MOON) return 0;   // las lunas son rocosas con cráteres
   return [0, 1, 4][index % 3]!;
 }
 
@@ -118,7 +119,7 @@ export function createPlanetsLayer(world: World, segments: number, octaves: numb
     const list: number[] = [];
     for (let i = 0; i < world.count; i++) {
       const kind = world.kind[i]!;
-      if (kind >= KIND_ROCKY && kind <= KIND_GAS && planetTypeFor(kind, i) === type) list.push(i);
+      if (kind >= KIND_ROCKY && kind <= KIND_MOON && planetTypeFor(kind, i) === type) list.push(i);
     }
     if (list.length === 0) continue;
     const indices = Int32Array.from(list);

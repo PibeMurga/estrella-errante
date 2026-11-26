@@ -16,6 +16,7 @@ export interface SimConfig {
   starBaseCaptureRadius: number;
   captureRadiusPerSqrtMass: number;
   maxCaptureSize: number;        // radio máximo que se puede capturar
+  stealSizeRatio: number;        // la estrella tiene que medir esto veces el planeta para robarle lunas y escombros
   orbitMin: number;
   orbitMax: number;
   orbitCapacity: number;
@@ -38,6 +39,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   starBaseCaptureRadius: 6,
   captureRadiusPerSqrtMass: 1.2,
   maxCaptureSize: 1.5,
+  stealSizeRatio: 1.5,
   orbitMin: 4,
   orbitMax: 18,
   orbitCapacity: 240,

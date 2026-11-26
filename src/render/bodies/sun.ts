@@ -1,4 +1,5 @@
 import { AdditiveBlending, Group, Mesh, PlaneGeometry, PointLight, ShaderMaterial, SphereGeometry, Vector3 } from 'three';
+import { starSize } from '../../sim/world';
 import { toWorld } from '../cameraRig';
 import type { Layer } from '../layer';
 import { NOISE_GLSL } from '../shaders/noise';
@@ -47,9 +48,7 @@ void main(){
   gl_FragColor = vec4((ring + prom + cor) * (1. - smoothstep(1.8, 3.3, r)), 1.);
 }`;
 
-export function starRenderRadius(mass: number): number {
-  return 4 + 0.5 * Math.sqrt(mass);
-}
+export const starRenderRadius = starSize;
 
 // La estrella del jugador como un sol, con su luz para los cuerpos (posición compartida en `sunPos`).
 export function createSunLayer(sunPos: Vector3): Layer {
