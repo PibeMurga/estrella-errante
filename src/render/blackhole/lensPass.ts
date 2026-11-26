@@ -21,7 +21,7 @@ void main() {
   float r = max(length(d), 1e-4);
   vec2 dir = d / r;
   float beta = r - (uEinsteinR * uEinsteinR) / r;
-  float w = (1.0 - smoothstep(uEinsteinR * 5.0, uEinsteinR * 8.0, r)) * uEnabled;
+  float w = (1.0 - smoothstep(uEinsteinR * 2.2, uEinsteinR * 3.6, r)) * uEnabled;
   vec2 src = dir * mix(r, beta, w);
   src.x /= uAspect;
   gl_FragColor = texture2D(inputBuffer, uCenter + src);

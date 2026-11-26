@@ -66,6 +66,8 @@ export function createSpaceView(canvas: HTMLCanvasElement, opts: SpaceViewOption
   const built = buildLayers({ world: opts.world, quality, rng: createRng(opts.seed ?? 1), pipeline });
   const layers = built.layers;
   for (const l of layers) scene.add(l.object);
+  // Compilar todos los shaders al arrancar: evita tirones la primera vez que algo entra en pantalla.
+  pipeline.renderer.compile(scene, camera);
 
   const diagnostics: Diagnostics = {
     frames: 0, quality: quality.level, calls: 0, triangles: 0, orbiting: 0,

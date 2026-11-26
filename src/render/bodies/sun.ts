@@ -2,6 +2,7 @@ import { AdditiveBlending, Group, Mesh, PlaneGeometry, PointLight, ShaderMateria
 import { toWorld } from '../cameraRig';
 import type { Layer } from '../layer';
 import { NOISE_GLSL } from '../shaders/noise';
+import { smoothToward } from '../smooth';
 
 const SUN_VERT = /* glsl */ `varying vec3 vN; varying vec3 vO; varying vec3 vV;
 void main(){ vO = position; vec4 w = modelMatrix*vec4(position,1.); vN = normalize(mat3(modelMatrix)*normal); vV = normalize(cameraPosition - w.xyz); gl_Position = projectionMatrix*viewMatrix*w; }`;
@@ -62,12 +63,15 @@ export function createSunLayer(sunPos: Vector3): Layer {
   const light = new PointLight(0xffc890, 2.4, 0, 0);
   const group = new Group();
   group.add(sun, halo, light);
+  let shownR = -1;   // radio que se ve: sigue al radio real con una curva suave, sin saltos
 
   return {
     object: group,
     update(ctx) {
       toWorld(ctx.starX, ctx.starY, sunPos);
-      const r = starRenderRadius(ctx.world.star.mass);
+      const target = starRenderRadius(ctx.world.star.mass);
+      shownR = shownR < 0 ? target : smoothToward(shownR, target, 1.2, ctx.dt);
+      const r = shownR;
       sun.position.copy(sunPos); sun.scale.setScalar(r); sun.rotation.y = ctx.time * 0.03;
       halo.position.copy(sunPos); halo.scale.setScalar(r); halo.quaternion.copy(ctx.camera.quaternion);
       light.position.copy(sunPos);
