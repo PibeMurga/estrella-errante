@@ -83,7 +83,7 @@ float height(vec3 p){
   vec3 s = p + vSeed; float h = 0.;
 #if SHADE == 0
   { h = fbm(s*3., uOct)*.35; float c1 = worley(s*5.); float c2 = worley(s*13.);
-    h += -.5*(1.-smoothstep(0.,.25,c1)) + .3*exp(-pow((c1-.26)/.05,2.)); h += (-.25*(1.-smoothstep(0.,.22,c2)) + .14*exp(-pow((c2-.23)/.04,2.)))*.6; }
+    h += -.5*(1.-smoothstep(0.,.25,c1)) + .3*exp(-((c1-.26)/.05)*((c1-.26)/.05)); h += (-.25*(1.-smoothstep(0.,.22,c2)) + .14*exp(-((c2-.23)/.04)*((c2-.23)/.04)))*.6; }
 #elif SHADE == 1
   { vec3 w = s*1.6 + .55*vec3(fbm(s*1.2,4), fbm(s*1.2+5.,4), fbm(s*1.2+9.,4)); h = fbm(w, uOct); }
 #elif SHADE == 2
@@ -199,7 +199,7 @@ void main(){ vec3 p = normalize(vO); float ndl = dot(normalize(vN), normalize(uS
 // Atmósfera: borde fino que brilla del lado del sol, con el color propio del tipo y apagado hacia afuera.
 const ATMO_FRAG = /* glsl */ `uniform vec3 uSunPos; uniform vec3 uCol; uniform float uPow; varying vec3 vN; varying vec3 vP; varying vec3 vO; varying mat3 vM; varying float vSeed;
 void main(){ vec3 n = normalize(vN); vec3 V = normalize(cameraPosition - vP); vec3 L = normalize(uSunPos - vP);
-  float r = 1. - abs(dot(n, V)); float rim = pow(r, uPow) * (1. - pow(r, 14.)); float day = smoothstep(-.35, .45, dot(n, L));
+  float r = clamp(1. - abs(dot(n, V)), 0., 1.); float rim = pow(r, uPow) * (1. - pow(r, 14.)); float day = smoothstep(-.35, .45, dot(n, L));
   gl_FragColor = vec4(uCol * rim * day, 1.); }`;
 
 // Anillos: velo suave con una división difusa e irregular; el planeta les proyecta su sombra.
@@ -220,7 +220,9 @@ void main(){ float r = length(vL.xy); float t = (r - 1.35) / (2.3 - 1.35); if (t
   float body = smoothstep(0., .3, t) * smoothstep(1., .7, t);
   float a = body * (.7 + .3*smoothstep(.3, .7, bands)) * (1. - gap*.6) * .6;
   vec3 L = normalize(uSunPos - vP); vec3 toC = vC - vP; float along = dot(toC, L);
-  float shadow = (along > 0. && length(toC - L*along) < vR) ? .08 : 1.;
+  // Sombra del planeta con penumbra: la estrella es grande y está cerca, así que el borde se abre y se difumina con la distancia.
+  float dd = length(toC - L*along); float pen = vR*.06 + max(along, 0.)*.16;
+  float shadow = mix(1., .07 + .93*smoothstep(vR - pen, vR + pen, dd), smoothstep(0., vR*.6, along));
   vec3 col = mix(uA, uB, smoothstep(.2, .8, bands)) * shadow * uLight * .8;
   gl_FragColor = vec4(col * a, a * .9); }`;
 

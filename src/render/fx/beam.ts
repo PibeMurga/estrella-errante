@@ -8,7 +8,7 @@ void main(){
   float across = (vUv.y - .5) * 2.;
   float core = exp(-across*across*28.);
   float glow = exp(-across*across*4.) * .35;
-  float along = pow(1. - vUv.x, .7) * smoothstep(0., .03, vUv.x);
+  float along = pow(clamp(1. - vUv.x, 0., 1.), .7) * smoothstep(0., .03, vUv.x);
   float flicker = .85 + .15 * sin(uTime*40. + vUv.x*30.);
   vec3 col = mix(vec3(1., .55, .22), vec3(1., .93, .8), core);
   gl_FragColor = vec4(col * (core*3.2 + glow) * along * flicker * uFade, 1.);

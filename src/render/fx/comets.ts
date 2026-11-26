@@ -9,9 +9,9 @@ const TAIL_FRAG = /* glsl */ `uniform float uTime; uniform float uHurt; varying 
 void main(){
   float along = vUv.x;                       // 0 en el núcleo, 1 en la punta de la cola
   float across = (vUv.y - .5) * 2.;
-  float width = mix(.18, 1., pow(along, .6));
+  float width = mix(.18, 1., pow(clamp(along, 0., 1.), .6));
   float n = fbm(vec3(along*6. - uTime*2.2, across*2.5, uTime*.3), 4) * .5 + .5;
-  float body = exp(-pow(across/width, 2.) * 3.) * pow(1. - along, 1.6);
+  float body = exp(-(across/width)*(across/width) * 3.) * pow(clamp(1. - along, 0., 1.), 1.6);
   float strands = smoothstep(.35, .9, n) * body;
   vec3 col = mix(vec3(.55, .85, 1.), vec3(.25, .45, 1.), along);
   col = mix(col, vec3(1., .45, .3), uHurt);
