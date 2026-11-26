@@ -6,7 +6,7 @@ import { addBody, createWorld, KIND_ASTEROID, ORBITING, type World } from '../..
 const IDLE: Intent = { targetX: 0, targetY: 0, hasTarget: false };
 
 function worldWithOrbit(angles: number[]): World {
-  const w = createWorld({ ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, blackHole: false }, 5, 40);
+  const w = createWorld({ ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, blackHole: false, eclipseMin: 3 }, 5, 400);
   for (const a of angles) {
     const i = addBody(w, { x: Math.cos(a) * 8, y: Math.sin(a) * 8, vx: 0, vy: 0, radius: 0.6, kind: KIND_ASTEROID });
     w.state[i] = ORBITING; w.orbitR[i] = 8; w.orbitTarget[i] = 8; w.orbitAngle[i] = a;
@@ -30,6 +30,14 @@ describe('eclipses', () => {
     const moved = DEFAULT_CONFIG.orbitSpeedK * Math.pow(DEFAULT_CONFIG.orbitMin / 8, 1.5) / 60;
     expect(angleDiff(w.eclipseAngle, 1.03 + moved)).toBeLessThan(0.02);
     expect(w.beamTime).toBeGreaterThan(0);
+  });
+
+  it('con muchos mundos repartidos parejo no hay eclipse: hace falta una concentración real', () => {
+    const angles: number[] = [];
+    for (let k = 0; k < 200; k++) angles.push((k / 200) * Math.PI * 2);
+    const w = worldWithOrbit(angles);
+    step(w, IDLE);
+    expect(w.eclipses).toBe(0);
   });
 
   it('con dos alineados no hay eclipse', () => {

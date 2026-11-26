@@ -110,7 +110,8 @@ function eclipse(w: World): void {
     const n = eclCount[b]! + eclCount[(b + 1) % bins]!;
     if (n > bestN) { bestN = n; best = b; }
   }
-  if (bestN < c.eclipseMin) return;
+  const need = Math.max(c.eclipseMin, Math.ceil(((w.orbitingCount * c.eclipseWindowDeg) / 360) * c.eclipseDensity));
+  if (bestN < need) return;
   const b2 = (best + 1) % bins;
   w.eclipseAngle = Math.atan2(eclSin[best]! + eclSin[b2]!, eclCos[best]! + eclCos[b2]!);
   w.eclipseStrength = bestN;
@@ -144,7 +145,8 @@ export function step(w: World, intent: Intent): void {
 
   // El agujero negro persigue a la estrella, cada vez un poco más rápido.
   const range2 = c.bhRange * c.bhRange;
-  const G = c.bhPull * bh.mass;
+  // Crece con la raíz de su masa: comer lo hace más peligroso, pero no imposible de esquivar.
+  const G = c.bhPull * Math.sqrt(bh.mass);
   if (bh.active) {
     bh.speed = Math.min(c.bhMaxSpeed, bh.speed + c.bhAccel * DT);
     const dx = s.x - bh.x, dy = s.y - bh.y;
@@ -156,7 +158,7 @@ export function step(w: World, intent: Intent): void {
     const gx = bh.x - s.x, gy = bh.y - s.y;
     const g2 = gx * gx + gy * gy;
     if (g2 < range2 && g2 > 1e-9) {
-      const a = Math.min(c.bhMaxAccel, G / Math.max(g2, 1)) * DT / Math.sqrt(g2);
+      const a = c.bhStarPull * Math.min(c.bhMaxAccel, G / Math.max(g2, 1)) * DT / Math.sqrt(g2);
       s.vx += gx * a;
       s.vy += gy * a;
     }
@@ -259,7 +261,15 @@ export function step(w: World, intent: Intent): void {
       if (w.noCatch[i]! > 0) { w.noCatch[i] = w.noCatch[i]! - DT; continue; }
       // Para robarle algo a un planeta, la estrella tiene que ser claramente más grande que él.
       const canSteal = st === FREE || starSize(s.mass) >= w.radius[w.parent[i]!] * c.stealSizeRatio;
-      if (canSteal && d < captureR && w.radius[i] <= c.maxCaptureSize && w.orbitingCount < c.orbitCapacity) {
+      if (canSteal && d < captureR && w.radius[i] <= c.maxCaptureSize && w.orbitingCount >= c.orbitCapacity) {
+        // Órbita llena: la estrella lo absorbe (suma su masa y el cuerpo queda libre para la reserva de escombros).
+        w.state[i] = DEAD;
+        w.parent[i] = -1;
+        s.mass += w.mass[i];
+        w.absorbed++;
+        continue;
+      }
+      if (canSteal && d < captureR && w.radius[i] <= c.maxCaptureSize) {
         w.state[i] = ORBITING;
         w.parent[i] = -1;
         w.orbitR[i] = d;

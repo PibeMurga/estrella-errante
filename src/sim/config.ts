@@ -31,6 +31,7 @@ export interface SimConfig {
   bhMaxAccel: number;            // tope de la aceleración (cerca del centro)
   bhRange: number;               // más allá de esta distancia no atrae
   bhMassGain: number;            // fracción de la masa tragada que suma el agujero negro
+  bhStarPull: number;            // fracción de la gravedad que siente la estrella (0..1)
   hurtWorldsLost: number;        // mundos que se pierden al chocar con un planeta más grande
   hurtInvuln: number;            // segundos sin recibir daño después de un choque
   hurtBounce: number;            // velocidad del rebote
@@ -43,6 +44,7 @@ export interface SimConfig {
   slingLoseDist: number;         // si al empezar a volver está más lejos que esto, se pierde
   eclipseMin: number;            // mundos alineados que hacen falta para un eclipse
   eclipseWindowDeg: number;      // ancho de la alineación, en grados
+  eclipseDensity: number;        // hace falta esto veces lo que cabría por azar en la ventana (con muchos mundos)
   eclipseCooldown: number;       // segundos entre eclipses
   beamDuration: number;          // segundos que dura el rayo
   beamLength: number;            // largo del rayo
@@ -88,7 +90,8 @@ export const DEFAULT_CONFIG: SimConfig = {
   bhPull: 9000,
   bhMaxAccel: 80,
   bhRange: 140,
-  bhMassGain: 0.004,
+  bhMassGain: 0.003,
+  bhStarPull: 0.6,
   hurtWorldsLost: 3,
   hurtInvuln: 1.5,
   hurtBounce: 24,
@@ -99,9 +102,10 @@ export const DEFAULT_CONFIG: SimConfig = {
   slingLife: 2.2,
   slingReturnSpeed: 50,
   slingLoseDist: 220,
-  eclipseMin: 3,
+  eclipseMin: 4,
   eclipseWindowDeg: 7,
-  eclipseCooldown: 2,
+  eclipseDensity: 2.5,
+  eclipseCooldown: 2.5,
   beamDuration: 0.6,
   beamLength: 150,
   beamHalfWidth: 4,

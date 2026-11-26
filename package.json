@@ -14,7 +14,8 @@
     "test:e2e": "playwright test --project=web",
     "test:electron": "npm run build && playwright test --project=electron",
     "bench": "playwright test --project=bench --headed",
-    "shots": "playwright test --project=shots"
+    "shots": "playwright test --project=shots",
+    "balance": "node -e \"process.env.BALANCE=1;require('child_process').execSync('npx vitest run --silent=false',{stdio:'inherit',env:process.env})\""
   },
   "dependencies": {
     "postprocessing": "^6.39.6",
