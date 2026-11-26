@@ -1,4 +1,5 @@
 import { DT } from './config';
+import { stageFor } from './stages';
 import { captureRadiusFor, FREE, ORBIT_PLANET, ORBITING, starSize, type World } from './world';
 
 export interface Intent { targetX: number; targetY: number; hasTarget: boolean }
@@ -95,5 +96,7 @@ export function step(w: World, intent: Intent): void {
   }
 
   s.captureRadius = captureRadiusFor(c, s.mass);
+  const st = stageFor(s.mass);
+  if (st > w.stage) { w.stage = st; w.stageUps++; }
   w.tick++;
 }
