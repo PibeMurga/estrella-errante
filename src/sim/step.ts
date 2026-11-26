@@ -17,16 +17,34 @@ export function step(w: World, intent: Intent): void {
   w.prevX.set(w.x);
   w.prevY.set(w.y);
 
+  // Movimiento con inercia: acelera hacia una velocidad deseada y frena para llegar sin pasarse.
+  const acc = c.starAccel / (1 + c.starMassInertia * s.mass);
+  let desX = 0;
+  let desY = 0;
+  let maxDv = acc * c.starBrake * DT;
   if (intent.hasTarget && Number.isFinite(intent.targetX) && Number.isFinite(intent.targetY)) {
-    const tx = clamp(intent.targetX, -hw, hw);
-    const ty = clamp(intent.targetY, -hh, hh);
-    const dx = tx - s.x;
-    const dy = ty - s.y;
+    const dx = clamp(intent.targetX, -hw, hw) - s.x;
+    const dy = clamp(intent.targetY, -hh, hh) - s.y;
     const dist = Math.hypot(dx, dy);
-    const maxStep = c.starMaxSpeed * DT;
-    if (dist <= maxStep) { s.x = tx; s.y = ty; }
-    else { s.x += (dx / dist) * maxStep; s.y += (dy / dist) * maxStep; }
+    if (dist > 1e-6) {
+      const speed = Math.min(c.starMaxSpeed, Math.sqrt(2 * acc * 0.8 * dist), (c.starMaxSpeed * dist) / c.starSlowRadius);
+      desX = (dx / dist) * speed;
+      desY = (dy / dist) * speed;
+    }
+    maxDv = acc * DT;
   }
+  let dvx = desX - s.vx;
+  let dvy = desY - s.vy;
+  const dv = Math.hypot(dvx, dvy);
+  if (dv > maxDv) { dvx *= maxDv / dv; dvy *= maxDv / dv; }
+  s.vx += dvx;
+  s.vy += dvy;
+  const sp = Math.hypot(s.vx, s.vy);
+  if (sp > c.starMaxSpeed) { s.vx *= c.starMaxSpeed / sp; s.vy *= c.starMaxSpeed / sp; }
+  s.x += s.vx * DT;
+  s.y += s.vy * DT;
+  if (s.x > hw) { s.x = hw; s.vx = 0; } else if (s.x < -hw) { s.x = -hw; s.vx = 0; }
+  if (s.y > hh) { s.y = hh; s.vy = 0; } else if (s.y < -hh) { s.y = -hh; s.vy = 0; }
 
   const captureR = s.captureRadius;
   for (let i = 0; i < w.count; i++) {

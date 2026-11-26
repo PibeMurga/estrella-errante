@@ -9,6 +9,10 @@ export interface SimConfig {
   spawnClearRadius: number;
   starStartMass: number;
   starMaxSpeed: number;          // unidades por segundo
+  starAccel: number;             // aceleración con masa inicial (unidades/s²)
+  starMassInertia: number;       // cuánto frena la masa: aceleración = starAccel / (1 + starMassInertia·masa)
+  starSlowRadius: number;        // distancia a la que empieza a frenar para llegar
+  starBrake: number;             // fracción de la aceleración para frenar cuando no hay objetivo
   starBaseCaptureRadius: number;
   captureRadiusPerSqrtMass: number;
   maxCaptureSize: number;        // radio máximo que se puede capturar
@@ -26,7 +30,11 @@ export const DEFAULT_CONFIG: SimConfig = {
   planetCount: 9,
   spawnClearRadius: 15,
   starStartMass: 1,
-  starMaxSpeed: 60,
+  starMaxSpeed: 32,
+  starAccel: 26,
+  starMassInertia: 0.02,
+  starSlowRadius: 30,
+  starBrake: 0.5,
   starBaseCaptureRadius: 6,
   captureRadiusPerSqrtMass: 1.2,
   maxCaptureSize: 1.5,

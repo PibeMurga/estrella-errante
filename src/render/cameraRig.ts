@@ -1,6 +1,6 @@
 // Cámara inclinada que sigue a la estrella. Matemática pura (sin three) para poder probarla.
 export interface CameraRigOptions { tiltDeg: number; distance: number; fovDeg: number; follow: number }
-export const DEFAULT_RIG: CameraRigOptions = { tiltDeg: 35, distance: 150, fovDeg: 36, follow: 4 };
+export const DEFAULT_RIG: CameraRigOptions = { tiltDeg: 35, distance: 150, fovDeg: 36, follow: 1.6 };
 
 interface V3 { x: number; y: number; z: number }
 

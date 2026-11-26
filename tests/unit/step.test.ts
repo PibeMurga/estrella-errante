@@ -16,18 +16,50 @@ function rock(x: number, y: number, radius = 0.5, vx = 0, vy = 0) {
 }
 
 describe('estrella', () => {
-  it('avanza hacia el objetivo sin pasar la velocidad máxima', () => {
+  it('arranca de a poco: tiene inercia', () => {
     const w = emptyWorld();
     step(w, { targetX: 100, targetY: 0, hasTarget: true });
-    expect(w.star.x).toBeCloseTo(DEFAULT_CONFIG.starMaxSpeed * DT, 10);
+    expect(w.star.x).toBeGreaterThan(0);
+    expect(w.star.x).toBeLessThan(DEFAULT_CONFIG.starMaxSpeed * DT * 0.25);
     expect(w.star.y).toBe(0);
   });
 
-  it('llega exacto cuando el objetivo está cerca', () => {
+  it('nunca supera la velocidad máxima', () => {
     const w = emptyWorld();
-    step(w, { targetX: 0.1, targetY: 0.2, hasTarget: true });
-    expect(w.star.x).toBe(0.1);
-    expect(w.star.y).toBe(0.2);
+    for (let i = 0; i < 600; i++) {
+      step(w, { targetX: 150, targetY: 0, hasTarget: true });
+      expect(Math.hypot(w.star.vx, w.star.vy)).toBeLessThanOrEqual(DEFAULT_CONFIG.starMaxSpeed + 1e-9);
+    }
+  });
+
+  it('llega al objetivo frenando, sin pasarse de largo', () => {
+    const w = emptyWorld();
+    let maxX = 0;
+    for (let i = 0; i < 60 * 12; i++) { step(w, { targetX: 40, targetY: 0, hasTarget: true }); maxX = Math.max(maxX, w.star.x); }
+    expect(w.star.x).toBeCloseTo(40, 1);
+    expect(Math.hypot(w.star.vx, w.star.vy)).toBeLessThan(0.5);
+    expect(maxX).toBeLessThan(40.5);
+  });
+
+  it('cuanto más masa, más le cuesta acelerar', () => {
+    const light = emptyWorld();
+    const heavy = emptyWorld();
+    heavy.star.mass = 200;
+    for (let i = 0; i < 60; i++) {
+      step(light, { targetX: 150, targetY: 0, hasTarget: true });
+      step(heavy, { targetX: 150, targetY: 0, hasTarget: true });
+    }
+    expect(heavy.star.x).toBeLessThan(light.star.x * 0.8);
+  });
+
+  it('al soltar sigue de largo y frena de a poco', () => {
+    const w = emptyWorld();
+    for (let i = 0; i < 120; i++) step(w, { targetX: 150, targetY: 0, hasTarget: true });
+    const x0 = w.star.x;
+    step(w, NO_INPUT);
+    expect(w.star.x).toBeGreaterThan(x0);
+    for (let i = 0; i < 60 * 10; i++) step(w, NO_INPUT);
+    expect(Math.hypot(w.star.vx, w.star.vy)).toBeLessThan(0.01);
   });
 
   it('ignora objetivos inválidos y no produce NaN', () => {
@@ -47,9 +79,13 @@ describe('estrella', () => {
 
   it('el objetivo se limita a la arena', () => {
     const w = emptyWorld();
-    for (let i = 0; i < 2000; i++) step(w, { targetX: 1e6, targetY: -1e6, hasTarget: true });
-    expect(w.star.x).toBe(DEFAULT_CONFIG.arenaHalfWidth);
-    expect(w.star.y).toBe(-DEFAULT_CONFIG.arenaHalfHeight);
+    for (let i = 0; i < 4000; i++) {
+      step(w, { targetX: 1e6, targetY: -1e6, hasTarget: true });
+      expect(Math.abs(w.star.x)).toBeLessThanOrEqual(DEFAULT_CONFIG.arenaHalfWidth);
+      expect(Math.abs(w.star.y)).toBeLessThanOrEqual(DEFAULT_CONFIG.arenaHalfHeight);
+    }
+    expect(w.star.x).toBeCloseTo(DEFAULT_CONFIG.arenaHalfWidth, 1);
+    expect(w.star.y).toBeCloseTo(-DEFAULT_CONFIG.arenaHalfHeight, 1);
   });
 
   it('guarda la posición anterior para interpolar', () => {

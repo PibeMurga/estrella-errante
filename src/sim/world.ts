@@ -10,6 +10,7 @@ export const KIND_GAS = 3;
 
 export interface Star {
   x: number; y: number; prevX: number; prevY: number;
+  vx: number; vy: number;
   mass: number; captureRadius: number;
 }
 
@@ -53,7 +54,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
   const w: World = {
     config, capacity, tick: 0, count: 0,
     star: {
-      x: 0, y: 0, prevX: 0, prevY: 0,
+      x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0,
       mass: config.starStartMass, captureRadius: captureRadiusFor(config, config.starStartMass),
     },
     x: f(), y: f(), prevX: f(), prevY: f(), vx: f(), vy: f(), radius: f(), mass: f(),
