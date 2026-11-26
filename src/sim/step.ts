@@ -1,7 +1,8 @@
 import { stepComets } from './comets';
+import { breakPlanet } from './tidal';
 import { DT } from './config';
 import { stageFor } from './stages';
-import { CARRIED, captureRadiusFor, DEAD, FREE, KIND_GAS, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_DIMMED, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
+import { CARRIED, captureRadiusFor, DEAD, FREE, KIND_GAS, KIND_ICE, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_DIMMED, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
 
 // target: hacia dónde ir. aim: hacia dónde apuntar la honda (stick derecho); sin aim se apunta al objetivo.
 export interface Intent {
@@ -250,6 +251,7 @@ export function step(w: World, intent: Intent): void {
         // siempre fuera de cámara. La posición anterior se corre igual, así el dibujo no interpola por el medio.
         if (x - s.x > hw) { x -= 2 * hw; w.prevX[i] -= 2 * hw; } else if (x - s.x < -hw) { x += 2 * hw; w.prevX[i] += 2 * hw; }
         if (y - s.y > hh) { y -= 2 * hh; w.prevY[i] -= 2 * hh; } else if (y - s.y < -hh) { y += 2 * hh; w.prevY[i] += 2 * hh; }
+        if (w.broken[i] > 0) w.broken[i] += DT;
         if (bh.active) {
           const gx = bh.x - x, gy = bh.y - y;
           const g2 = gx * gx + gy * gy;
@@ -260,6 +262,15 @@ export function step(w: World, intent: Intent): void {
               bh.mass += w.mass[i] * c.bhMassGain;
               w.x[i] = x; w.y[i] = y;
               continue;
+            }
+            // Marea: un planeta rocoso o helado que se acerca demasiado se parte.
+            if (w.broken[i] === 0 && (w.kind[i] === KIND_ROCKY || w.kind[i] === KIND_ICE)) {
+              const roche = bh.radius * c.rocheFactor + w.radius[i];
+              if (g2 < roche * roche) {
+                const gd = Math.sqrt(g2) || 1;
+                w.x[i] = x; w.y[i] = y;
+                breakPlanet(w, i, gx / gd, gy / gd);
+              }
             }
             const a = Math.min(c.bhMaxAccel, G / Math.max(g2, 1)) * DT / Math.sqrt(g2);
             w.vx[i] += gx * a;

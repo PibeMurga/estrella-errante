@@ -4,6 +4,7 @@ import type { World } from '../sim/world';
 import { createSky } from './background/sky';
 import { createBlackHoleLayer } from './blackhole/blackHole';
 import { createAsteroidLayer } from './bodies/asteroids';
+import { createBrokenPlanetsLayer } from './bodies/brokenPlanets';
 import { createPlanetsLayer } from './bodies/planets';
 import { createSunLayer } from './bodies/sun';
 import { createBeamLayer } from './fx/beam';
@@ -24,6 +25,7 @@ export function buildLayers(deps: LayerDeps): BuiltLayers {
       createSky(deps.quality, deps.rng),
       createSunLayer(sunPos),
       planets,
+      createBrokenPlanetsLayer(deps.world, sunPos),
       createAsteroidLayer(deps.world, deps.rng),
       ambient,
       createBlackHoleLayer(deps.pipeline),

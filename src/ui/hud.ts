@@ -50,7 +50,7 @@ export function createHud(parent: HTMLElement): Hud {
   // Lo último escrito en el DOM: sólo se vuelve a escribir si cambió (a píxel entero).
   let shownMode = -1, lastTx = NaN, lastTy = NaN, lastHalf = NaN, lastAng = NaN, visible = true;
   let acc = 1, lastSeg = -1, lastBhDist = Infinity;
-  let seen = { stageUps: 0, eclipses: 0, steals: 0, kills: 0, hits: 0, comets: 0 };
+  let seen = { stageUps: 0, eclipses: 0, steals: 0, kills: 0, hits: 0, comets: 0, tidal: 0 };
 
   const log = (text: string): void => {
     logText.unshift(text); logAge.unshift(0);
@@ -62,7 +62,7 @@ export function createHud(parent: HTMLElement): Hud {
   const hud: Hud = {
     root,
     reset(w) {
-      seen = { stageUps: w.stageUps, eclipses: w.eclipses, steals: w.cometSteals, kills: w.cometKills, hits: w.hits, comets: activeComets(w) };
+      seen = { stageUps: w.stageUps, eclipses: w.eclipses, steals: w.cometSteals, kills: w.cometKills, hits: w.hits, comets: activeComets(w), tidal: w.tidalBreaks };
       logText.length = 0; logAge.length = 0;
       lastSeg = -1; acc = 1; lastBhDist = Infinity;
     },
@@ -132,10 +132,11 @@ export function createHud(parent: HTMLElement): Hud {
       if (w.cometSteals > seen.steals) log('COMETA: TE ROBÓ UN MUNDO');
       if (w.cometKills > seen.kills) log('COMETA DESTRUIDO');
       if (w.hits > seen.hits) log('IMPACTO: PERDISTE MUNDOS');
+      if (w.tidalBreaks > seen.tidal) log('MAREA: UN PLANETA SE PARTIÓ');
       const ac = activeComets(w);
       if (ac > seen.comets) log('COMETA CAZADOR A LA VISTA');
       seen.stageUps = w.stageUps; seen.eclipses = w.eclipses; seen.steals = w.cometSteals;
-      seen.kills = w.cometKills; seen.hits = w.hits; seen.comets = ac;
+      seen.kills = w.cometKills; seen.hits = w.hits; seen.tidal = w.tidalBreaks; seen.comets = ac;
       for (let k = 0; k < LOG_LINES; k++) {
         const el = logEls[k]!;
         if (k < logText.length && logAge[k]! < LOG_LIFE) {

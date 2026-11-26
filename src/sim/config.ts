@@ -59,6 +59,9 @@ export interface SimConfig {
   cometRadius: number;
   cometDebris: number;           // asteroides que deja al morir
   debrisReserve: number;         // cuerpos de reserva para los escombros (se crean muertos al armar el mapa)
+  rocheFactor: number;           // un planeta rocoso o helado se parte a menos de (radio del agujero × esto + su radio)
+  tidalDebris: number;           // escombros que suelta al partirse
+  preBrokenChance: number;       // probabilidad de que un planeta rocoso o helado arranque ya partido
 }
 
 export const DEFAULT_CONFIG: SimConfig = {
@@ -118,5 +121,8 @@ export const DEFAULT_CONFIG: SimConfig = {
   cometFleeTime: 6,
   cometRadius: 2.5,
   cometDebris: 5,
-  debrisReserve: 60,
+  debrisReserve: 120,
+  rocheFactor: 6,
+  tidalDebris: 14,
+  preBrokenChance: 0.04,
 };

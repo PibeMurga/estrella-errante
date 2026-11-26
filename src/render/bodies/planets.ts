@@ -347,7 +347,7 @@ export function createPlanetsLayer(world: World, segments: number, octaves: numb
         let nHi = 0, nLo = 0;
         for (let s = 0; s < en.indices.length; s++) {
           const i = en.indices[s]!;
-          if (w.state[i] === DEAD) continue;   // tragado
+          if (w.state[i] === DEAD || w.broken[i]! > 0) continue;   // tragado, o partido (lo dibuja otra capa)
           const x = w.prevX[i] + (w.x[i] - w.prevX[i]) * a;
           const y = w.prevY[i] + (w.y[i] - w.prevY[i]) * a;
           const r = w.radius[i];

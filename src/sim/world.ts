@@ -73,6 +73,9 @@ export interface World {
   readonly state: Uint8Array; readonly kind: Uint8Array;
   readonly noCatch: Float32Array;  // segundos en que no se puede capturar (mundos recién perdidos)
   readonly life: Float32Array;     // segundos de vuelo que le quedan a un proyectil
+  readonly broken: Float32Array;   // segundos desde que el planeta se partió por marea (0 = entero)
+  readonly breakAx: Float32Array; readonly breakAy: Float32Array;   // eje de la ruptura (hacia el agujero negro)
+  tidalBreaks: number;             // planetas partidos por marea (evento)
   orbitingCount: number;
   stage: number;       // etapa actual de la estrella (ver stages.ts)
   stageUps: number;    // cuántas veces subió de etapa (el dibujo y la interfaz lo usan como evento)
@@ -175,6 +178,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
     parent: new Int32Array(capacity).fill(-1),
     state: new Uint8Array(capacity), kind: new Uint8Array(capacity), noCatch: new Float32Array(capacity), life: new Float32Array(capacity),
+    broken: new Float32Array(capacity), breakAx: new Float32Array(capacity), breakAy: new Float32Array(capacity), tidalBreaks: 0,
     orbitingCount: 0, stage: 0, stageUps: 0, maxMass: config.starStartMass, absorbed: 0, captured: new Int32Array(capacity), capturedCount: 0,
   };
   const rng = createRng(seed);
@@ -226,6 +230,15 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
   const side = rng.next() < 0.5 ? -1 : 1;
   w.bh.x = w.bh.prevX = side * hw * 0.95;
   w.bh.y = w.bh.prevY = rng.range(-hh * 0.5, hh * 0.5);
+  // Algunos planetas rocosos o helados ya están partidos (se sortea al final, sin alterar el resto del mapa).
+  for (let i = 0; i < w.count; i++) {
+    const k = w.kind[i]!;
+    if (k !== KIND_ROCKY && k !== KIND_ICE) continue;
+    if (rng.next() >= config.preBrokenChance) continue;
+    const a = rng.range(0, Math.PI * 2);
+    w.broken[i] = 60; w.breakAx[i] = Math.cos(a); w.breakAy[i] = Math.sin(a);
+    w.radius[i] *= 0.85; w.mass[i] = w.radius[i] ** 3;
+  }
   return w;
 }
 
