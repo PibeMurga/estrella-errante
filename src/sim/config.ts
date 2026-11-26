@@ -36,6 +36,11 @@ export interface SimConfig {
   hurtBounce: number;            // velocidad del rebote
   lostSpeed: number;             // velocidad con que salen despedidos los mundos perdidos
   noCatchTime: number;           // segundos en que un mundo perdido no se puede volver a capturar
+  slingCooldown: number;         // segundos entre disparos de honda
+  slingSpeed: number;            // velocidad del mundo lanzado
+  slingLife: number;             // segundos de vuelo antes de volver
+  slingReturnSpeed: number;      // velocidad de vuelta (se suma la de la estrella)
+  slingLoseDist: number;         // si al empezar a volver está más lejos que esto, se pierde
 }
 
 export const DEFAULT_CONFIG: SimConfig = {
@@ -73,4 +78,9 @@ export const DEFAULT_CONFIG: SimConfig = {
   hurtBounce: 24,
   lostSpeed: 18,
   noCatchTime: 1.5,
+  slingCooldown: 0.35,
+  slingSpeed: 70,
+  slingLife: 2.2,
+  slingReturnSpeed: 50,
+  slingLoseDist: 220,
 };

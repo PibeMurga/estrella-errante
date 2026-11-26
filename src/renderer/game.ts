@@ -27,7 +27,7 @@ if (!view.ok) {
     last = now;
     const steps = stepper.advance(elapsed);
     const intent = input.poll(world.star.x, world.star.y);
-    for (let i = 0; i < steps; i++) step(world, intent);
+    for (let i = 0; i < steps; i++) { step(world, intent); intent.fire = false; }
     view.update(world, stepper.alpha, now / 1000);
     view.render();
     const next = governor.sample(elapsed * 1000);

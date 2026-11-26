@@ -5,6 +5,8 @@ export const FREE = 0;
 export const ORBITING = 1;       // orbita la estrella del jugador
 export const ORBIT_PLANET = 2;   // orbita un planeta (luna o escombro de su cinturón)
 export const DEAD = 3;           // tragado o destruido: no se mueve ni se dibuja
+export const PROJECTILE = 4;     // lanzado con la honda
+export const RETURNING = 5;      // vuelve a la órbita después del lanzamiento
 export const OVER_NONE = 0;
 export const OVER_SWALLOWED = 1; // la tragó el agujero negro
 export const OVER_DIMMED = 2;    // se apagó: chocó sin mundos que la protejan
@@ -36,6 +38,8 @@ export interface World {
   over: number;        // OVER_NONE mientras se juega
   invuln: number;      // segundos de invulnerabilidad que quedan
   hits: number;        // choques con planetas (evento para el dibujo y la interfaz)
+  slingCd: number;     // segundos hasta poder volver a disparar
+  shots: number;       // disparos de honda (evento)
   readonly x: Float64Array; readonly y: Float64Array;
   readonly prevX: Float64Array; readonly prevY: Float64Array;
   readonly vx: Float64Array; readonly vy: Float64Array;
@@ -45,6 +49,7 @@ export interface World {
   readonly parent: Int32Array;     // planeta que orbita, o -1
   readonly state: Uint8Array; readonly kind: Uint8Array;
   readonly noCatch: Float32Array;  // segundos en que no se puede capturar (mundos recién perdidos)
+  readonly life: Float32Array;     // segundos de vuelo que le quedan a un proyectil
   orbitingCount: number;
   stage: number;       // etapa actual de la estrella (ver stages.ts)
   stageUps: number;    // cuántas veces subió de etapa (el dibujo y la interfaz lo usan como evento)
@@ -133,11 +138,11 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       mass: config.starStartMass, captureRadius: captureRadiusFor(config, config.starStartMass),
     },
     bh: { x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0, speed: config.bhStartSpeed, radius: config.bhStartRadius, mass: 1, active: config.blackHole },
-    over: OVER_NONE, invuln: 0, hits: 0,
+    over: OVER_NONE, invuln: 0, hits: 0, slingCd: 0, shots: 0,
     x: f(), y: f(), prevX: f(), prevY: f(), vx: f(), vy: f(), radius: f(), mass: f(),
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
     parent: new Int32Array(capacity).fill(-1),
-    state: new Uint8Array(capacity), kind: new Uint8Array(capacity), noCatch: new Float32Array(capacity),
+    state: new Uint8Array(capacity), kind: new Uint8Array(capacity), noCatch: new Float32Array(capacity), life: new Float32Array(capacity),
     orbitingCount: 0, stage: 0, stageUps: 0, captured: new Int32Array(capacity), capturedCount: 0,
   };
   const rng = createRng(seed);
