@@ -26,10 +26,13 @@ void main(){
   float c = worley(q); float gran = 1. - smoothstep(.05, .85, c);
   float fine = fbm(p*60. + t*.3, 3)*.5+.5;
   float sg = fbm(p*3.2 + vec3(t*.01), 5)*.5+.5;
-  float sp = fbm(p*2.6 + 11.3, 5)*.5+.5;
+  // Manchas y fáculas: giran muy despacio con la estrella (más rápido en el ecuador, como el Sol) y cambian de forma de a poco.
+  float wr = t*.012*(1. - .25*p.y*p.y);
+  vec3 pr = vec3(p.x*cos(wr) - p.z*sin(wr), p.y, p.x*sin(wr) + p.z*cos(wr));
+  float sp = fbm(pr*2.6 + 11.3 + vec3(0., 0., t*.003), 5)*.5+.5;
   float spot = smoothstep(.73, .78, sp);
   float pen = smoothstep(.69, .74, sp);
-  float fac = smoothstep(.62, .8, fbm(p*9. + 3.1, 4)*.5+.5) * (1. - mu);
+  float fac = smoothstep(.62, .8, fbm(pr*9. + 3.1 + vec3(t*.006), 4)*.5+.5) * (1. - mu);
   vec3 hot = uHot, mid = uMid, cool = uCool;
   vec3 col = mix(mid, hot, gran*.75 + fine*.15);
   col *= .82 + .3*sg;
@@ -49,11 +52,12 @@ void main(){
   if (r < .985) discard;
   float h = r - 1.;
   vec3 ring = uTint * vec3(1.,.55,.4) * exp(-h*55.) * 1.8;
-  float flow = fbm(vec3(cos(a)*3., sin(a)*3., h*3.5 - uTime*.12), 5)*.5+.5;
+  float flow = fbm(vec3(cos(a)*3. + uTime*.015, sin(a)*3. - uTime*.01, h*3.5 - uTime*.12), 5)*.5+.5;   // deriva lenta, no manchas fijas
   float loops = smoothstep(.6, .8, flow) * exp(-h*9.) * smoothstep(0., .03, h);
   float spikes = smoothstep(.55, .9, fbm(vec3(cos(a)*7., sin(a)*7., uTime*.05), 4)*.5+.5);
   vec3 prom = uTint * vec3(1.,.7,.55) * loops * (1.2 + spikes) * 1.4;
-  vec3 cor = uTint * exp(-h*2.2) * .28;
+  float breathe = .9 + .1*(fbm(vec3(cos(a)*1.5, sin(a)*1.5, uTime*.03), 3)*.5+.5);
+  vec3 cor = uTint * exp(-h*2.2) * .28 * breathe;
   gl_FragColor = vec4((ring + prom + cor) * (1. - smoothstep(1.8, 3.3, r)), 1.);
 }`;
 

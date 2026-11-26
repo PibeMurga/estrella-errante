@@ -29,7 +29,7 @@ export function createHud(parent: HTMLElement): Hud {
     <div class="stage"><span class="name"></span> · <span class="pct"></span><div class="seg">${'<i class="o"></i>'.repeat(SEGMENTS)}</div></div>
     <div class="clock"><span class="time">00:00</span><br><span class="dim mass">MASA 0000</span></div>
     <div class="bhinfo am">AGUJERO NEGRO<br><span class="bhdist"></span></div>
-    <div class="bottom"><span class="sling">HONDA ●</span><span class="am ecl">ECLIPSE ×0</span><span class="worlds">MUNDOS 000</span></div>
+    <div class="bottom"><span class="sling">HONDA ●</span><span class="am ecl">ECLIPSE ×0</span><span class="worlds">EN ÓRBITA 000</span></div>
     <div class="log">${'<div></div>'.repeat(LOG_LINES)}</div>
     <div class="arrow am"><svg width="22" height="22" viewBox="-11 -11 22 22"><path d="M-6 -8 L7 0 L-6 8" fill="none" stroke="#ffb000" stroke-width="2.4"/></svg><span class="adist"></span></div>
     <div class="brackets"><i></i><i></i><i></i><i></i></div>`;
@@ -49,7 +49,8 @@ export function createHud(parent: HTMLElement): Hud {
   const scr = { x: 0, y: 0, ahead: true as boolean | undefined }, edge = { x: 0, y: 0 };
   // Lo último escrito en el DOM: sólo se vuelve a escribir si cambió (a píxel entero).
   let shownMode = -1, lastTx = NaN, lastTy = NaN, lastHalf = NaN, lastAng = NaN, visible = true;
-  let acc = 1, lastSeg = -1, lastBhDist = Infinity;
+  let acc = 1, lastSeg = -1, lastBhDist = Infinity, lastOrbit = 0;
+  let lastFlip = false;
   let seen = { stageUps: 0, eclipses: 0, steals: 0, kills: 0, hits: 0, comets: 0, tidal: 0, crashes: 0 };
 
   const log = (text: string): void => {
@@ -64,7 +65,7 @@ export function createHud(parent: HTMLElement): Hud {
     reset(w) {
       seen = { stageUps: w.stageUps, eclipses: w.eclipses, steals: w.cometSteals, kills: w.cometKills, hits: w.hits, comets: activeComets(w), tidal: w.tidalBreaks, crashes: w.planetCrashes };
       logText.length = 0; logAge.length = 0;
-      lastSeg = -1; acc = 1; lastBhDist = Infinity;
+      lastSeg = -1; acc = 1; lastBhDist = Infinity; lastOrbit = w.orbitingCount;
     },
     setVisible(on) { if (on !== visible) { visible = on; root.style.display = on ? '' : 'none'; } },
     update(w, view, dt, width, height) {
@@ -92,7 +93,13 @@ export function createHud(parent: HTMLElement): Hud {
           const tx = Math.round(cx + ex * t - 11), ty = Math.round(cy + ey * t - 11);
           const ang = Math.round(Math.atan2(ey, ex) * 100) / 100;
           if (shownMode !== 0) { arrow.style.display = 'flex'; brackets.style.display = 'none'; shownMode = 0; lastTx = NaN; }
-          if (tx !== lastTx || ty !== lastTy) { arrow.style.transform = `translate(${tx}px, ${ty}px)`; lastTx = tx; lastTy = ty; }
+          // Contra el borde derecho el rótulo va a la izquierda de la flecha, para que no se corte.
+          const flip = ex > 0.35;
+          if (flip !== lastFlip) { arrow.style.flexDirection = flip ? 'row-reverse' : 'row'; lastFlip = flip; lastTx = NaN; }
+          if (tx !== lastTx || ty !== lastTy) {
+            arrow.style.transform = flip ? `translate(${tx}px, ${ty}px) translateX(calc(-100% + 22px))` : `translate(${tx}px, ${ty}px)`;
+            lastTx = tx; lastTy = ty;
+          }
           if (ang !== lastAng) { arrowSvg.style.transform = `rotate(${ang}rad)`; lastAng = ang; }
         }
       }
@@ -116,27 +123,28 @@ export function createHud(parent: HTMLElement): Hud {
       if (bh.active) {
         const d = Math.max(0, Math.hypot(bh.x - s.x, bh.y - s.y) - bh.radius);
         bhInfo.style.display = '';
-        bhDistEl.textContent = `${ua(d)} UA · ${d < lastBhDist - 0.05 ? 'SE ACERCA' : 'SE ALEJA'}`;
-        arrowDist.textContent = `${ua(d)} UA`;
+        bhDistEl.textContent = `A ${ua(d)} UA · ${d < lastBhDist - 0.05 ? 'SE ACERCA' : 'SE ALEJA'}`;   // UA: unidades astronómicas
+        arrowDist.textContent = `AGUJERO NEGRO · ${ua(d)} UA`;
         lastBhDist = d;
       } else bhInfo.style.display = 'none';
 
       slingEl.textContent = w.slingCd > 0 ? 'HONDA ○' : 'HONDA ●';
       slingEl.className = w.orbitingCount > 0 ? 'sling' : 'sling off';
       eclEl.textContent = `ECLIPSE ×${w.eclipses}`;
-      worldsEl.textContent = `MUNDOS ${pad(w.orbitingCount, 3)}`;
+      worldsEl.textContent = `EN ÓRBITA ${pad(w.orbitingCount, 3)}`;
 
       // Registro de sucesos.
       if (w.stageUps > seen.stageUps) log(`ETAPA: ${STAGES[w.stage]!.name}`);
       if (w.eclipses > seen.eclipses) log(`ECLIPSE ×${w.eclipseStrength}`);
-      if (w.cometSteals > seen.steals) log('COMETA: TE ROBÓ UN MUNDO');
+      if (w.cometSteals > seen.steals) log('UN COMETA SE LLEVÓ UN CUERPO DE TU ÓRBITA');
       if (w.cometKills > seen.kills) log('COMETA DESTRUIDO');
-      if (w.hits > seen.hits) log('IMPACTO: PERDISTE MUNDOS');
+      if (w.hits > seen.hits) log(`CHOQUE CON UN PLANETA: PERDISTE ${Math.max(1, lastOrbit - w.orbitingCount)} CUERPOS DE TU ÓRBITA`);
       if (w.tidalBreaks > seen.tidal) log('MAREA: UN PLANETA SE PARTIÓ');
       if (w.planetCrashes > seen.crashes) log('CHOQUE DE PLANETAS');
       const ac = activeComets(w);
       if (ac > seen.comets) log('COMETA CAZADOR A LA VISTA');
       seen.stageUps = w.stageUps; seen.eclipses = w.eclipses; seen.steals = w.cometSteals;
+      lastOrbit = w.orbitingCount;
       seen.kills = w.cometKills; seen.hits = w.hits; seen.tidal = w.tidalBreaks; seen.crashes = w.planetCrashes; seen.comets = ac;
       for (let k = 0; k < LOG_LINES; k++) {
         const el = logEls[k]!;

@@ -51,7 +51,7 @@ export function createGameOver(parent: HTMLElement, onRestart: () => void): Game
       shown = true;
       const swallowed = w.over === OVER_SWALLOWED;
       title.textContent = swallowed ? 'ESTRELLA TRAGADA' : 'ESTRELLA APAGADA';
-      why.textContent = swallowed ? 'EL AGUJERO NEGRO TE ALCANZÓ' : 'CHOCASTE SIN MUNDOS QUE TE PROTEJAN';
+      why.textContent = swallowed ? 'EL AGUJERO NEGRO TE ALCANZÓ' : 'CHOCASTE CONTRA UN PLANETA SIN NADA EN ÓRBITA QUE TE PROTEJA';
       const secs = w.tick / 60;
       stats.innerHTML = `
         <div><span>TIEMPO</span><b>${pad(secs / 60, 2)}:${pad(secs % 60, 2)}</b></div>

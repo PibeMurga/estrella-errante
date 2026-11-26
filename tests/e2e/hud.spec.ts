@@ -5,10 +5,10 @@ async function boot(page: Page): Promise<void> {
   await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
 }
 
-test('el visor muestra la etapa, el tiempo y los mundos', async ({ page }) => {
+test('el visor muestra la etapa, el tiempo y lo que hay en órbita', async ({ page }) => {
   await boot(page);
   await expect(page.locator('.hud .stage .name')).toHaveText('ENANA ROJA');
-  await expect(page.locator('.hud .worlds')).toContainText('MUNDOS');
+  await expect(page.locator('.hud .worlds')).toContainText('EN ÓRBITA');
   await expect(page.locator('.hud .bhinfo')).toContainText('UA');
 });
 
