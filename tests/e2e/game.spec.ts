@@ -17,6 +17,24 @@ test('arranca sin errores y dibuja la escena', async ({ page }) => {
   await page.screenshot({ path: 'artifacts/e2e/juego.png' });
 });
 
+test('dibuja varios tipos de planeta', async ({ page }) => {
+  await boot(page);
+  const d = await page.evaluate(() => window.__GAME__!.diagnostics);
+  expect(d.planetTypes).toBeGreaterThanOrEqual(3);
+});
+
+test('al mover el mouse la estrella captura asteroides', async ({ page }) => {
+  await boot(page);
+  for (let k = 0; k < 120; k++) {
+    const a = k * 0.15;
+    await page.mouse.move(640 + Math.cos(a) * 420, 360 + Math.sin(a) * 220);
+    await page.waitForTimeout(50);
+  }
+  const orbiting = await page.evaluate(() => window.__GAME__!.diagnostics.orbiting);
+  expect(orbiting).toBeGreaterThan(0);
+  await page.screenshot({ path: 'artifacts/e2e/capturas.png' });
+});
+
 test('se adapta al cambiar el tamaño de la ventana', async ({ page }) => {
   await boot(page);
   await page.setViewportSize({ width: 800, height: 600 });

@@ -62,12 +62,13 @@ export function createSpaceView(canvas: HTMLCanvasElement, opts: SpaceViewOption
   syncCamera();
 
   const pipeline = createPipeline(canvas, gl, scene, camera);
-  const layers = buildLayers({ world: opts.world, quality, rng: createRng(opts.seed ?? 1), pipeline });
+  const built = buildLayers({ world: opts.world, quality, rng: createRng(opts.seed ?? 1), pipeline });
+  const layers = built.layers;
   for (const l of layers) scene.add(l.object);
 
   const diagnostics: Diagnostics = {
     frames: 0, quality: quality.level, calls: 0, triangles: 0, orbiting: 0,
-    canvasWidth: 0, canvasHeight: 0, lastFrameMs: 0, lensEnabled: 0, lensRadius: 0, planetTypes: 0,
+    canvasWidth: 0, canvasHeight: 0, lastFrameMs: 0, lensEnabled: 0, lensRadius: 0, planetTypes: built.planetTypes,
   };
   const ctx: FrameContext = {
     world: opts.world, alpha: 1, time: 0, dt: 0, frame: 0, starX: opts.world.star.x, starY: opts.world.star.y,
