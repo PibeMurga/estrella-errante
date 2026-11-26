@@ -1,6 +1,7 @@
+import { stepComets } from './comets';
 import { DT } from './config';
 import { stageFor } from './stages';
-import { captureRadiusFor, DEAD, FREE, KIND_GAS, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_DIMMED, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
+import { CARRIED, captureRadiusFor, DEAD, FREE, KIND_GAS, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_DIMMED, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
 
 export interface Intent { targetX: number; targetY: number; hasTarget: boolean; fire?: boolean }
 
@@ -132,6 +133,8 @@ export function step(w: World, intent: Intent): void {
   bh.prevY = bh.y;
   w.prevX.set(w.x);
   w.prevY.set(w.y);
+  w.comets.prevX.set(w.comets.x);
+  w.comets.prevY.set(w.comets.y);
   // Partida terminada: todo queda quieto (y sin interpolar) hasta que se reinicie.
   if (w.over !== OVER_NONE) return;
   if (w.invuln > 0) w.invuln = Math.max(0, w.invuln - DT);
@@ -198,7 +201,7 @@ export function step(w: World, intent: Intent): void {
   let hit = -1;
   for (let i = 0; i < w.count; i++) {
     const st = w.state[i];
-    if (st === DEAD) continue;
+    if (st === DEAD || st === CARRIED) continue;
     if (st === PROJECTILE || st === RETURNING) { flight(w, i, st); continue; }
     if (st === FREE || st === ORBIT_PLANET) {
       let x: number;
@@ -278,6 +281,7 @@ export function step(w: World, intent: Intent): void {
 
   if (hit >= 0) hurt(w, hit);
   if (w.eclipseCd <= 0 && w.orbitingCount >= c.eclipseMin) eclipse(w);
+  stepComets(w);
   if (intent.fire && w.slingCd <= 0 && w.orbitingCount > 0 && intent.hasTarget && Number.isFinite(intent.targetX) && Number.isFinite(intent.targetY)) sling(w, intent.targetX, intent.targetY);
   bh.radius = c.bhStartRadius * Math.cbrt(bh.mass);
   s.captureRadius = captureRadiusFor(c, s.mass);

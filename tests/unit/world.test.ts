@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG, type SimConfig } from '../../src/sim/config';
 import {
-  addBody, captureRadiusFor, createWorld, FREE, hashWorld, KIND_ASTEROID, KIND_GAS, KIND_MOON, KIND_ROCKY, ORBIT_PLANET,
+  addBody, captureRadiusFor, createWorld, FREE, hashWorld, KIND_ASTEROID, KIND_GAS, KIND_MOON, KIND_ROCKY, ORBIT_PLANET, DEAD,
 } from '../../src/sim/world';
 
 const cfg: SimConfig = { ...DEFAULT_CONFIG, asteroidCount: 200, planetCount: 6 };
@@ -13,6 +13,7 @@ describe('createWorld', () => {
     let planets = 0;
     for (let i = 0; i < w.count; i++) {
       if (w.parent[i] >= 0) continue;   // lunas y cinturones se prueban aparte
+      if (w.state[i] === DEAD) continue; // reserva de escombros para los cometas
       expect(Math.abs(w.x[i])).toBeLessThanOrEqual(cfg.arenaHalfWidth);
       expect(Math.abs(w.y[i])).toBeLessThanOrEqual(cfg.arenaHalfHeight);
       expect(Math.hypot(w.x[i], w.y[i])).toBeGreaterThanOrEqual(cfg.spawnClearRadius);
@@ -40,7 +41,7 @@ describe('createWorld', () => {
 
 describe('addBody', () => {
   it('devuelve -1 cuando no queda lugar', () => {
-    const w = createWorld({ ...cfg, asteroidCount: 0, planetCount: 0 }, 1, 1);
+    const w = createWorld({ ...cfg, asteroidCount: 0, planetCount: 0, debrisReserve: 0 }, 1, 1);
     const body = { x: 0, y: 0, vx: 0, vy: 0, radius: 1, kind: KIND_ASTEROID };
     expect(addBody(w, body)).toBe(0);
     expect(addBody(w, body)).toBe(-1);

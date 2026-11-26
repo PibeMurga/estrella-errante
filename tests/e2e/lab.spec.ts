@@ -43,3 +43,16 @@ test('el eclipse dibuja el rayo', async ({ page }) => {
   expect(during).toBeGreaterThan(before);
   await page.screenshot({ path: 'artifacts/e2e/eclipse.png' });
 });
+
+test('dibuja un cometa cazador', async ({ page }) => {
+  await page.goto('/lab.html');
+  await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
+  const before = await page.evaluate(() => window.__GAME__!.diagnostics.calls);
+  await page.evaluate(() => {
+    const c = window.__GAME__!.world.comets;
+    c.mode[0] = 1; c.hp[0] = 3; c.x[0] = c.prevX[0] = 40; c.y[0] = c.prevY[0] = -10; c.vx[0] = -20; c.vy[0] = 8; c.carry[0] = -1;
+  });
+  await page.waitForTimeout(150);
+  expect(await page.evaluate(() => window.__GAME__!.diagnostics.calls)).toBeGreaterThan(before);
+  await page.screenshot({ path: 'artifacts/e2e/cometa.png' });
+});

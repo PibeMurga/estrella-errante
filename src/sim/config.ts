@@ -46,6 +46,17 @@ export interface SimConfig {
   eclipseCooldown: number;       // segundos entre eclipses
   beamDuration: number;          // segundos que dura el rayo
   beamLength: number;            // largo del rayo
+  beamHalfWidth: number;         // medio ancho del rayo para el daño
+  cometFirst: number;            // segundos hasta el primer cometa
+  cometEvery: number;            // segundos entre cometas
+  cometSpeed: number;            // al cazar (la estrella llega a starMaxSpeed)
+  cometFleeSpeed: number;
+  cometTurn: number;             // giro máximo, rad/s
+  cometHp: number;
+  cometFleeTime: number;         // segundos que huye después de robar
+  cometRadius: number;
+  cometDebris: number;           // asteroides que deja al morir
+  debrisReserve: number;         // cuerpos de reserva para los escombros (se crean muertos al armar el mapa)
 }
 
 export const DEFAULT_CONFIG: SimConfig = {
@@ -93,4 +104,15 @@ export const DEFAULT_CONFIG: SimConfig = {
   eclipseCooldown: 2,
   beamDuration: 0.6,
   beamLength: 150,
+  beamHalfWidth: 4,
+  cometFirst: 60,
+  cometEvery: 40,
+  cometSpeed: 24,
+  cometFleeSpeed: 30,
+  cometTurn: 1.6,
+  cometHp: 3,
+  cometFleeTime: 6,
+  cometRadius: 2.5,
+  cometDebris: 5,
+  debrisReserve: 60,
 };
