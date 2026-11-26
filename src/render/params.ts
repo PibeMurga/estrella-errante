@@ -1,0 +1,29 @@
+export interface ViewParams {
+  bloomIntensity: number;
+  bloomThreshold: number;
+  vignetteDarkness: number;
+  nebulaIntensity: number;
+  sunIntensity: number;
+  lightIntensity: number;
+  lensEnabled: boolean;
+  einsteinScale: number;
+  diskIntensity: number;
+  blackHoleX: number;      // en coordenadas de la simulación
+  blackHoleY: number;
+  blackHoleRadius: number;
+}
+
+export const DEFAULT_PARAMS: ViewParams = {
+  bloomIntensity: 0.95,
+  bloomThreshold: 1.0,
+  vignetteDarkness: 0.55,
+  nebulaIntensity: 1,
+  sunIntensity: 1.45,
+  lightIntensity: 2.4,
+  lensEnabled: true,
+  einsteinScale: 1.2,
+  diskIntensity: 4,
+  blackHoleX: 118,
+  blackHoleY: 40,
+  blackHoleRadius: 5,
+};
