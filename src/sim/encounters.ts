@@ -65,7 +65,7 @@ export function stepEncounters(w: World): void {
       const dx = w.x[small]! - w.x[big]!, dy = w.y[small]! - w.y[big]!;
       if (Math.abs(dx) > hw || Math.abs(dy) > hh) continue;   // del otro lado de la costura: lejos de verdad
       const sum = ri + rj;
-      const D = sum * c.encounterGap, range = D * 3;
+      const D = sum * c.encounterGap, range = D * 4;
       const d2 = dx * dx + dy * dy;
       if (d2 >= range * range) continue;
       const d = Math.sqrt(d2);
@@ -92,7 +92,7 @@ export function stepStarFlybys(w: World): void {
     const dx = w.x[i]! - s.x, dy = w.y[i]! - s.y;
     if (Math.abs(dx) > hw || Math.abs(dy) > hh) continue;
     const D = (size + r) * c.encounterGap;
-    if (dx * dx + dy * dy >= 9 * D * D) continue;
+    if (dx * dx + dy * dy >= 16 * D * D) continue;   // empieza a desviarse desde lejos, de a poco
     bypass(w, i, s.x, s.y, s.vx, s.vy, dx, dy, D);
   }
 }
@@ -110,7 +110,7 @@ function bypass(w: World, i: number, ox: number, oy: number, ovx: number, ovy: n
     const miss = Math.abs(lat);
     if (miss < D) {
       const tca = -closing / v2;
-      const f = Math.min(1, (1.6 * DT) / Math.max(tca, DT));
+      const f = Math.min(1, (1.1 * DT) / Math.max(tca, DT));   // suave: el desvío se reparte en todo el acercamiento
       const push = (D - miss) * f * (lat >= 0 ? 1 : -1);
       w.x[i] = w.x[i]! + px * push;
       w.y[i] = w.y[i]! + py * push;
