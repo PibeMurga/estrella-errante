@@ -6,7 +6,8 @@ import { applyDeadzone } from './gamepad';
 export type ToWorld = (sx: number, sy: number, out: { x: number; y: number }) => boolean;
 
 export class InputController {
-  private readonly intent: Intent = { targetX: 0, targetY: 0, hasTarget: false, fire: false };
+  private readonly intent: Intent = { targetX: 0, targetY: 0, hasTarget: false, fire: false, aimX: 0, aimY: 0, hasAim: false };
+  private readonly aimStick = { x: 0, y: 0 };
   private readonly world = { x: 0, y: 0 };
   private readonly stick = { x: 0, y: 0 };
   private pointerX = 0;
@@ -44,6 +45,19 @@ export class InputController {
     this.triggerHeld = trigger;
     this.intent.fire = this.intent.fire === true || this.firePending;
     this.firePending = false;
+    // Stick derecho: mira propia de la honda (en el joystick, Y positivo es abajo).
+    this.intent.hasAim = false;
+    for (let k = 0; k < pads.length; k++) {
+      const p = pads[k];
+      if (!p) continue;
+      applyDeadzone(p.axes[2] ?? 0, p.axes[3] ?? 0, 0.3, this.aimStick);
+      if (this.aimStick.x !== 0 || this.aimStick.y !== 0) {
+        this.intent.aimX = starX + this.aimStick.x * this.reach;
+        this.intent.aimY = starY - this.aimStick.y * this.reach;
+        this.intent.hasAim = true;
+        break;
+      }
+    }
     // Se revisan todos los joysticks: manda el primero que tenga el stick movido.
     for (let k = 0; k < pads.length; k++) {
       const p = pads[k];

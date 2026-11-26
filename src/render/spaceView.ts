@@ -37,7 +37,8 @@ export interface SpaceView {
   // Píxel (CSS, relativo al canvas) → coordenadas de la simulación. false si cae por encima del horizonte.
   screenToWorld(px: number, py: number, out: { x: number; y: number }): boolean;
   // Coordenadas de la simulación → píxel (CSS). Devuelve true si el punto está delante de la cámara y dentro de la pantalla.
-  worldToScreen(simX: number, simY: number, out: { x: number; y: number }): boolean;
+  // out.ahead dice si el punto está delante de la cámara (si no, la proyección queda invertida).
+  worldToScreen(simX: number, simY: number, out: { x: number; y: number; ahead?: boolean }): boolean;
 }
 
 export interface ViewFailure { readonly ok: false; readonly reason: string }
@@ -165,6 +166,7 @@ export function createSpaceView(canvas: HTMLCanvasElement, opts: SpaceViewOption
       projTmp.project(camera);
       out.x = (projTmp.x * 0.5 + 0.5) * ctx.width;
       out.y = (-projTmp.y * 0.5 + 0.5) * ctx.height;
+      out.ahead = ahead;
       return ahead && Math.abs(projTmp.x) <= 1 && Math.abs(projTmp.y) <= 1;
     },
   };

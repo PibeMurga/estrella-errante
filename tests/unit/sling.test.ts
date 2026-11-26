@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG } from '../../src/sim/config';
 import { type Intent, step } from '../../src/sim/step';
-import { addBody, createWorld, FREE, KIND_ASTEROID, ORBITING, PROJECTILE, RETURNING, type World } from '../../src/sim/world';
+import { addBody, createWorld, DEAD, FREE, KIND_ASTEROID, ORBITING, PROJECTILE, RETURNING, type World } from '../../src/sim/world';
 
 const IDLE: Intent = { targetX: 0, targetY: 0, hasTarget: false };
 const aim = (x: number, y: number, fire = true): Intent => ({ targetX: x, targetY: y, hasTarget: true, fire });
@@ -66,5 +66,33 @@ describe('honda', () => {
     const { w } = worldWithOrbit([]);
     step(w, aim(50, 0));
     expect(w.shots).toBe(0);
+  });
+});
+
+describe('honda (revisión final)', () => {
+  it('si vuelve con la órbita llena, la estrella lo absorbe y no queda pegado', () => {
+    const w = createWorld({ ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, blackHole: false, orbitCapacity: 1 }, 5, 40);
+    const i = addBody(w, { x: 8, y: 0, vx: 0, vy: 0, radius: 0.6, kind: KIND_ASTEROID });
+    w.state[i] = ORBITING; w.orbitR[i] = 8; w.orbitTarget[i] = 8; w.orbitAngle[i] = 0; w.orbitingCount = 1;
+    step(w, aim(50, 0));
+    expect(w.state[i]).toBe(PROJECTILE);
+    const j = addBody(w, { x: 0, y: 8, vx: 0, vy: 0, radius: 0.6, kind: KIND_ASTEROID });
+    w.state[j] = ORBITING; w.orbitR[j] = 8; w.orbitTarget[j] = 8; w.orbitAngle[j] = 1.5; w.orbitingCount = 1;
+    for (let k = 0; k < 60 * 10; k++) step(w, IDLE);
+    expect(w.state[i]).toBe(DEAD);
+    expect(w.absorbed).toBe(1);
+  });
+
+  it('con una mira propia (stick derecho) apunta ahí y no hacia donde se mueve', () => {
+    const { w, ids } = worldWithOrbit([0, Math.PI / 2, Math.PI, -Math.PI / 2]);
+    step(w, { targetX: 50, targetY: 0, hasTarget: true, fire: true, aimX: 0, aimY: -40, hasAim: true });
+    expect(w.state[ids[3]!]).toBe(PROJECTILE);
+  });
+
+  it('sin mira y con el objetivo encima de la estrella, apunta al cometa más cercano', () => {
+    const { w, ids } = worldWithOrbit([0, Math.PI / 2, Math.PI, -Math.PI / 2]);
+    w.comets.mode[0] = 1; w.comets.x[0] = -60; w.comets.y[0] = 0; w.comets.hp[0] = 3;
+    step(w, { targetX: 0, targetY: 0, hasTarget: true, fire: true });
+    expect(w.state[ids[2]!]).toBe(PROJECTILE);
   });
 });

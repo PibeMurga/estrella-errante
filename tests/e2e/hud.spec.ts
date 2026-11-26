@@ -28,3 +28,19 @@ test('la barra de etapa avanza con la masa', async ({ page }) => {
   await expect(page.locator('.hud .stage .pct')).toHaveText('50%');
   expect(await page.locator('.hud .seg i:not(.o)').count()).toBe(12);
 });
+
+test('la flecha apunta hacia donde está el agujero negro en pantalla', async ({ page }) => {
+  await boot(page);
+  // Arriba en el mapa (lejos, hacia el horizonte): la flecha va al borde de arriba, centrada.
+  await page.evaluate(() => { const w = window.__GAME__!.world; w.bh.x = w.bh.prevX = w.star.x; w.bh.y = w.bh.prevY = w.star.y + 260; });
+  await page.waitForTimeout(300);
+  const up = await page.locator('.hud .arrow').boundingBox();
+  expect(up!.y).toBeLessThan(120);
+  expect(Math.abs(up!.x + up!.width / 2 - 640)).toBeLessThan(120);
+  // Abajo a la izquierda: la flecha queda en la mitad izquierda e inferior.
+  await page.evaluate(() => { const w = window.__GAME__!.world; w.bh.x = w.bh.prevX = w.star.x - 300; w.bh.y = w.bh.prevY = w.star.y - 220; });
+  await page.waitForTimeout(300);
+  const dl = await page.locator('.hud .arrow').boundingBox();
+  expect(dl!.x).toBeLessThan(640);
+  expect(dl!.y).toBeGreaterThan(360);
+});

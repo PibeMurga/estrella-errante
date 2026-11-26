@@ -115,4 +115,14 @@ describe('InputController', () => {
     r.fire = false;
     expect(input.poll(0, 0).fire).toBe(false);
   });
+
+  it('el stick derecho del joystick da una mira propia para la honda', () => {
+    const pad = { axes: [0, 0, 0, -1], buttons: [] as { pressed: boolean }[] };
+    vi.stubGlobal('navigator', { getGamepads: () => [pad] });
+    const { el } = fakeElement();
+    const r = new InputController(el, toWorld, 40).poll(5, 5);
+    expect(r.hasAim).toBe(true);
+    expect(r.aimX).toBe(5);
+    expect(r.aimY).toBe(45);   // stick hacia arriba = y positivo en la simulación
+  });
 });

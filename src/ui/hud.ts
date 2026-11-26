@@ -4,7 +4,7 @@ import './hud.css';
 
 // Visor de fósforo de la partida. El texto se actualiza a 10 Hz para no tocar el DOM en cada cuadro;
 // la flecha y los corchetes del agujero negro se mueven en cada cuadro, sólo con transform.
-export interface HudView { worldToScreen(simX: number, simY: number, out: { x: number; y: number }): boolean }
+export interface HudView { worldToScreen(simX: number, simY: number, out: { x: number; y: number; ahead?: boolean }): boolean }
 
 export interface Hud {
   readonly root: HTMLElement;
@@ -46,8 +46,10 @@ export function createHud(parent: HTMLElement): Hud {
   const brackets = q<HTMLElement>('.brackets');
 
   const logText: string[] = [], logAge: number[] = [];
-  const scr = { x: 0, y: 0 }, edge = { x: 0, y: 0 };
-  let acc = 1, lastSeg = -1, lastBhDist = 0;
+  const scr = { x: 0, y: 0, ahead: true as boolean | undefined }, edge = { x: 0, y: 0 };
+  // Lo último escrito en el DOM: sólo se vuelve a escribir si cambió (a píxel entero).
+  let shownMode = -1, lastTx = NaN, lastTy = NaN, lastHalf = NaN, lastAng = NaN, visible = true;
+  let acc = 1, lastSeg = -1, lastBhDist = Infinity;
   let seen = { stageUps: 0, eclipses: 0, steals: 0, kills: 0, hits: 0, comets: 0 };
 
   const log = (text: string): void => {
@@ -62,9 +64,9 @@ export function createHud(parent: HTMLElement): Hud {
     reset(w) {
       seen = { stageUps: w.stageUps, eclipses: w.eclipses, steals: w.cometSteals, kills: w.cometKills, hits: w.hits, comets: activeComets(w) };
       logText.length = 0; logAge.length = 0;
-      lastSeg = -1; acc = 1;
+      lastSeg = -1; acc = 1; lastBhDist = Infinity;
     },
-    setVisible(on) { root.style.display = on ? '' : 'none'; },
+    setVisible(on) { if (on !== visible) { visible = on; root.style.display = on ? '' : 'none'; } },
     update(w, view, dt, width, height) {
       const s = w.star, bh = w.bh;
 
@@ -74,21 +76,24 @@ export function createHud(parent: HTMLElement): Hud {
         if (onScreen) {
           // El disco de acreción llega a ~4,9 radios del horizonte: los corchetes lo rodean.
           view.worldToScreen(bh.x + bh.radius * 4.9, bh.y, edge);
-          const half = Math.max(18, Math.abs(edge.x - scr.x));
-          brackets.style.display = 'block';
-          brackets.style.width = brackets.style.height = `${half * 2}px`;
-          brackets.style.transform = `translate(${scr.x - half}px, ${scr.y - half}px)`;
-          arrow.style.display = 'none';
+          const half = Math.round(Math.max(18, Math.abs(edge.x - scr.x)));
+          const tx = Math.round(scr.x - half), ty = Math.round(scr.y - half);
+          if (shownMode !== 1) { brackets.style.display = 'block'; arrow.style.display = 'none'; shownMode = 1; lastTx = NaN; }
+          if (half !== lastHalf) { brackets.style.width = brackets.style.height = `${half * 2}px`; lastHalf = half; }
+          if (tx !== lastTx || ty !== lastTy) { brackets.style.transform = `translate(${tx}px, ${ty}px)`; lastTx = tx; lastTy = ty; }
         } else {
-          // En pantalla, x de la simulación va a la derecha e y hacia arriba.
-          const ang = Math.atan2(-(bh.y - s.y), bh.x - s.x);
+          // Dirección real en pantalla (con la perspectiva de la cámara); si quedó detrás de la cámara, se invierte.
           const cx = width / 2, cy = height / 2, mx = cx - 70, my = cy - 60;
-          const ex = Math.cos(ang), ey = Math.sin(ang);
+          let ex = scr.x - cx, ey = scr.y - cy;
+          if (!scr.ahead) { ex = -ex; ey = -ey; }
+          const len = Math.hypot(ex, ey) || 1;
+          ex /= len; ey /= len;
           const t = Math.min(mx / Math.max(1e-6, Math.abs(ex)), my / Math.max(1e-6, Math.abs(ey)));
-          arrow.style.display = 'flex';
-          arrow.style.transform = `translate(${cx + ex * t - 11}px, ${cy + ey * t - 11}px)`;
-          arrowSvg.style.transform = `rotate(${ang}rad)`;
-          brackets.style.display = 'none';
+          const tx = Math.round(cx + ex * t - 11), ty = Math.round(cy + ey * t - 11);
+          const ang = Math.round(Math.atan2(ey, ex) * 100) / 100;
+          if (shownMode !== 0) { arrow.style.display = 'flex'; brackets.style.display = 'none'; shownMode = 0; lastTx = NaN; }
+          if (tx !== lastTx || ty !== lastTy) { arrow.style.transform = `translate(${tx}px, ${ty}px)`; lastTx = tx; lastTy = ty; }
+          if (ang !== lastAng) { arrowSvg.style.transform = `rotate(${ang}rad)`; lastAng = ang; }
         }
       }
 

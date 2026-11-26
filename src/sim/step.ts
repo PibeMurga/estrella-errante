@@ -3,7 +3,12 @@ import { DT } from './config';
 import { stageFor } from './stages';
 import { CARRIED, captureRadiusFor, DEAD, FREE, KIND_GAS, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_DIMMED, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
 
-export interface Intent { targetX: number; targetY: number; hasTarget: boolean; fire?: boolean }
+// target: hacia dónde ir. aim: hacia dónde apuntar la honda (stick derecho); sin aim se apunta al objetivo.
+export interface Intent {
+  targetX: number; targetY: number; hasTarget: boolean;
+  fire?: boolean;
+  aimX?: number; aimY?: number; hasAim?: boolean;
+}
 
 const clamp = (v: number, lo: number, hi: number): number => (v < lo ? lo : v > hi ? hi : v);
 
@@ -33,9 +38,32 @@ function hurt(w: World, p: number): void {
 }
 
 // Honda: lanza el mundo en órbita cuyo ángulo está más cerca de la dirección de la mira.
-function sling(w: World, tx: number, ty: number): void {
+// Dirección de la honda: la mira propia; si no, el objetivo; si está encima de la estrella, el cometa más cercano;
+// si no hay cometas, hacia donde se mueve. Devuelve NaN si no hay ninguna dirección razonable.
+function slingAngle(w: World, it: Intent): number {
+  const s = w.star;
+  if (it.hasAim && Number.isFinite(it.aimX) && Number.isFinite(it.aimY)) {
+    const dx = it.aimX! - s.x, dy = it.aimY! - s.y;
+    if (dx * dx + dy * dy > 1e-6) return Math.atan2(dy, dx);
+  }
+  if (it.hasTarget && Number.isFinite(it.targetX) && Number.isFinite(it.targetY)) {
+    const dx = it.targetX - s.x, dy = it.targetY - s.y;
+    if (dx * dx + dy * dy > 4) return Math.atan2(dy, dx);
+  }
+  const cm = w.comets;
+  let best = -1, bestD = Infinity;
+  for (let k = 0; k < cm.mode.length; k++) {
+    if (cm.mode[k] === 0) continue;
+    const e = (cm.x[k]! - s.x) ** 2 + (cm.y[k]! - s.y) ** 2;
+    if (e < bestD) { bestD = e; best = k; }
+  }
+  if (best >= 0) return Math.atan2(cm.y[best]! - s.y, cm.x[best]! - s.x);
+  if (s.vx * s.vx + s.vy * s.vy > 1) return Math.atan2(s.vy, s.vx);
+  return Number.NaN;
+}
+
+function sling(w: World, aim: number): void {
   const c = w.config, s = w.star;
-  const aim = Math.atan2(ty - s.y, tx - s.x);
   let best = -1, bestDiff = Infinity;
   for (let i = 0; i < w.count; i++) {
     if (w.state[i] !== ORBITING) continue;
@@ -71,7 +99,13 @@ function flight(w: World, i: number, st: number): void {
       w.state[i] = RETURNING;
     }
   } else {
-    if (d < c.orbitMax && w.orbitingCount < c.orbitCapacity) {
+    if (d < c.orbitMax && w.orbitingCount >= c.orbitCapacity) {
+      // Volvió con la órbita llena: la estrella lo absorbe (su masa ya estaba contada).
+      w.state[i] = DEAD;
+      w.absorbed++;
+      return;
+    }
+    if (d < c.orbitMax) {
       w.state[i] = ORBITING;
       w.orbitR[i] = d;
       w.orbitTarget[i] = clamp(d * 0.9, c.orbitMin, c.orbitMax);
@@ -239,8 +273,7 @@ export function step(w: World, intent: Intent): void {
         w.vy[i] = w.vy[p] + Math.cos(ang) * v;
         w.state[i] = FREE;
         w.parent[i] = -1;
-        x = w.x[i];
-        y = w.y[i];
+        continue;   // recién soltada: en este paso no se mueve ni se captura
       } else {
         // Luna o escombro: gira alrededor de su planeta (que ya se movió en este paso, porque se creó antes).
         const p = w.parent[i]!;
@@ -290,9 +323,13 @@ export function step(w: World, intent: Intent): void {
   }
 
   if (hit >= 0) hurt(w, hit);
+  if (w.over !== OVER_NONE) { w.tick++; return; }   // se apagó en este paso: no pasa nada más
   if (w.eclipseCd <= 0 && w.orbitingCount >= c.eclipseMin) eclipse(w);
   stepComets(w);
-  if (intent.fire && w.slingCd <= 0 && w.orbitingCount > 0 && intent.hasTarget && Number.isFinite(intent.targetX) && Number.isFinite(intent.targetY)) sling(w, intent.targetX, intent.targetY);
+  if (intent.fire && w.slingCd <= 0 && w.orbitingCount > 0) {
+    const a = slingAngle(w, intent);
+    if (Number.isFinite(a)) sling(w, a);
+  }
   bh.radius = c.bhStartRadius * Math.cbrt(bh.mass);
   s.captureRadius = captureRadiusFor(c, s.mass);
   if (s.mass > w.maxMass) w.maxMass = s.mass;

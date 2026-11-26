@@ -27,7 +27,7 @@ export function createGameOver(parent: HTMLElement, onRestart: () => void): Game
   const why = root.querySelector('.why') as HTMLElement;
   const stats = root.querySelector('.stats') as HTMLElement;
 
-  let wait = DELAY, shown = false, done = false;
+  let wait = DELAY, shown = false, done = false, padHeld = true;
   const restart = (): void => { if (shown && !done) { done = true; onRestart(); } };
   root.addEventListener('pointerdown', restart);
   window.addEventListener('keydown', (e) => { if (e.key === 'r' || e.key === 'R') restart(); });
@@ -37,8 +37,12 @@ export function createGameOver(parent: HTMLElement, onRestart: () => void): Game
     update(w, dt) {
       if (w.over === 0 || shown) {
         // Joystick: A o Start reinician.
+        // Hay que soltar y volver a apretar: un botón mantenido desde antes no saltea el resumen.
         if (shown && typeof navigator !== 'undefined' && navigator.getGamepads) {
-          for (const p of navigator.getGamepads()) if (p && (p.buttons[0]?.pressed || p.buttons[9]?.pressed)) restart();
+          let down = false;
+          for (const p of navigator.getGamepads()) if (p && (p.buttons[0]?.pressed || p.buttons[9]?.pressed)) down = true;
+          if (down && !padHeld) restart();
+          padHeld = down;
         }
         return;
       }
