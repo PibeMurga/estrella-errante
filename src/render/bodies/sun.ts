@@ -1,5 +1,5 @@
 import { AdditiveBlending, Group, Mesh, PlaneGeometry, PointLight, ShaderMaterial, SphereGeometry, Vector3 } from 'three';
-import { starSize } from '../../sim/world';
+import { OVER_SWALLOWED, starSize } from '../../sim/world';
 import { toWorld } from '../cameraRig';
 import type { Layer } from '../layer';
 import { NOISE_GLSL } from '../shaders/noise';
@@ -79,9 +79,12 @@ export function createSunLayer(sunPos: Vector3): Layer {
     object: group,
     update(ctx) {
       toWorld(ctx.starX, ctx.starY, sunPos);
-      const target = starRenderRadius(ctx.world.star.mass);
-      shownR = shownR < 0 ? target : smoothToward(shownR, target, 1.2, ctx.dt);
-      const r = shownR;
+      // Tragada por el agujero negro: se achica hasta desaparecer.
+      const swallowed = ctx.world.over === OVER_SWALLOWED;
+      const target = swallowed ? 0 : starRenderRadius(ctx.world.star.mass);
+      shownR = shownR < 0 ? target : smoothToward(shownR, target, swallowed ? 2.5 : 1.2, ctx.dt);
+      const r = Math.max(shownR, 1e-3);
+      sun.visible = halo.visible = shownR > 0.05;
       sun.position.copy(sunPos); sun.scale.setScalar(r); sun.rotation.y = ctx.time * 0.03;
       halo.position.copy(sunPos); halo.scale.setScalar(r); halo.quaternion.copy(ctx.camera.quaternion);
       light.position.copy(sunPos);

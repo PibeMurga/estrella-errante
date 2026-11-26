@@ -1,0 +1,21 @@
+/* Fin de partida: el mismo fósforo del visor, sobre un velo oscuro. La escena sigue moviéndose detrás. */
+.gameover {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at center, #02060599 0%, #000000d0 75%);
+  opacity: 0; pointer-events: none; transition: opacity 1.2s ease;
+  font-family: 'Cascadia Mono', 'Consolas', 'DejaVu Sans Mono', 'Liberation Mono', monospace;
+  color: #7af5c9; text-shadow: 0 0 4px #7af5c9cc, 0 0 12px #7af5c944; letter-spacing: 3px; cursor: pointer;
+}
+.gameover.on { opacity: 1; pointer-events: auto; }
+.gameover .panel {
+  min-width: 420px; padding: 34px 44px; text-align: center;
+  border: 1.5px solid #7af5c966; box-shadow: 0 0 18px #7af5c922, inset 0 0 30px #7af5c90d;
+  background: radial-gradient(circle, #7af5c90c 1px, transparent 1.4px) 0 0/4px 4px;
+}
+.gameover .title { font-size: 26px; font-weight: 700; color: #ffb000; text-shadow: 0 0 8px #ffb000aa, 0 0 20px #ffb00044; }
+.gameover .why { margin-top: 8px; font-size: 11px; opacity: .7; }
+.gameover .stats { margin: 26px 0 24px; display: grid; gap: 8px; font-size: 13px; }
+.gameover .stats div { display: flex; justify-content: space-between; gap: 40px; }
+.gameover .stats span { opacity: .65; }
+.gameover .again { font-size: 12px; animation: blink 1.4s steps(2, start) infinite; }
+@keyframes blink { 50% { opacity: .35; } }

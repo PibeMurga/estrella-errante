@@ -285,6 +285,7 @@ export function step(w: World, intent: Intent): void {
   if (intent.fire && w.slingCd <= 0 && w.orbitingCount > 0 && intent.hasTarget && Number.isFinite(intent.targetX) && Number.isFinite(intent.targetY)) sling(w, intent.targetX, intent.targetY);
   bh.radius = c.bhStartRadius * Math.cbrt(bh.mass);
   s.captureRadius = captureRadiusFor(c, s.mass);
+  if (s.mass > w.maxMass) w.maxMass = s.mass;
   const st = stageFor(s.mass);
   if (st > w.stage) { w.stage = st; w.stageUps++; }
   w.tick++;

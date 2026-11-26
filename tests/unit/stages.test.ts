@@ -38,3 +38,15 @@ describe('etapas de la estrella', () => {
     expect(w.stageUps).toBe(1);
   });
 });
+
+describe('masa máxima de la partida', () => {
+  it('recuerda la mayor masa alcanzada aunque después baje', () => {
+    const w = createWorld({ ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, blackHole: false }, 1, 10);
+    const none: Intent = { targetX: 0, targetY: 0, hasTarget: false };
+    w.star.mass = 40;
+    step(w, none);
+    w.star.mass = 10;
+    step(w, none);
+    expect(w.maxMass).toBe(40);
+  });
+});

@@ -76,6 +76,7 @@ export interface World {
   orbitingCount: number;
   stage: number;       // etapa actual de la estrella (ver stages.ts)
   stageUps: number;    // cuántas veces subió de etapa (el dibujo y la interfaz lo usan como evento)
+  maxMass: number;     // la mayor masa alcanzada en la partida
   readonly captured: Int32Array;   // índices capturados en el último paso
   capturedCount: number;
 }
@@ -173,7 +174,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
     parent: new Int32Array(capacity).fill(-1),
     state: new Uint8Array(capacity), kind: new Uint8Array(capacity), noCatch: new Float32Array(capacity), life: new Float32Array(capacity),
-    orbitingCount: 0, stage: 0, stageUps: 0, captured: new Int32Array(capacity), capturedCount: 0,
+    orbitingCount: 0, stage: 0, stageUps: 0, maxMass: config.starStartMass, captured: new Int32Array(capacity), capturedCount: 0,
   };
   const rng = createRng(seed);
   const hw = config.arenaHalfWidth, hh = config.arenaHalfHeight;
