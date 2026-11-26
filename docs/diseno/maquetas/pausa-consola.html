@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;600;800&family=Sometype+Mono:wght@500;700&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #0d0e10; color: #ddd; font-family: system-ui, sans-serif; }
+  header.top { padding: 22px 32px 6px; } header.top h1 { margin: 0; font-size: 22px; color: #eee; } header.top p { margin: 6px 0 0; color: #9a9ea8; font-size: 14px; }
+  section.v { padding: 18px 32px 26px; }
+  section.v h2 { margin: 0 0 4px; font-size: 18px; color: #eee; } section.v p.d { margin: 0 0 12px; color: #9a9ea8; font-size: 13px; max-width: 1280px; }
+  .screen { position: relative; width: 1280px; height: 720px; overflow: hidden; font-family: 'Martian Mono', monospace; color: #d8cfb8; box-shadow: 0 10px 40px #000; }
+  .screen canvas.bg { position: absolute; inset: 0; }
+  .abs { position: absolute; }
+
+  .stencil { color: var(--ink, #d9cfb4); -webkit-mask-image: var(--mask); mask-image: var(--mask); -webkit-mask-size: 300px; mask-size: 300px; }
+  .title { left: 56px; top: 44px; }
+  .title .k { font-size: 12px; letter-spacing: 5px; opacity: .85; }
+  .title .t { font-size: 46px; font-weight: 800; letter-spacing: 2px; line-height: 1.05; margin-top: 8px; }
+  .title .s { font-size: 12px; letter-spacing: 3px; margin-top: 10px; opacity: .75; }
+
+  .key { position: relative; width: 300px; height: 58px; border-radius: 5px; display: flex; align-items: center; gap: 14px; padding: 0 18px;
+    background: linear-gradient(180deg, #4a4c50, #2c2e31 55%, #222326); box-shadow: inset 0 1px 0 #ffffff30, inset 0 -4px 0 #15161899, 0 3px 0 #0b0b0c, 0 6px 10px #0009;
+    font-weight: 600; font-size: 15px; letter-spacing: 3px; color: #d8cfb8; text-shadow: 0 -1px 0 #000; }
+  .key::before { content: ''; position: absolute; inset: 6px 30px 14px; border-radius: 50%; background: radial-gradient(ellipse, #ffffff12, transparent 70%); }
+  .key.pri { background: linear-gradient(180deg, #e0d3b4, #c4b38f 55%, #a8987a); color: #23211b; text-shadow: 0 1px 0 #ffffff55; box-shadow: inset 0 1px 0 #fff7, inset 0 -4px 0 #7d6f55, 0 3px 0 #0b0b0c, 0 6px 10px #0009; }
+  .key .lamp { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #6a4a14, #2a1c06); box-shadow: inset 0 0 0 1px #000, 0 0 0 3px #1b1c1e; flex: none; }
+  .key .lamp.on { background: radial-gradient(circle at 35% 35%, #fff0b0, #ffb000 45%, #a86400); box-shadow: inset 0 0 0 1px #000, 0 0 0 3px #1b1c1e, 0 0 12px #ffb000cc; }
+  .key .n { margin-left: auto; font-size: 10px; opacity: .55; letter-spacing: 1px; }
+  .menu { left: 56px; top: 250px; display: grid; gap: 16px; }
+
+  .tabs { right: 56px; top: 44px; display: flex; gap: 10px; }
+  .tabs .key { width: auto; height: 44px; font-size: 12px; padding: 0 16px; gap: 10px; }
+
+  .port { left: 440px; top: 170px; width: 420px; height: 420px; border-radius: 50%;
+    background: radial-gradient(circle, transparent 59%, #0a0a0b 60%, #5b5e63 62%, #9a9da2 64.5%, #3b3d41 67%, #1a1b1d 69%, #4a4c50 71%, #26272a 74%, transparent 74.5%); }
+  .port canvas { position: absolute; left: 42px; top: 42px; width: 336px; height: 336px; border-radius: 50%; }
+  .port .glass { position: absolute; left: 42px; top: 42px; width: 336px; height: 336px; border-radius: 50%; background: linear-gradient(140deg, #ffffff1c 0%, transparent 30%, transparent 70%, #ffffff0a 100%); box-shadow: inset 0 0 40px #000c; }
+  .bolt { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #b7babf, #4a4c50 55%, #1e1f22); box-shadow: 0 1px 2px #000; }
+  .bolt::after { content: ''; position: absolute; left: 3px; top: 3px; width: 8px; height: 8px; clip-path: polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%); background: #2a2b2e; }
+
+  .vfd { position: relative; padding: 14px 16px; border-radius: 4px; background: radial-gradient(circle, #74f2c412 1px, transparent 1.4px) 0 0/4px 4px, #06100d;
+    box-shadow: inset 0 0 18px #000, inset 0 0 0 2px #000, 0 0 0 6px #232427, 0 0 0 7px #000, 0 1px 0 7px #ffffff14; font-family: 'Sometype Mono', monospace; }
+  .vfd::after { content: ''; position: absolute; inset: 0; background: linear-gradient(125deg, #ffffff16 0%, transparent 28%); pointer-events: none; border-radius: 4px; }
+  .g { color: #7af5c9; text-shadow: 0 0 4px #7af5c9cc, 0 0 12px #7af5c955; }
+  .gd { color: #7af5c955; }
+  .info { left: 908px; top: 190px; width: 316px; }
+  .info .r { display: flex; justify-content: space-between; font-size: 14px; margin: 5px 0; letter-spacing: 1px; }
+  .info .big { font-size: 22px; font-weight: 700; letter-spacing: 1px; margin: 2px 0 10px; }
+  .seg { display: flex; gap: 3px; margin-top: 6px; } .seg i { width: 12px; height: 14px; background: #7af5c9; box-shadow: 0 0 6px #7af5c9bb; } .seg i.o { background: #7af5c914; box-shadow: none; }
+  .lab { font-size: 10px; letter-spacing: 3px; margin: 0 0 8px; }
+
+  .bottom { left: 56px; right: 56px; bottom: 34px; display: flex; align-items: flex-end; gap: 34px; }
+  .tog { display: grid; justify-items: center; gap: 8px; font-size: 10px; letter-spacing: 2px; }
+  .tog .base { position: relative; width: 34px; height: 34px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #8d9095, #2b2c2f 70%); box-shadow: 0 2px 4px #000, inset 0 0 0 2px #1a1b1d; }
+  .tog .lever { position: absolute; left: 13px; top: -16px; width: 8px; height: 30px; border-radius: 4px; background: linear-gradient(90deg, #7c7f84, #e2e4e8, #8a8d92); box-shadow: 1px 2px 3px #000; transform-origin: 50% 100%; }
+  .tog .lever.dn { transform: rotate(180deg); top: 20px; }
+  .ver { margin-left: auto; font-size: 10px; letter-spacing: 2px; opacity: .6; }
+  .tape { position: absolute; padding: 4px 14px; background: #d9cc9c; color: #2b2a8a; font-family: 'Nanum Pen Script'; font-size: 24px; transform: rotate(-4deg); box-shadow: 0 2px 4px #0006; opacity: .92;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 4px, #000 calc(100% - 4px), transparent 100%); }
+
+
+  .vX1 .key { background: linear-gradient(180deg, #e6e0cf, #cfc7b0 55%, #b5ad95); color: #2a2a24; text-shadow: 0 1px 0 #fff6; box-shadow: inset 0 1px 0 #fff8, inset 0 -4px 0 #8d8670, 0 3px 0 #0b0b0c, 0 6px 10px #0009; }
+  .vX1 .key.pri, .vX2 .key.pri, .vX3 .key.pri { background: linear-gradient(180deg, #f0c46a, #d9a441 55%, #b8862c); color: #24190a; text-shadow: 0 1px 0 #fff5; box-shadow: inset 0 1px 0 #fff8, inset 0 -4px 0 #8a6420, 0 3px 0 #0b0b0c, 0 6px 10px #0009; }
+  .vX1 .stencil { --ink: #e6dfc8; } .vX2 .stencil { --ink: #e3cf9c; } .vX3 .stencil { --ink: #ece3c6; }
+  .vX3 .key { background: linear-gradient(180deg, #24463b, #13291f 55%, #0b1a14); color: #e3cf9c; box-shadow: inset 0 1px 0 #ffffff22, inset 0 -4px 0 #050d0a, 0 3px 0 #000, 0 6px 10px #000a; }
+  .vX3 .key::before { background: radial-gradient(ellipse, #7af5c90c, transparent 70%); }
+  .pw { position: absolute; left: 430px; top: 160px; width: 440px; height: 440px; }
+  .pw canvas.view, .pw canvas.dust { position: absolute; left: 60px; top: 60px; width: 320px; height: 320px; border-radius: 50%; }
+  .pw canvas.dust { pointer-events: none; }
+  .pw svg { position: absolute; inset: 0; }
+  .pw .hex { position: absolute; width: 16px; height: 16px; clip-path: polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%); background: radial-gradient(circle at 35% 35%, #f8e3a0, #9a7630 55%, #3a280c); }
+  .pw .hex::after { content: ''; position: absolute; inset: 5px; border-radius: 50%; background: #2a1d08aa; }
+  .readout { position: absolute; font-family: 'Sometype Mono', monospace; font-size: 11px; letter-spacing: 1px; color: #7af5c9; text-shadow: 0 0 4px #7af5c9aa; white-space: nowrap; }
+  .vX1 .bolt, .vX2 .bolt, .vX3 .bolt { background: radial-gradient(circle at 35% 35%, #f3d98a, #8a6a2a 55%, #2a1d08); }
+  .vX1 .port, .vX2 .port, .vX3 .port { background: radial-gradient(circle, transparent 59%, #0a0a0b 60%, #6e5524 62%, #e3c47a 64.5%, #7a5a22 67%, #1f160a 69%, #8a6a2a 71%, #2a1d08 74%, transparent 74.5%); }
+
+  .pw .ring { position: absolute; inset: 0; }
+  .pw .hexs { position: absolute; width: 11px; height: 11px; clip-path: polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%); background: radial-gradient(circle at 35% 35%, #a89468, #4e4128 55%, #1e1810); }
+  .ld { position: absolute; left: 230px; top: 150px; width: 820px; }
+  .ld .vfd { padding: 22px 26px; }
+  .ld .head { display: flex; justify-content: space-between; font-size: 15px; letter-spacing: 2px; }
+  .ld .lines { margin-top: 14px; height: 150px; font-size: 14px; line-height: 1.75; letter-spacing: 1px; }
+  .ld .lines .ok { float: right; }
+  .ld .bar { display: flex; gap: 4px; margin-top: 16px; } .ld .bar i { flex: 1; height: 20px; background: #7af5c914; }
+  .ld .bar i.on { background: #7af5c9; box-shadow: 0 0 8px #7af5c9bb; }
+  .ld .foot { display: flex; justify-content: space-between; margin-top: 12px; font-size: 13px; letter-spacing: 1px; }
+  .ld .row2 { display: flex; gap: 28px; margin-top: 34px; align-items: center; }
+  .scope { width: 150px; height: 150px; border-radius: 50%; box-shadow: 0 0 0 8px #1d1f1e, 0 0 0 9px #000, 0 0 0 14px #3b3122, 0 0 0 15px #000, inset 0 0 20px #000; background: #06100d; }
+  .leds { display: flex; gap: 14px; }
+  .leds span { width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #6a4a14, #2a1c06); box-shadow: inset 0 0 0 1px #000, 0 0 0 4px #1b1c1e; }
+  .leds span.on { background: radial-gradient(circle at 35% 35%, #fff0b0, #ffb000 45%, #a86400); box-shadow: inset 0 0 0 1px #000, 0 0 0 4px #1b1c1e, 0 0 14px #ffb000; }
+  .cursor { display: inline-block; width: 9px; height: 15px; background: #7af5c9; box-shadow: 0 0 6px #7af5c9; vertical-align: -2px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+</style></head>
+<body>
+<header class="top"><h1>Pausa en la consola de metal</h1>
+<p>Escotilla con aro de latón envejecido más sobrio, ventana siempre en movimiento y una pantalla de carga con la misma estética de consola.</p></header>
+<section class="v vX3" data-choice="principal"><h2>Pantalla principal</h2><p class="d">El aro ahora es metal torneado y gastado, más oscuro y con menos brillo. Por la ventana se ve siempre la escena en movimiento.</p><div class="screen" id="s1"></div></section>
+<section class="v vX3" data-choice="carga"><h2>Pantalla de carga</h2><p class="d">Una secuencia de arranque en la pantalla de fósforo: líneas de chequeo, barra segmentada, un osciloscopio redondo con órbitas y luces ámbar que recorren el tablero.</p><div class="screen" id="s2"></div></section>
+
+<script>
+if (location.search.includes('only=')) { const only = new URLSearchParams(location.search).get('only'); document.addEventListener('DOMContentLoaded', () => {}); window.__ONLY__ = only; }
+const W = 1280, H = 720;
+function rng(seed){ let s = seed % 2147483647; if (s <= 0) s += 2147483646; return () => (s = s * 16807 % 2147483647) / 2147483647; }
+function makeNoise(seed){
+  const r = rng(seed), perm = [...Array(256).keys()];
+  for (let i = 255; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [perm[i], perm[j]] = [perm[j], perm[i]]; }
+  const p = new Uint16Array(512); for (let i = 0; i < 512; i++) p[i] = perm[i & 255];
+  const v = new Float32Array(256); for (let i = 0; i < 256; i++) v[i] = r();
+  return (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, X = xi & 255, Y = yi & 255;
+    const a = v[p[p[X] + Y]], b = v[p[p[X + 1] + Y]], c = v[p[p[X] + Y + 1]], d = v[p[p[X + 1] + Y + 1]];
+    const u = xf * xf * (3 - 2 * xf), w = yf * yf * (3 - 2 * yf); return a + (b - a) * u + (c - a) * w + (a - b - c + d) * u * w; };
+}
+const fbm = (n, x, y, o) => { let s = 0, a = .5, f = 1; for (let i = 0; i < o; i++) { s += a * n(x * f, y * f); f *= 2.03; a *= .5; } return s; };
+const ss = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+function surface(cv, o){
+  const ctx = cv.getContext('2d'), img = ctx.createImageData(W, H), d = img.data;
+  const n1 = makeNoise(o.seed), n2 = makeNoise(o.seed + 7), n3 = makeNoise(o.seed + 13), n4 = makeNoise(o.seed + 21);
+  const h = new Float32Array(W * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    h[y * W + x] = o.hammer * fbm(n1, x * .07, y * .07, 3) + o.brush * (n2(x * .006, y * 1.1) * .6 + n2(x * .02, y * 2.3) * .4) + .12 * n3(x * .6, y * .6);
+  }
+  const L = [-.45, -.55, .7]; const ll = Math.hypot(...L); L[0] /= ll; L[1] /= ll; L[2] /= ll;
+  const seams = o.seams;
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+    const i = y * W + x;
+    const nx = (h[i - 1] - h[i + 1]) * o.bump, ny = (h[i - W] - h[i + W]) * o.bump, nl = Math.hypot(nx, ny, 1);
+    const lam = Math.max(0, (nx * L[0] + ny * L[1] + L[2]) / nl);
+    let ed = Math.min(x, y, W - x, H - y);
+    for (const sx of seams.x) ed = Math.min(ed, Math.abs(x - sx));
+    for (const sy of seams.y) ed = Math.min(ed, Math.abs(y - sy));
+    for (const b of o.bolts) ed = Math.min(ed, Math.max(0, Math.hypot(x - b[0], y - b[1]) - 6));
+    const wn = fbm(n2, x * .018, y * .018, 4) + .25 * n4(x * .12, y * .12);
+    const wear = wn * .95 + Math.max(0, 1 - ed / o.edgeW) * .75 + o.wearBias;
+    const chip = ss(.985, 1.0, wear), rim = ss(.93, .985, wear) * (1 - chip);
+    const spec = Math.pow(lam, 18);
+    const P = (o.paint2 && x > o.split[0] && x < o.split[1]) ? o.paint2 : o.paint;
+    let r = P[0] * (.45 + .7 * lam), g = P[1] * (.45 + .7 * lam), b = P[2] * (.45 + .7 * lam);
+    const streak = .85 + .3 * n2(x * .004, y * .9);
+    const mr = o.metal[0] * (.5 + .6 * lam) * streak + 160 * spec, mg = o.metal[1] * (.5 + .6 * lam) * streak + 160 * spec, mb = o.metal[2] * (.5 + .6 * lam) * streak + 160 * spec;
+    r += (mr - r) * chip; g += (mg - g) * chip; b += (mb - b) * chip;
+    const dk = 1 - rim * .4; r *= dk; g *= dk; b *= dk;
+    const gr = fbm(n3, x * .005, y * .005, 4) * .9 + (y / H) * .35 + Math.max(0, 1 - ed / 110) * .35 + .3 * fbm(n4, x * .03, y * .03, 2);
+    const gm = Math.min(.75, Math.max(0, (gr - .62) * o.grime));
+    r += (o.grimeC[0] - r) * gm; g += (o.grimeC[1] - g) * gm; b += (o.grimeC[2] - b) * gm;
+    if (o.oxid) { const ox = ss(.62, .7, fbm(n4, x * .02, y * .02, 3)); r *= 1 - ox * .35; g *= 1 - ox * .33; b *= 1 - ox * .28; }
+    let ao = 1;
+    for (const sx of seams.x) ao = Math.min(ao, .55 + .45 * ss(0, 3, Math.abs(x - sx)));
+    for (const sy of seams.y) ao = Math.min(ao, .55 + .45 * ss(0, 3, Math.abs(y - sy)));
+    const vig = .72 + .28 * ss(0, 140, Math.min(x, y, W - x, H - y));
+    r *= ao * vig; g *= ao * vig; b *= ao * vig;
+    d[i * 4] = r; d[i * 4 + 1] = g; d[i * 4 + 2] = b; d[i * 4 + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  const R = rng(o.seed + 99);
+  ctx.lineCap = 'round';
+  for (let k = 0; k < o.scratches; k++) {
+    const cx = R() * W, cy = R() * H, len = 4 + R() * R() * 70, a = (R() - .5) * .9 + (R() < .3 ? Math.PI / 2 : 0);
+    ctx.strokeStyle = R() < .75 ? `rgba(225,222,210,${.05 + R() * .16})` : `rgba(0,0,0,${.1 + R() * .2})`;
+    ctx.lineWidth = .4 + R() * .8; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * len, cy + Math.sin(a) * len); ctx.stroke();
+  }
+  for (const sx of seams.x) { ctx.fillStyle = '#0008'; ctx.fillRect(sx - 1, 0, 2, H); ctx.fillStyle = '#ffffff12'; ctx.fillRect(sx + 1, 0, 1, H); }
+  for (const sy of seams.y) { ctx.fillStyle = '#0008'; ctx.fillRect(0, sy - 1, W, 2); ctx.fillStyle = '#ffffff12'; ctx.fillRect(0, sy + 1, W, 1); }
+  for (const b of o.bolts) {
+    const bc = o.brass ? ['#f3d98a', '#8a6a2a', '#2a1d08'] : ['#c9cbcf', '#55585d', '#141517'];
+    const g = ctx.createRadialGradient(b[0] - 2, b[1] - 2, 1, b[0], b[1], 7); g.addColorStop(0, bc[0]); g.addColorStop(.5, bc[1]); g.addColorStop(1, bc[2]);
+    ctx.fillStyle = '#0009'; ctx.beginPath(); ctx.arc(b[0] + 1, b[1] + 2, 7.5, 0, 7); ctx.fill();
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b[0], b[1], 7, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 1.4; ctx.beginPath(); const a = R() * 3; ctx.moveTo(b[0] - Math.cos(a) * 5, b[1] - Math.sin(a) * 5); ctx.lineTo(b[0] + Math.cos(a) * 5, b[1] + Math.sin(a) * 5); ctx.stroke();
+  }
+}
+
+function maskURL(seed, keep){
+  const c = document.createElement('canvas'); c.width = c.height = 300; const x = c.getContext('2d'), im = x.createImageData(300, 300), n = makeNoise(seed), n2 = makeNoise(seed + 3);
+  for (let i = 0; i < 300 * 300; i++) { const px = i % 300, py = (i / 300) | 0; const v = fbm(n, px * .05, py * .05, 4) * .8 + n2(px * .6, py * .6) * .35;
+    im.data[i * 4 + 3] = v < keep ? 255 : v < keep + .04 ? 120 : 0; }
+  x.putImageData(im, 0, 0); return `url(${c.toDataURL()})`;
+}
+
+function porthole(cv){
+  const c = cv.getContext('2d'), S = cv.width; c.fillStyle = '#020205'; c.fillRect(0, 0, S, S);
+  const R = rng(5); for (let i = 0; i < 420; i++) { c.fillStyle = `rgba(255,255,255,${.2 + R() * .7})`; const s = R() < .05 ? 1.8 : .9; c.fillRect(R() * S, R() * S, s, s); }
+  const neb = c.createRadialGradient(S * .3, S * .7, 10, S * .3, S * .7, S * .6); neb.addColorStop(0, '#3b2a6a55'); neb.addColorStop(1, 'transparent'); c.fillStyle = neb; c.fillRect(0, 0, S, S);
+  const sx = S * .78, sy = S * .22; const st = c.createRadialGradient(sx, sy, 0, sx, sy, 80); st.addColorStop(0, '#fff8e8'); st.addColorStop(.08, '#ffd99a'); st.addColorStop(.3, '#ff9a3c33'); st.addColorStop(1, 'transparent'); c.fillStyle = st; c.fillRect(0, 0, S, S);
+  const px = S * .42, py = S * .58, pr = S * .2; const pg = c.createRadialGradient(px + pr * .45, py - pr * .45, pr * .1, px, py, pr * 1.05);
+  pg.addColorStop(0, '#9fd0ff'); pg.addColorStop(.55, '#2d5a8c'); pg.addColorStop(1, '#030406'); c.fillStyle = pg; c.beginPath(); c.arc(px, py, pr, 0, 7); c.fill();
+  c.strokeStyle = '#8ccaffaa'; c.lineWidth = 3; c.beginPath(); c.arc(px, py, pr + 1.5, -1.9, -0.3); c.stroke();
+  for (let i = 0; i < 26; i++) { const a = R() * 7, d = pr * (1.4 + R() * .5); c.fillStyle = '#9a9286'; c.beginPath(); c.arc(px + Math.cos(a) * d, py + Math.sin(a) * d * .8, 1.5 + R() * 2.5, 0, 7); c.fill(); }
+}
+
+
+function ring(rIn, rOut, id){ return '<circle cx="220" cy="220" r="' + ((rIn + rOut) / 2) + '" fill="none" stroke="url(#' + id + ')" stroke-width="' + (rOut - rIn) + '"/>'; }
+function portHTML(kind){
+  const defs = '<defs>'
+    + '<linearGradient id="br" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6dc92"/><stop offset=".35" stop-color="#b8903f"/><stop offset=".6" stop-color="#6b4f1c"/><stop offset="1" stop-color="#d9b867"/></linearGradient>'
+    + '<linearGradient id="br2" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a6a2a"/><stop offset=".5" stop-color="#e9cf86"/><stop offset="1" stop-color="#5a4216"/></linearGradient>'
+    + '<linearGradient id="refl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".25"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>'
+    + '<filter id="sh"><feGaussianBlur stdDeviation="6"/></filter></defs>';
+  const shadow = '<circle cx="224" cy="228" r="214" fill="#000" opacity=".6" filter="url(#sh)"/>';
+  let svg = '', extra = '';
+  if (kind === 'escotilla') {
+    svg = shadow + ring(196, 218, 'br') + ring(180, 196, 'br2') + '<circle cx="220" cy="220" r="172" fill="none" stroke="#070707" stroke-width="16"/>'
+      + '<circle cx="220" cy="220" r="218" fill="none" stroke="#2a1d08" stroke-width="2"/><circle cx="220" cy="220" r="196" fill="none" stroke="#3a2a0e" stroke-width="1.5"/>'
+      + '<path d="M90 150 A 150 150 0 0 1 250 70" fill="none" stroke="url(#refl)" stroke-width="22" stroke-linecap="round"/>';
+    for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2 + .13; extra += '<span class="hex" style="left:' + (212 + Math.cos(a) * 207) + 'px;top:' + (212 + Math.sin(a) * 207) + 'px"></span>'; }
+  } else if (kind === 'ocular') {
+    svg = shadow + '<circle cx="220" cy="220" r="211" fill="none" stroke="url(#br)" stroke-width="18"/>'
+      + '<circle cx="220" cy="220" r="211" fill="none" stroke="#2a1d08" stroke-width="18" stroke-dasharray="1.6 2.4" opacity=".7"/>'
+      + ring(170, 202, 'br2') + '<circle cx="220" cy="220" r="167" fill="none" stroke="#070707" stroke-width="6"/>';
+    for (let d = 0; d < 360; d += 5) { const a = (d - 90) * Math.PI / 180, l = d % 30 === 0 ? 12 : 6;
+      svg += '<line x1="' + (220 + Math.cos(a) * 200) + '" y1="' + (220 + Math.sin(a) * 200) + '" x2="' + (220 + Math.cos(a) * (200 - l)) + '" y2="' + (220 + Math.sin(a) * (200 - l)) + '" stroke="#2a1d08" stroke-width="' + (l > 6 ? 1.6 : 1) + '"/>';
+      if (d % 30 === 0) svg += '<text x="' + (220 + Math.cos(a) * 179) + '" y="' + (223.5 + Math.sin(a) * 179) + '" fill="#2a1d08" font-size="9" font-family="Martian Mono" text-anchor="middle">' + d + '</text>'; }
+    svg += '<g stroke="#e3cf9c" stroke-opacity=".35" stroke-width=".8"><line x1="220" y1="64" x2="220" y2="200"/><line x1="220" y1="240" x2="220" y2="376"/><line x1="64" y1="220" x2="200" y2="220"/><line x1="240" y1="220" x2="376" y2="220"/></g>'
+      + '<circle cx="220" cy="220" r="60" fill="none" stroke="#e3cf9c" stroke-opacity=".25" stroke-dasharray="3 5"/>'
+      + '<path d="M95 140 A 145 145 0 0 1 240 75" fill="none" stroke="url(#refl)" stroke-width="16" stroke-linecap="round"/>';
+    extra = '<div class="readout" style="left:10px;top:436px">AZ 214,6°  ·  ALT 32,1°</div><div class="readout" style="right:10px;top:436px">AUM ×40  ·  FOCO 7,2</div>';
+  } else {
+    svg = shadow + ring(196, 216, 'br') + ring(184, 196, 'br2') + '<circle cx="220" cy="220" r="178" fill="none" stroke="#070707" stroke-width="10"/>'
+      + '<g fill="none" stroke="#7af5c9" stroke-opacity=".55" stroke-width="1"><ellipse cx="194" cy="242" rx="92" ry="74" stroke-dasharray="3 4"/><ellipse cx="194" cy="242" rx="126" ry="100" stroke-dasharray="1 5"/>'
+      + '<path d="M150 198 h-10 v10 M238 198 h10 v10 M150 286 h-10 v-10 M238 286 h10 v-10" stroke-opacity=".9" stroke-width="1.5"/>'
+      + '<path d="M300 150 L 350 116" stroke-dasharray="2 3"/></g>'
+      + '<text x="250" y="312" fill="#7af5c9" font-family="Sometype Mono" font-size="10">SU SISTEMA · 24</text>'
+      + '<text x="262" y="108" fill="#ffb000" font-family="Sometype Mono" font-size="10">AGUJERO NEGRO 4,2 UA</text>'
+      + '<path d="M92 150 A 150 150 0 0 1 250 70" fill="none" stroke="url(#refl)" stroke-width="18" stroke-linecap="round"/>';
+    for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2 + .39; extra += '<span class="hex" style="left:' + (212 + Math.cos(a) * 206) + 'px;top:' + (212 + Math.sin(a) * 206) + 'px"></span>'; }
+  }
+  return '<div class="pw"><canvas class="view" width="320" height="320"></canvas><canvas class="dust" width="320" height="320"></canvas><svg width="440" height="440" viewBox="0 0 440 440">' + defs + svg + '</svg>' + extra + '</div>';
+}
+function dust(cv, k){ const c = cv.getContext('2d'), R = rng(77);
+  for (let i = 0; i < 160 * k; i++) { c.fillStyle = 'rgba(255,255,255,' + (.04 + R() * .12) + ')'; c.beginPath(); c.arc(R() * 320, R() * 320, .4 + R() * 1.3, 0, 7); c.fill(); }
+  c.strokeStyle = 'rgba(255,255,255,.07)'; c.lineWidth = 6; c.lineCap = 'round'; c.beginPath(); c.arc(230, 250, 70, 2.4, 3.3); c.stroke();
+  const v = c.createRadialGradient(160, 160, 135, 160, 160, 162); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.6)'); c.fillStyle = v; c.fillRect(0, 0, 320, 320); }
+
+function ringCanvas(cv){
+  const S = 440, c = cv.getContext('2d'), im = c.createImageData(S, S), d = im.data, n = makeNoise(303), n2 = makeNoise(304);
+  const L = [-.5, -.6, .62]; const ll = Math.hypot(...L); L[0] /= ll; L[1] /= ll; L[2] /= ll;
+  const bands = [[160, 182, 0.9], [182, 214, 1.0]];
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const dx = x - 220, dy = y - 220, r = Math.hypot(dx, dy); let hit = null;
+    for (const b of bands) if (r >= b[0] && r < b[1]) hit = b;
+    if (!hit) continue;
+    const t = (r - hit[0]) / (hit[1] - hit[0]);
+    const prof = Math.cos(Math.PI * (t - .5)), slope = -Math.sin(Math.PI * (t - .5)) * .9;
+    const nx = dx / r * slope, ny = dy / r * slope, nz = Math.max(.2, prof), nl = Math.hypot(nx, ny, nz);
+    const lam = Math.max(0, (nx * L[0] + ny * L[1] + nz * L[2]) / nl);
+    const ang = Math.atan2(dy, dx);
+    const lathe = .75 + .5 * n(ang * 90, r * .9);
+    const spec = Math.pow(lam, 22) * lathe * 120;
+    const pat = Math.max(0, fbm(n2, x * .03, y * .03, 3) - .45) * 1.6;
+    let R = 104 * hit[2], G = 88 * hit[2], B = 60 * hit[2];
+    R = R * (.35 + .75 * lam) * lathe + spec; G = G * (.35 + .75 * lam) * lathe + spec * .92; B = B * (.35 + .75 * lam) * lathe + spec * .75;
+    R += (52 - R) * pat * .5; G += (66 - G) * pat * .5; B += (58 - B) * pat * .5;
+    const edge = Math.min(r - hit[0], hit[1] - r); const e = edge < 1.2 ? .45 : 1;
+    const i = (y * S + x) * 4; d[i] = R * e; d[i + 1] = G * e; d[i + 2] = B * e; d[i + 3] = 255;
+  }
+  c.putImageData(im, 0, 0);
+  const g = c.createRadialGradient(220, 220, 150, 220, 220, 162); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.9)');
+  c.fillStyle = g; c.beginPath(); c.arc(220, 220, 160, 0, 7); c.fill();
+}
+function portReal(){
+  let bolts = '';
+  for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2 + .13; bolts += '<span class="hexs" style="left:' + (214.5 + Math.cos(a) * 198) + 'px;top:' + (214.5 + Math.sin(a) * 198) + 'px"></span>'; }
+  return '<div class="pw"><canvas class="ring" width="440" height="440"></canvas>' + bolts + '<canvas class="view" width="320" height="320"></canvas><canvas class="dust" width="320" height="320"></canvas></div>';
+}
+function animateView(cv){
+  const c = cv.getContext('2d'), S = 320, R = rng(9);
+  const layers = [0, 1, 2].map(l => Array.from({ length: [260, 120, 40][l] }, () => ({ x: R() * S, y: R() * S, b: .25 + R() * .75, p: R() * 6.3, s: [.7, 1.1, 1.6][l] })));
+  const tex = document.createElement('canvas'); tex.width = 256; tex.height = 128; const tc = tex.getContext('2d'), ti = tc.createImageData(256, 128), tn = makeNoise(17);
+  for (let y = 0; y < 128; y++) for (let x = 0; x < 256; x++) { const v = fbm(tn, x * .04, y * .09, 4), band = .5 + .5 * Math.sin(y * .22 + v * 4);
+    const k = (y * 256 + x) * 4; ti.data[k] = 40 + 90 * band + 60 * v; ti.data[k + 1] = 80 + 90 * band + 50 * v; ti.data[k + 2] = 130 + 100 * band + 40 * v; ti.data[k + 3] = 255; }
+  tc.putImageData(ti, 0, 0); const T = ti.data;
+  const P = { x: 150, y: 175, r: 62 }, img = c.createImageData(P.r * 2 + 2, P.r * 2 + 2);
+  const rocks = Array.from({ length: 34 }, () => ({ a: R() * 6.3, d: 1.45 + R() * .55, s: 1.2 + R() * 2.2, w: .25 + R() * .25 }));
+  const sun = { x: 255, y: 62 };
+  function frame(ms){
+    const t = ms / 1000; c.fillStyle = '#020306'; c.fillRect(0, 0, S, S);
+    const neb = c.createRadialGradient(80, 250, 10, 80, 250, 220); neb.addColorStop(0, 'rgba(70,50,120,.35)'); neb.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = neb; c.fillRect(0, 0, S, S);
+    layers.forEach((L, li) => { const off = t * [2, 5, 10][li]; for (const st of L) { const x = (st.x - off % S + S) % S; const tw = .7 + .3 * Math.sin(t * 1.5 + st.p); c.fillStyle = 'rgba(255,250,240,' + (st.b * tw) + ')'; c.fillRect(x, st.y, st.s, st.s); } });
+    const fl = 1 + .05 * Math.sin(t * 3.1) + .03 * Math.sin(t * 7.3);
+    let g = c.createRadialGradient(sun.x, sun.y, 0, sun.x, sun.y, 110 * fl); g.addColorStop(0, 'rgba(255,250,235,1)'); g.addColorStop(.05, 'rgba(255,215,150,.95)'); g.addColorStop(.25, 'rgba(255,150,60,.25)'); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(0, 0, S, S);
+    c.strokeStyle = 'rgba(255,220,170,.18)'; c.lineWidth = 1; c.beginPath(); c.moveTo(sun.x - 120, sun.y); c.lineTo(sun.x + 120, sun.y); c.stroke();
+    const drawRocks = (front) => { for (const k of rocks) { const a = k.a + t * k.w; const sn = Math.sin(a); if ((sn > 0) !== front) continue;
+      const x = P.x + Math.cos(a) * P.r * k.d, y = P.y + sn * P.r * k.d * .32; const lit = .55 + .45 * Math.max(0, -Math.cos(a - .9));
+      c.fillStyle = 'rgb(' + (150 * lit) + ',' + (140 * lit) + ',' + (126 * lit) + ')'; c.beginPath(); c.arc(x, y, k.s * (front ? 1.1 : .85), 0, 7); c.fill(); } };
+    drawRocks(false);
+    const lx = sun.x - P.x, ly = sun.y - P.y, lz = 70, ln = Math.hypot(lx, ly, lz), Lx = lx / ln, Ly = ly / ln, Lz = lz / ln, W = P.r * 2 + 2, D = img.data;
+    for (let py = 0; py < W; py++) for (let px = 0; px < W; px++) {
+      const nx = (px - P.r) / P.r, ny = (py - P.r) / P.r, rr = nx * nx + ny * ny, k = (py * W + px) * 4;
+      if (rr > 1) { D[k + 3] = 0; continue; }
+      const nz = Math.sqrt(1 - rr), lon = Math.atan2(nx, nz) + t * .25, lat = Math.asin(ny);
+      const u = ((lon / 6.2832) % 1 + 1) % 1, v = lat / 3.1416 + .5, ti2 = ((v * 127 | 0) * 256 + (u * 255 | 0)) * 4;
+      const lam = Math.max(0, nx * Lx + ny * Ly + nz * Lz), rim = Math.pow(1 - nz, 2.6) * Math.max(0, .3 + lam) * 1.6;
+      const amb = .05, a = Math.min(1, (1 - rr) * 40);
+      D[k] = T[ti2] * (amb + lam) + 120 * rim; D[k + 1] = T[ti2 + 1] * (amb + lam) + 170 * rim; D[k + 2] = T[ti2 + 2] * (amb + lam) + 255 * rim; D[k + 3] = 255 * a;
+    }
+    const tmp = c.__tmp || (c.__tmp = document.createElement('canvas')); tmp.width = W; tmp.height = W; tmp.getContext('2d').putImageData(img, 0, 0);
+    c.drawImage(tmp, P.x - P.r - 1, P.y - P.r - 1);
+    g = c.createRadialGradient(P.x, P.y, P.r * .95, P.x, P.y, P.r * 1.25); g.addColorStop(0, 'rgba(140,200,255,.25)'); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.beginPath(); c.arc(P.x, P.y, P.r * 1.25, 0, 7); c.fill();
+    drawRocks(true);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+function loaderHTML(o){
+  return '<div class="abs title stencil" style="--mask:' + o.mask + '"><div class="k">CONSOLA DE VUELO · MÓDULO 7</div><div class="t" style="font-size:30px">ENJAMBRE GRAVITATORIO</div></div>'
+    + '<div class="ld"><div class="vfd"><div class="head"><span class="g">SECUENCIA DE ARRANQUE</span><span class="g" id="pct">000%</span></div>'
+    + '<div class="lines" id="lines"></div><div class="bar" id="bar">' + Array.from({ length: 32 }, () => '<i></i>').join('') + '</div>'
+    + '<div class="foot"><span class="gd" id="stage">PREPARANDO</span><span class="gd">MÓD. 7 · REV. 0.0.1</span></div></div>'
+    + '<div class="row2"><canvas class="scope" id="scope" width="150" height="150"></canvas><div><div class="lab stencil" style="--mask:' + o.mask + '">ESTADO DE SISTEMAS</div><div class="leds" id="leds"><span></span><span></span><span></span><span></span><span></span><span></span></div>'
+    + '<div class="lab stencil" style="--mask:' + o.mask + ';margin-top:22px;max-width:420px;line-height:1.7">NO APAGAR LA CONSOLA DURANTE LA CARGA</div></div></div></div>';
+}
+function animateLoader(el){
+  const steps = ['ENCENDIENDO PANTALLAS DE FÓSFORO', 'CALIBRANDO GIROSCOPIOS', 'CARGANDO CARTAS ESTELARES', 'ALINEANDO ÓRBITAS', 'MIDIENDO EL HORIZONTE DE EVENTOS', 'LISTO PARA DESPEGAR'];
+  const lines = el.querySelector('#lines'), bar = [...el.querySelectorAll('#bar i')], pct = el.querySelector('#pct'), stage = el.querySelector('#stage'), leds = [...el.querySelectorAll('#leds span')];
+  const sc = el.querySelector('#scope').getContext('2d'); const trail = [];
+  let start = performance.now();
+  function frame(ms){
+    let t = (ms - start) / 1000; if (t > 9) { start = ms; t = 0; }
+    const p = Math.min(1, t / 7.5), shown = Math.min(steps.length, Math.floor(p * steps.length + .0001) + 1);
+    let html = ''; for (let i = 0; i < shown; i++) { const done = i < shown - 1 || p >= 1;
+      html += '<div><span class="g">› ' + steps[i] + '</span>' + (done ? '<span class="g ok">OK</span>' : '<span class="cursor"></span>') + '</div>'; }
+    if (lines.innerHTML !== html) lines.innerHTML = html;
+    const on = Math.floor(p * 32); bar.forEach((b, i) => b.classList.toggle('on', i < on || (i === on && Math.sin(ms / 60) > 0)));
+    pct.textContent = String(Math.floor(p * 100)).padStart(3, '0') + '%'; stage.textContent = p >= 1 ? 'COMPLETO' : 'CARGANDO';
+    const scan = Math.floor(ms / 180) % (leds.length * 2 - 2), idx = scan < leds.length ? scan : leds.length * 2 - 2 - scan;
+    leds.forEach((l, i) => l.classList.toggle('on', p >= 1 || i === idx));
+    sc.fillStyle = 'rgba(6,16,13,.25)'; sc.fillRect(0, 0, 150, 150);
+    sc.strokeStyle = 'rgba(122,245,201,.18)'; sc.lineWidth = 1; for (const r of [26, 44, 62]) { sc.beginPath(); sc.ellipse(75, 75, r, r * .55, -.4, 0, 7); sc.stroke(); }
+    sc.fillStyle = '#7af5c9'; sc.shadowColor = '#7af5c9'; sc.shadowBlur = 10; sc.beginPath(); sc.arc(75, 75, 4, 0, 7); sc.fill();
+    [[26, 2.2], [44, 1.3], [62, .8]].forEach(([r, w], k) => { const a = ms / 1000 * w + k * 2, x = 75 + Math.cos(a) * r * Math.cos(-.4) - Math.sin(a) * r * .55 * Math.sin(-.4), y = 75 + Math.cos(a) * r * Math.sin(-.4) + Math.sin(a) * r * .55 * Math.cos(-.4);
+      sc.beginPath(); sc.arc(x, y, 2.6, 0, 7); sc.fill(); });
+    sc.shadowBlur = 0;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function animateStar(cv){
+  const c = cv.getContext('2d'), S = 320, R = rng(19);
+  const layers = [0, 1, 2].map(l => Array.from({ length: [260, 110, 35][l] }, () => ({ x: R() * S, y: R() * S, b: .25 + R() * .75, p: R() * 6.3, s: [.7, 1.1, 1.6][l] })));
+  const C = { x: 168, y: 178 };
+  const worlds = [
+    { d: 46, r: 6.5, w: .9, a: 0.4, col: [190, 120, 80] },
+    { d: 74, r: 9, w: .55, a: 2.6, col: [120, 170, 230] },
+    { d: 104, r: 12, w: .36, a: 4.4, col: [220, 185, 130] },
+    { d: 132, r: 7.5, w: .26, a: 1.2, col: [210, 230, 245] },
+  ];
+  const rocks = Array.from({ length: 70 }, () => ({ a: R() * 6.3, d: 56 + R() * 12, s: .8 + R() * 1.6, w: .7 + R() * .2 }));
+  const tilt = .42;
+  const pos = (a, d) => ({ x: C.x + Math.cos(a) * d, y: C.y + Math.sin(a) * d * tilt, front: Math.sin(a) > 0 });
+  const BH = { x: 44, y: 64 };
+  function sphere(x, y, r, col, lx, ly){
+    const g = c.createRadialGradient(x + lx * r * .55, y + ly * r * .55, r * .1, x, y, r * 1.05);
+    g.addColorStop(0, 'rgb(' + col.map(v => Math.min(255, v * 1.25)).join(',') + ')'); g.addColorStop(.55, 'rgb(' + col.map(v => v * .55).join(',') + ')'); g.addColorStop(1, 'rgb(6,7,10)');
+    c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+    c.strokeStyle = 'rgba(' + col.join(',') + ',.55)'; c.lineWidth = 1.2; c.beginPath(); const a0 = Math.atan2(ly, lx); c.arc(x, y, r + .6, a0 - 1.1, a0 + 1.1); c.stroke();
+  }
+  function frame(ms){
+    const t = ms / 1000;
+    c.fillStyle = '#020306'; c.fillRect(0, 0, S, S);
+    const neb = c.createRadialGradient(250, 260, 10, 250, 260, 200); neb.addColorStop(0, 'rgba(60,45,110,.32)'); neb.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = neb; c.fillRect(0, 0, S, S);
+    layers.forEach((L, li) => { const off = t * [1.5, 3.5, 7][li]; for (const st of L) { const x = (st.x - off % S + S) % S; const tw = .7 + .3 * Math.sin(t * 1.5 + st.p); c.fillStyle = 'rgba(255,250,240,' + (st.b * tw) + ')'; c.fillRect(x, st.y, st.s, st.s); } });
+    // agujero negro lejano
+    let g = c.createRadialGradient(BH.x, BH.y, 6, BH.x, BH.y, 46); g.addColorStop(0, 'rgba(255,170,90,0)'); g.addColorStop(.32, 'rgba(255,160,80,.55)'); g.addColorStop(.5, 'rgba(200,80,30,.18)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = g; c.beginPath(); c.arc(BH.x, BH.y, 46, 0, 7); c.fill();
+    c.save(); c.translate(BH.x, BH.y); c.rotate(-.35); c.strokeStyle = 'rgba(255,190,120,.7)'; c.lineWidth = 2.2; c.beginPath(); c.ellipse(0, 0, 26, 6, 0, 0, 7); c.stroke(); c.restore();
+    c.fillStyle = '#000'; c.beginPath(); c.arc(BH.x, BH.y, 11, 0, 7); c.fill();
+    c.strokeStyle = 'rgba(255,215,160,.8)'; c.lineWidth = 1; c.beginPath(); c.arc(BH.x, BH.y, 12, 0, 7); c.stroke();
+    // órbitas tenues
+    c.strokeStyle = 'rgba(255,220,170,.08)'; c.lineWidth = 1; for (const w of worlds) { c.beginPath(); c.ellipse(C.x, C.y, w.d, w.d * tilt, 0, 0, 7); c.stroke(); }
+    const draw = (front) => {
+      for (const k of rocks) { const p = pos(k.a + t * k.w * .5, k.d); if (p.front !== front) continue; const lit = .5 + .5 * (front ? .3 : 1);
+        c.fillStyle = 'rgba(' + (170 * lit) + ',' + (160 * lit) + ',' + (145 * lit) + ',.9)'; c.beginPath(); c.arc(p.x, p.y, k.s, 0, 7); c.fill(); }
+      for (const w of worlds) { const p = pos(w.a + t * w.w * .5, w.d); if (p.front !== front) continue; const dx = C.x - p.x, dy = C.y - p.y, dl = Math.hypot(dx, dy); sphere(p.x, p.y, w.r * (front ? 1.05 : .9), w.col, dx / dl, dy / dl); }
+    };
+    draw(false);
+    // tu estrella
+    const fl = 1 + .06 * Math.sin(t * 2.7) + .03 * Math.sin(t * 6.1);
+    g = c.createRadialGradient(C.x, C.y, 0, C.x, C.y, 95 * fl); g.addColorStop(0, 'rgba(255,252,240,1)'); g.addColorStop(.12, 'rgba(255,225,160,.95)'); g.addColorStop(.3, 'rgba(255,160,70,.35)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = g; c.fillRect(0, 0, S, S);
+    c.strokeStyle = 'rgba(255,225,180,.22)'; c.beginPath(); c.moveTo(C.x - 110, C.y); c.lineTo(C.x + 110, C.y); c.moveTo(C.x, C.y - 60); c.lineTo(C.x, C.y + 60); c.stroke();
+    draw(true);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+function overlay(o){
+  return `
+  <div class="abs title stencil" style="--mask:${o.mask}">
+    <div class="k">CONSOLA DE VUELO · MÓDULO 7</div>
+    <div class="t">PARTIDA<br>EN PAUSA</div>
+    <div class="s">LA ESTRELLA SIGUE AHÍ AFUERA</div>
+  </div>
+  <div class="abs tabs">
+    <div class="key"><span class="lamp on"></span>PAUSA</div>
+    <div class="key"><span class="lamp"></span>ATLAS</div>
+    <div class="key"><span class="lamp"></span>OPCIONES</div>
+  </div>
+  <div class="abs menu">
+    <div class="key pri"><span class="lamp on"></span>CONTINUAR<span class="n">01</span></div>
+    <div class="key"><span class="lamp"></span>OPCIONES<span class="n">02</span></div>
+    <div class="key"><span class="lamp"></span>REINICIAR<span class="n">03</span></div>
+    <div class="key"><span class="lamp"></span>ABANDONAR<span class="n">04</span></div>
+  </div>
+  ${o.port === 'real' ? portReal() : portHTML(o.port)}
+  <div class="abs info">
+    <div class="lab stencil" style="--mask:${o.mask}">BITÁCORA DE LA PARTIDA</div>
+    <div class="vfd">
+      <div class="r"><span class="gd">SISTEMA</span><span class="g">01</span></div>
+      <div class="big g">NEBULOSA DE ORIGEN</div>
+      <div class="r"><span class="gd">TIEMPO</span><span class="g">08:41</span></div><div class="r"><span class="gd">ETAPA</span><span class="g">ENANA AMARILLA</span></div><div class="r"><span class="gd">MUNDOS</span><span class="g">10</span></div>
+      <div class="r"><span class="gd">POLVO ESTELAR</span><span class="g">0128</span></div>
+      <div class="r" style="margin-top:12px"><span class="gd">AGUJERO NEGRO</span><span class="g" style="color:#ffb000;text-shadow:0 0 6px #ffb000">4,2 UA</span></div>
+      <div class="seg">${Array.from({length: 18}, (_, i) => `<i class="${i < 7 ? '' : 'o'}"></i>`).join('')}</div>
+    </div>
+  </div>
+  <div class="abs bottom">
+    <div class="tog stencil" style="--mask:${o.mask}"><div class="base"><div class="lever"></div></div>SONIDO</div>
+    <div class="tog stencil" style="--mask:${o.mask}"><div class="base"><div class="lever"></div></div>MÚSICA</div>
+    <div class="tog stencil" style="--mask:${o.mask}"><div class="base"><div class="lever dn"></div></div>VIBRACIÓN</div>
+    <div class="ver stencil" style="--mask:${o.mask}">MOD. 7 · REV. 0.0.1 · HECHO EN ESTUDIO GAME</div>
+  </div>
+  ${o.tape ? `<div class="tape" style="left:430px;top:620px">no tocar — calibrar después</div>` : ''}`;
+}
+
+const bolts = [[22,22],[1258,22],[22,698],[1258,698],[640,22],[640,698],[22,360],[1258,360],[420,22],[880,22],[420,698],[880,698]];
+const seams = { x: [490, 880], y: [] };
+const base = { brass: true, seed: 71, paint: [52,90,85], metal: [176,178,176], hammer: 1.0, brush: 0, bump: 9, edgeW: 30, wearBias: -.16, grime: 1.1, grimeC: [24,30,26], scratches: 300, keep: .78 };
+const variants = [ { ...base, id: 's1', port: 'real' }, { ...base, id: 's2', loader: true } ];
+for (const v of variants) {
+  const el = document.getElementById(v.id);
+  if (window.__ONLY__ && window.__ONLY__ !== v.id) { el.closest('section').style.display = 'none'; continue; }
+  const cv = document.createElement('canvas'); cv.className = 'bg'; cv.width = W; cv.height = H; el.appendChild(cv);
+  surface(cv, { ...v, bolts, seams });
+  const mask = maskURL(v.seed + 5, v.keep);
+  if (v.loader) { el.insertAdjacentHTML('beforeend', loaderHTML({ mask })); animateLoader(el); continue; }
+  el.insertAdjacentHTML('beforeend', overlay({ mask, port: v.port }));
+  ringCanvas(el.querySelector('.pw canvas.ring'));
+  animateStar(el.querySelector('.pw canvas.view'));
+  dust(el.querySelector('.pw canvas.dust'), .7);
+}
+if (window.__ONLY__) { document.querySelector('header.top').style.display = 'none'; document.body.style.margin = '0'; document.querySelectorAll('section.v').forEach(x => { x.style.padding = '0'; x.querySelectorAll('h2,p.d').forEach(e => e.style.display = 'none'); }); }
+</script>
+</body></html>

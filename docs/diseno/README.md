@@ -23,7 +23,7 @@ Regla de diseño: nada que parezca generado o genérico. Cada elemento sale de o
 |---|---|---|
 | Principal | Aprobada. La ventana muestra en movimiento la estrella del jugador con sus mundos y, de fondo, el agujero negro | `capturas/01-pantalla-principal.png`, `videos/pantalla-principal.webm` |
 | Carga | Aprobada | `capturas/02-pantalla-de-carga.png`, `videos/pantalla-de-carga.webm` |
-| Interfaz de partida | **Falta decidir:** A tablero de cabina, B placas en las esquinas o C visor de fósforo. Claude recomienda B con los arcos de fósforo de C | `capturas/03-partida-*.png` |
+| Interfaz de partida | **Decidida (25/11): C · Visor de fósforo.** Durante la partida no hay metal: todo va en fósforo sobre el espacio. El metal queda para menús, pausa y carga | `capturas/03-partida-*.png` |
 | Elegir mejora, pausa, fin de partida, elegir estrella, Atlas, opciones | Pendientes | — |
 
 ## Maquetas fuente
