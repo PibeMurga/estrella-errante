@@ -1,4 +1,4 @@
-import { Color, Group, InstancedMesh, Matrix4, Quaternion, ShaderMaterial, SphereGeometry, Vector3 } from 'three';
+import { Color, Frustum, Group, InstancedMesh, Matrix4, Quaternion, ShaderMaterial, Sphere, SphereGeometry, Vector3 } from 'three';
 import type { Rng } from '../../sim/rng';
 import { KIND_GAS, KIND_ICE, KIND_ROCKY, type World } from '../../sim/world';
 import type { Layer } from '../layer';
@@ -91,14 +91,25 @@ const pos = new Vector3();
 const scl = new Vector3();
 const yAxis = new Vector3(0, 1, 0);
 const seedCol = new Color();
+const frustum = new Frustum();
+const projView = new Matrix4();
+const bound = new Sphere();
 
-interface Entry { mesh: InstancedMesh; clouds: InstancedMesh | null; indices: Int32Array; spin: Float32Array }
+// Nivel de detalle: los planetas que se ven chicos usan una esfera simple; los grandes o cercanos, la detallada.
+const LOD_PX = 36;        // radio en pantalla (px) a partir del cual se usa la esfera detallada
+const LOW_SEGMENTS = 24;
+
+interface Entry {
+  hi: InstancedMesh; lo: InstancedMesh; clouds: InstancedMesh | null;
+  indices: Int32Array; spin: Float32Array; seed: Float32Array;
+}
 
 export interface PlanetsLayer extends Layer { readonly typesShown: number }
 
 export function createPlanetsLayer(world: World, segments: number, octaves: number, rng: Rng, sunPos: Vector3): PlanetsLayer {
   const group = new Group();
-  const geo = new SphereGeometry(1, segments, Math.max(8, Math.floor(segments / 2)));
+  const geoHi = new SphereGeometry(1, segments, Math.max(8, Math.floor(segments / 2)));
+  const geoLo = new SphereGeometry(1, LOW_SEGMENTS, LOW_SEGMENTS / 2);
   const light = LIGHT_BASE.clone();
   const time = { value: 0 };
   const entries: Entry[] = [];
@@ -111,53 +122,77 @@ export function createPlanetsLayer(world: World, segments: number, octaves: numb
     }
     if (list.length === 0) continue;
     const indices = Int32Array.from(list);
+    const n = indices.length;
     const common = { uTime: time, uSunPos: { value: sunPos }, uLight: { value: light } };
     const mat = new ShaderMaterial({ uniforms: { ...common, uType: { value: type }, uOct: { value: octaves } }, vertexShader: VERT, fragmentShader: NOISE_GLSL + FRAG });
-    const mesh = new InstancedMesh(geo, mat, indices.length);
-    mesh.frustumCulled = false;
+    const hi = new InstancedMesh(geoHi, mat, n);
+    const lo = new InstancedMesh(geoLo, mat, n);
+    hi.frustumCulled = false; lo.frustumCulled = false;
     let clouds: InstancedMesh | null = null;
     if (type === 1) {
-      clouds = new InstancedMesh(geo, new ShaderMaterial({ uniforms: common, vertexShader: VERT, fragmentShader: NOISE_GLSL + CLOUD_FRAG, transparent: true, depthWrite: false }), indices.length);
+      clouds = new InstancedMesh(geoHi, new ShaderMaterial({ uniforms: common, vertexShader: VERT, fragmentShader: NOISE_GLSL + CLOUD_FRAG, transparent: true, depthWrite: false }), n);
       clouds.frustumCulled = false;
     }
-    const spin = new Float32Array(indices.length);
-    for (let s = 0; s < indices.length; s++) {
+    const spin = new Float32Array(n), seed = new Float32Array(n);
+    for (let s = 0; s < n; s++) {
       spin[s] = rng.range(0.12, 0.35);
-      seedCol.setRGB(rng.next(), 0, 0);
-      mesh.setColorAt(s, seedCol);
-      clouds?.setColorAt(s, seedCol);
+      seed[s] = rng.next();
+      seedCol.setRGB(seed[s]!, 0, 0);
+      hi.setColorAt(s, seedCol); lo.setColorAt(s, seedCol); clouds?.setColorAt(s, seedCol);
     }
-    group.add(mesh);
+    group.add(hi, lo);
     if (clouds) group.add(clouds);
-    entries.push({ mesh, clouds, indices, spin });
+    entries.push({ hi, lo, clouds, indices, spin, seed });
   }
 
   return {
     object: group,
     typesShown: entries.length,
     update(ctx) {
-      const w = ctx.world, a = ctx.alpha;
+      const w = ctx.world, a = ctx.alpha, cam = ctx.camera.position;
+      const pxPerUnit = (ctx.height / 2) / Math.tan((ctx.camera.fov * Math.PI) / 360);
+      frustum.setFromProjectionMatrix(projView.multiplyMatrices(ctx.camera.projectionMatrix, ctx.camera.matrixWorldInverse));
       time.value = ctx.time;
       for (let k = 0; k < entries.length; k++) {
         const en = entries[k]!;
+        let nHi = 0, nLo = 0;
         for (let s = 0; s < en.indices.length; s++) {
           const i = en.indices[s]!;
           const x = w.prevX[i] + (w.x[i] - w.prevX[i]) * a;
           const y = w.prevY[i] + (w.y[i] - w.prevY[i]) * a;
+          const r = w.radius[i];
           pos.set(x, 0, -y);
+          bound.center.copy(pos); bound.radius = r * 1.1;
+          if (!frustum.intersectsSphere(bound)) continue;   // fuera de cuadro: no se dibuja
+          const dist = Math.max(1, Math.hypot(pos.x - cam.x, pos.y - cam.y, pos.z - cam.z));
+          const detailed = (r / dist) * pxPerUnit >= LOD_PX;
           q.setFromAxisAngle(yAxis, ctx.time * en.spin[s]!);
-          scl.setScalar(w.radius[i]);
+          scl.setScalar(r);
           m4.compose(pos, q, scl);
-          en.mesh.setMatrixAt(s, m4);
-          if (en.clouds) {
-            q.setFromAxisAngle(yAxis, ctx.time * en.spin[s]! * 1.15);
-            scl.setScalar(w.radius[i] * 1.015);
-            m4.compose(pos, q, scl);
-            en.clouds.setMatrixAt(s, m4);
+          seedCol.setRGB(en.seed[s]!, 0, 0);
+          if (detailed) {
+            en.hi.setMatrixAt(nHi, m4); en.hi.setColorAt(nHi, seedCol);
+            if (en.clouds) {
+              q.setFromAxisAngle(yAxis, ctx.time * en.spin[s]! * 1.15);
+              scl.setScalar(r * 1.015);
+              m4.compose(pos, q, scl);
+              en.clouds.setMatrixAt(nHi, m4); en.clouds.setColorAt(nHi, seedCol);
+            }
+            nHi++;
+          } else {
+            en.lo.setMatrixAt(nLo, m4); en.lo.setColorAt(nLo, seedCol);
+            nLo++;
           }
         }
-        en.mesh.instanceMatrix.needsUpdate = true;
-        if (en.clouds) en.clouds.instanceMatrix.needsUpdate = true;
+        en.hi.count = nHi; en.lo.count = nLo;
+        en.hi.instanceMatrix.needsUpdate = true; en.lo.instanceMatrix.needsUpdate = true;
+        if (en.hi.instanceColor) en.hi.instanceColor.needsUpdate = true;
+        if (en.lo.instanceColor) en.lo.instanceColor.needsUpdate = true;
+        if (en.clouds) {
+          en.clouds.count = nHi;
+          en.clouds.instanceMatrix.needsUpdate = true;
+          if (en.clouds.instanceColor) en.clouds.instanceColor.needsUpdate = true;
+        }
       }
     },
     applyParams(p) {

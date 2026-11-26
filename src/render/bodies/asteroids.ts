@@ -1,4 +1,4 @@
-import { type BufferAttribute, type BufferGeometry, Color, IcosahedronGeometry, InstancedMesh, Matrix4, MeshStandardMaterial, Quaternion, Vector3 } from 'three';
+import { type BufferAttribute, type BufferGeometry, Color, Frustum, IcosahedronGeometry, InstancedMesh, Matrix4, MeshStandardMaterial, Quaternion, Sphere, Vector3 } from 'three';
 import type { Rng } from '../../sim/rng';
 import { KIND_ASTEROID, type World } from '../../sim/world';
 import type { Layer } from '../layer';
@@ -25,6 +25,9 @@ const pos = new Vector3();
 const scl = new Vector3();
 const axis = new Vector3();
 const tint = new Color();
+const frustum = new Frustum();
+const projView = new Matrix4();
+const bound = new Sphere();
 
 export function createAsteroidLayer(world: World, rng: Rng): Layer {
   let n = 0;
@@ -39,10 +42,11 @@ export function createAsteroidLayer(world: World, rng: Rng): Layer {
   const axes = new Float32Array(n * 3);
   const spin = new Float32Array(n);
   const lift = new Float32Array(n);
+  const tints = new Float32Array(n * 3);
   for (let s = 0; s < n; s++) {
     const b = 0.16 + rng.next() * 0.18, w = rng.next() * 0.04;
     tint.setRGB(b + w, b, b - w * 0.6);
-    mesh.setColorAt(s, tint);
+    tints[s * 3] = tint.r; tints[s * 3 + 1] = tint.g; tints[s * 3 + 2] = tint.b;
     axis.set(rng.range(-1, 1), rng.range(-1, 1), rng.range(-1, 1)).normalize();
     axes[s * 3] = axis.x; axes[s * 3 + 1] = axis.y; axes[s * 3 + 2] = axis.z;
     spin[s] = rng.range(0.2, 1.5);
@@ -53,16 +57,25 @@ export function createAsteroidLayer(world: World, rng: Rng): Layer {
     object: mesh,
     update(ctx) {
       const w = ctx.world, a = ctx.alpha;
+      frustum.setFromProjectionMatrix(projView.multiplyMatrices(ctx.camera.projectionMatrix, ctx.camera.matrixWorldInverse));
+      let v = 0;
       for (let s = 0; s < n; s++) {
         const i = indices[s]!;
         pos.set(w.prevX[i] + (w.x[i] - w.prevX[i]) * a, lift[s]!, -(w.prevY[i] + (w.y[i] - w.prevY[i]) * a));
+        bound.center.copy(pos); bound.radius = w.radius[i] * 1.3;
+        if (!frustum.intersectsSphere(bound)) continue;   // fuera de cuadro: no se dibuja
         axis.set(axes[s * 3]!, axes[s * 3 + 1]!, axes[s * 3 + 2]!);
         q.setFromAxisAngle(axis, ctx.time * spin[s]! + s);
         scl.setScalar(w.radius[i]);
         m4.compose(pos, q, scl);
-        mesh.setMatrixAt(s, m4);
+        mesh.setMatrixAt(v, m4);
+        tint.setRGB(tints[s * 3]!, tints[s * 3 + 1]!, tints[s * 3 + 2]!);
+        mesh.setColorAt(v, tint);
+        v++;
       }
+      mesh.count = v;
       mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     },
   };
 }
