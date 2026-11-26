@@ -32,3 +32,14 @@ test('bajar la calidad baja el detalle de los planetas, no sólo la resolución'
   await page.waitForTimeout(300);
   expect(await page.evaluate(() => window.__GAME__!.diagnostics.planetOctaves)).toBe(4);
 });
+
+test('el eclipse dibuja el rayo', async ({ page }) => {
+  await page.goto('/lab.html');
+  await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
+  const before = await page.evaluate(() => window.__GAME__!.diagnostics.calls);
+  await page.evaluate(() => { const w = window.__GAME__!.world; w.beamTime = 0.6; w.eclipseAngle = 0.4; w.eclipseStrength = 5; });
+  await page.waitForTimeout(100);
+  const during = await page.evaluate(() => window.__GAME__!.diagnostics.calls);
+  expect(during).toBeGreaterThan(before);
+  await page.screenshot({ path: 'artifacts/e2e/eclipse.png' });
+});

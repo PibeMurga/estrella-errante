@@ -41,6 +41,11 @@ export interface SimConfig {
   slingLife: number;             // segundos de vuelo antes de volver
   slingReturnSpeed: number;      // velocidad de vuelta (se suma la de la estrella)
   slingLoseDist: number;         // si al empezar a volver está más lejos que esto, se pierde
+  eclipseMin: number;            // mundos alineados que hacen falta para un eclipse
+  eclipseWindowDeg: number;      // ancho de la alineación, en grados
+  eclipseCooldown: number;       // segundos entre eclipses
+  beamDuration: number;          // segundos que dura el rayo
+  beamLength: number;            // largo del rayo
 }
 
 export const DEFAULT_CONFIG: SimConfig = {
@@ -83,4 +88,9 @@ export const DEFAULT_CONFIG: SimConfig = {
   slingLife: 2.2,
   slingReturnSpeed: 50,
   slingLoseDist: 220,
+  eclipseMin: 3,
+  eclipseWindowDeg: 7,
+  eclipseCooldown: 2,
+  beamDuration: 0.6,
+  beamLength: 150,
 };

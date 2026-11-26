@@ -85,6 +85,39 @@ function flight(w: World, i: number, st: number): void {
   w.y[i] += w.vy[i] * DT;
 }
 
+// Eclipse: varios mundos en órbita alineados con la estrella disparan un rayo en esa dirección.
+// Se reparten los ángulos en casillas de medio ancho de ventana y se busca el par de casillas vecinas con más mundos.
+const ECL_BINS_MAX = 720;
+const eclCount = new Uint16Array(ECL_BINS_MAX);
+const eclCos = new Float64Array(ECL_BINS_MAX);
+const eclSin = new Float64Array(ECL_BINS_MAX);
+function eclipse(w: World): void {
+  const c = w.config;
+  const TAU = Math.PI * 2;
+  const binW = (c.eclipseWindowDeg * Math.PI) / 360;
+  const bins = Math.min(ECL_BINS_MAX, Math.max(2, Math.floor(TAU / binW)));
+  eclCount.fill(0, 0, bins); eclCos.fill(0, 0, bins); eclSin.fill(0, 0, bins);
+  for (let i = 0; i < w.count; i++) {
+    if (w.state[i] !== ORBITING) continue;
+    const a = w.orbitAngle[i];
+    let n = a % TAU; if (n < 0) n += TAU;
+    const b = Math.min(bins - 1, Math.floor((n / TAU) * bins));
+    eclCount[b]++; eclCos[b] += Math.cos(a); eclSin[b] += Math.sin(a);
+  }
+  let best = -1, bestN = 0;
+  for (let b = 0; b < bins; b++) {
+    const n = eclCount[b]! + eclCount[(b + 1) % bins]!;
+    if (n > bestN) { bestN = n; best = b; }
+  }
+  if (bestN < c.eclipseMin) return;
+  const b2 = (best + 1) % bins;
+  w.eclipseAngle = Math.atan2(eclSin[best]! + eclSin[b2]!, eclCos[best]! + eclCos[b2]!);
+  w.eclipseStrength = bestN;
+  w.eclipses++;
+  w.eclipseCd = c.eclipseCooldown;
+  w.beamTime = c.beamDuration;
+}
+
 export function step(w: World, intent: Intent): void {
   const c = w.config;
   const s = w.star;
@@ -103,6 +136,8 @@ export function step(w: World, intent: Intent): void {
   if (w.over !== OVER_NONE) return;
   if (w.invuln > 0) w.invuln = Math.max(0, w.invuln - DT);
   if (w.slingCd > 0) w.slingCd = Math.max(0, w.slingCd - DT);
+  if (w.eclipseCd > 0) w.eclipseCd = Math.max(0, w.eclipseCd - DT);
+  if (w.beamTime > 0) w.beamTime = Math.max(0, w.beamTime - DT);
 
   // El agujero negro persigue a la estrella, cada vez un poco más rápido.
   const range2 = c.bhRange * c.bhRange;
@@ -242,6 +277,7 @@ export function step(w: World, intent: Intent): void {
   }
 
   if (hit >= 0) hurt(w, hit);
+  if (w.eclipseCd <= 0 && w.orbitingCount >= c.eclipseMin) eclipse(w);
   if (intent.fire && w.slingCd <= 0 && w.orbitingCount > 0 && intent.hasTarget && Number.isFinite(intent.targetX) && Number.isFinite(intent.targetY)) sling(w, intent.targetX, intent.targetY);
   bh.radius = c.bhStartRadius * Math.cbrt(bh.mass);
   s.captureRadius = captureRadiusFor(c, s.mass);

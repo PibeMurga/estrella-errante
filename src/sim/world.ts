@@ -40,6 +40,11 @@ export interface World {
   hits: number;        // choques con planetas (evento para el dibujo y la interfaz)
   slingCd: number;     // segundos hasta poder volver a disparar
   shots: number;       // disparos de honda (evento)
+  eclipses: number;    // eclipses producidos (evento)
+  eclipseAngle: number;     // dirección del último rayo
+  eclipseStrength: number;  // cuántos mundos lo formaron
+  eclipseCd: number;
+  beamTime: number;    // segundos que le quedan al rayo
   readonly x: Float64Array; readonly y: Float64Array;
   readonly prevX: Float64Array; readonly prevY: Float64Array;
   readonly vx: Float64Array; readonly vy: Float64Array;
@@ -139,6 +144,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     },
     bh: { x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0, speed: config.bhStartSpeed, radius: config.bhStartRadius, mass: 1, active: config.blackHole },
     over: OVER_NONE, invuln: 0, hits: 0, slingCd: 0, shots: 0,
+    eclipses: 0, eclipseAngle: 0, eclipseStrength: 0, eclipseCd: 0, beamTime: 0,
     x: f(), y: f(), prevX: f(), prevY: f(), vx: f(), vy: f(), radius: f(), mass: f(),
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
     parent: new Int32Array(capacity).fill(-1),
