@@ -1,0 +1,1 @@
+import '../dev/benchmarks/main';

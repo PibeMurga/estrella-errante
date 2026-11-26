@@ -147,6 +147,13 @@ Se eligió entre Neón, Cosmos pastel, Cinemático y Geométrico plano mirando b
 - **Agujero negro:** distorsión por lente gravitatoria, que curva la luz del fondo, y disco de acreción.
 - **Riesgo principal:** es el estilo más difícil de pulir. Se valida primero, en el hito 0.
 
+**Cámara y realismo (decidido el 25/11/2026, después de una prueba en 3D real):**
+- **Cámara en perspectiva inclinada a 35°**, en lugar de cenital. Reemplaza a la cámara ortográfica desde arriba. La simulación sigue en un plano y sólo cambia desde dónde se mira.
+- En **Opciones** habrá un ajuste de **vista** con otras inclinaciones (50° y 65°) y una vista más amplia. La de 35° queda por defecto.
+- **Planetas sin halo ni borde de atmósfera:** sólo se iluminan del lado de la estrella, con el lado de noche oscuro y opaco, y una transición día-noche muy sutil.
+- **Menos líneas:** no se dibujan órbitas ni arcos permanentes. Las órbitas se insinúan con el movimiento de los mundos y con cinturones de polvo y rocas. La información de anillos aparece en fósforo sólo cuando hace falta, por ejemplo al apuntar la honda.
+- La prueba descartable está en `.superpowers/spike-vista-3d/` y sus shaders sirven de punto de partida para el hito 0.
+
 **Cómo medimos "cinemático":**
 - Se usa el scorecard de 10 categorías de la skill `threejs-aaa-graphics-builder`. Cada categoría va de 0 a 3 y la skill trae imágenes de referencia para calibrar.
 - Antes de puntuar, cada categoría se traduce a nuestro género:

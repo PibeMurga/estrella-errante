@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;600;800&family=Sometype+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #0d0e10; color: #ddd; font-family: system-ui, sans-serif; }
+  header.top { padding: 22px 32px 6px; } header.top h1 { margin: 0; font-size: 22px; color: #eee; } header.top p { margin: 6px 0 0; color: #9a9ea8; font-size: 14px; max-width: 1280px; }
+  section.v { padding: 18px 32px 26px; } section.v h2 { margin: 0 0 4px; font-size: 18px; color: #eee; } section.v p.d { margin: 0 0 12px; color: #9a9ea8; font-size: 13px; max-width: 1280px; }
+  .screen { position: relative; width: 1280px; height: 720px; overflow: hidden; font-family: 'Martian Mono', monospace; color: #e3dcc4; box-shadow: 0 10px 40px #000; }
+  .screen > canvas.scene { position: absolute; inset: 0; }
+  .abs { position: absolute; }
+  .plate { position: absolute; border-radius: 4px; box-shadow: 0 6px 16px #000b, inset 0 0 0 1px #000, inset 0 1px 0 #ffffff22; overflow: hidden; }
+  .plate > canvas { position: absolute; inset: 0; }
+  .plate .in { position: relative; padding: 12px 14px; }
+  .bolt { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #c9b07a, #5c4826 55%, #1e1810); box-shadow: 0 1px 1px #000; }
+  .lab { font-size: 9px; letter-spacing: 2.5px; color: #e3dcc4; opacity: .85; text-shadow: 0 1px 0 #0008; }
+  .vfd { position: relative; margin-top: 6px; padding: 7px 10px; border-radius: 3px; background: radial-gradient(circle, #7af5c912 1px, transparent 1.4px) 0 0/4px 4px, #06100d;
+    box-shadow: inset 0 0 10px #000, inset 0 0 0 2px #000, 0 1px 0 #ffffff18; font-family: 'Sometype Mono', monospace; }
+  .vfd::after { content: ''; position: absolute; inset: 0; background: linear-gradient(125deg, #ffffff12, transparent 30%); }
+  .g { color: #7af5c9; text-shadow: 0 0 4px #7af5c9cc, 0 0 10px #7af5c955; } .gd { color: #7af5c955; } .am { color: #ffb000; text-shadow: 0 0 6px #ffb000aa; }
+  .seg { display: flex; gap: 2px; margin-top: 5px; } .seg i { flex: 1; height: 9px; background: #7af5c9; box-shadow: 0 0 5px #7af5c9aa; } .seg i.o { background: #7af5c914; box-shadow: none; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .big { font-size: 18px; font-weight: 700; }
+  .tube { display: flex; flex-direction: column-reverse; gap: 2px; width: 16px; padding: 3px; background: #06100d; box-shadow: inset 0 0 6px #000, 0 0 0 2px #000; }
+  .tube i { height: 7px; background: #ffb000; box-shadow: 0 0 5px #ffb000; } .tube i.o { background: #ffb00014; box-shadow: none; }
+  .led { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff0b0, #ffb000 45%, #a86400); box-shadow: 0 0 8px #ffb000; vertical-align: -1px; }
+  .led.off { background: radial-gradient(circle at 35% 35%, #6a4a14, #2a1c06); box-shadow: none; }
+  /* C · visor */
+  .ph { color: #7af5c9; text-shadow: 0 0 4px #7af5c9cc; font-family: 'Sometype Mono', monospace; }
+  .corner { position: absolute; width: 34px; height: 34px; border: 1.5px solid #7af5c9aa; box-shadow: 0 0 6px #7af5c955; }
+</style></head><body>
+<header class="top"><h1>Interfaz durante la partida: tres maneras de mostrar la información</h1>
+<p>La misma escena en las tres: tu estrella con mundos en tres anillos, un eclipse disparando un rayo, un cometa cazador acercándose, un planeta errante peligroso y el agujero negro avanzando arriba a la derecha. Cambia sólo cómo se muestra la información: etapa y masa, mundos por anillo, carga de la supernova, distancia al agujero negro, tiempo y polvo estelar.</p></header>
+<section class="v"><h2>A · Tablero de cabina</h2><p class="d">Mirás el espacio a través del vidrio de la nave. Abajo hay una franja de tablero con los instrumentos, como en una cabina. Es lo más inmersivo, pero ocupa la parte de abajo de la pantalla.</p><div class="screen" id="a"></div></section>
+<section class="v"><h2>B · Placas atornilladas en las esquinas</h2><p class="d">Cuatro placas chicas de la consola atornilladas en las esquinas, con el centro libre. Cuando el agujero negro se acerca, el borde de la pantalla se enciende en ámbar.</p><div class="screen" id="b"></div></section>
+<section class="v"><h2>C · Visor de fósforo sobre el vidrio</h2><p class="d">Sin metal durante la partida: la información está proyectada en fósforo verde sobre el vidrio. Hay marcas en las esquinas, arcos alrededor de tu estrella que muestran cuántos mundos lleva cada anillo y un rumbo al agujero negro en el borde. Es la más limpia; el metal aparece en la pausa y en los menús.</p><div class="screen" id="c"></div></section>
+<script>
+const W = 1280, H = 720;
+function rng(seed){ let s = seed % 2147483647; if (s <= 0) s += 2147483646; return () => (s = s * 16807 % 2147483647) / 2147483647; }
+function makeNoise(seed){ const r = rng(seed), perm = [...Array(256).keys()]; for (let i = 255; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [perm[i], perm[j]] = [perm[j], perm[i]]; }
+  const p = new Uint16Array(512); for (let i = 0; i < 512; i++) p[i] = perm[i & 255]; const v = new Float32Array(256); for (let i = 0; i < 256; i++) v[i] = r();
+  return (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, X = xi & 255, Y = yi & 255;
+    const a = v[p[p[X] + Y]], b = v[p[p[X + 1] + Y]], c = v[p[p[X] + Y + 1]], d = v[p[p[X + 1] + Y + 1]]; const u = xf * xf * (3 - 2 * xf), w = yf * yf * (3 - 2 * yf);
+    return a + (b - a) * u + (c - a) * w + (a - b - c + d) * u * w; }; }
+const fbm = (n, x, y, o) => { let s = 0, a = .5, f = 1; for (let i = 0; i < o; i++) { s += a * n(x * f, y * f); f *= 2.03; a *= .5; } return s; };
+const ss = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+// Escena de juego (vista desde arriba): órbitas circulares.
+function scene(cv){
+  const c = cv.getContext('2d'), R = rng(3);
+  c.fillStyle = '#020306'; c.fillRect(0, 0, W, H);
+  for (const [x, y, r, col] of [[300, 600, 420, 'rgba(60,45,120,.28)'], [900, 300, 380, 'rgba(40,70,120,.22)'], [1100, 120, 260, 'rgba(140,70,40,.18)']]) { const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(0, 0, W, H); }
+  for (let i = 0; i < 1600; i++) { c.fillStyle = 'rgba(255,250,240,' + (.15 + R() * R() * .85) + ')'; const s = R() < .04 ? 1.8 : .9; c.fillRect(R() * W, R() * H, s, s); }
+  // agujero negro
+  const B = { x: 1120, y: 140 };
+  let g = c.createRadialGradient(B.x, B.y, 20, B.x, B.y, 170); g.addColorStop(0, 'rgba(255,170,90,0)'); g.addColorStop(.25, 'rgba(255,160,80,.5)'); g.addColorStop(.5, 'rgba(200,80,30,.15)'); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  c.save(); c.translate(B.x, B.y); c.rotate(.3); for (let k = 0; k < 3; k++) { c.strokeStyle = 'rgba(255,' + (200 - k * 40) + ',' + (140 - k * 40) + ',' + (.75 - k * .2) + ')'; c.lineWidth = 6 - k * 1.5; c.beginPath(); c.ellipse(0, 0, 88 + k * 14, 24 + k * 4, 0, 0, 7); c.stroke(); } c.restore();
+  c.fillStyle = '#000'; c.beginPath(); c.arc(B.x, B.y, 38, 0, 7); c.fill(); c.strokeStyle = 'rgba(255,220,170,.9)'; c.lineWidth = 2; c.beginPath(); c.arc(B.x, B.y, 40, 0, 7); c.stroke();
+  // estrella del jugador
+  const S = { x: 560, y: 390 };
+  for (const r of [70, 105, 145]) { c.strokeStyle = 'rgba(255,220,170,.07)'; c.lineWidth = 1; c.beginPath(); c.arc(S.x, S.y, r, 0, 7); c.stroke(); }
+  for (let i = 0; i < 60; i++) { const a = R() * 6.3, d = 84 + R() * 10; c.fillStyle = 'rgba(160,150,135,.9)'; c.beginPath(); c.arc(S.x + Math.cos(a) * d, S.y + Math.sin(a) * d, .8 + R() * 1.6, 0, 7); c.fill(); }
+  // rayo del eclipse (mundos alineados hacia la derecha)
+  g = c.createLinearGradient(S.x, 0, S.x + 520, 0); g.addColorStop(0, 'rgba(255,248,220,.85)'); g.addColorStop(1, 'rgba(255,248,220,0)');
+  c.fillStyle = g; c.beginPath(); c.moveTo(S.x + 60, S.y - 6); c.lineTo(S.x + 520, S.y - 16); c.lineTo(S.x + 520, S.y + 16); c.lineTo(S.x + 60, S.y + 6); c.fill();
+  const worlds = [[70, 0, 7, [190, 120, 80]], [105, 0, 9, [120, 170, 230]], [145, 0, 11, [220, 185, 130]], [70, 2.1, 6, [210, 230, 245]], [70, 4.0, 6.5, [170, 110, 90]], [105, 1.6, 8, [120, 200, 170]], [105, 3.3, 8.5, [230, 210, 160]], [105, 4.9, 7.5, [150, 160, 220]], [145, 2.5, 12, [200, 150, 110]], [145, 3.9, 10, [180, 210, 240]]];
+  for (const [d, a, r, col] of worlds) { const x = S.x + Math.cos(a) * d, y = S.y + Math.sin(a) * d, lx = (S.x - x) / d, ly = (S.y - y) / d;
+    g = c.createRadialGradient(x + lx * r * .55, y + ly * r * .55, r * .1, x, y, r * 1.05); g.addColorStop(0, 'rgb(' + col.map(v => Math.min(255, v * 1.25)).join(',') + ')'); g.addColorStop(.55, 'rgb(' + col.map(v => v * .55).join(',') + ')'); g.addColorStop(1, 'rgb(6,7,10)');
+    c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+  g = c.createRadialGradient(S.x, S.y, 0, S.x, S.y, 120); g.addColorStop(0, 'rgba(255,252,240,1)'); g.addColorStop(.13, 'rgba(255,225,160,.95)'); g.addColorStop(.32, 'rgba(255,160,70,.3)'); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  // cometa cazador
+  const K = { x: 300, y: 170 }; g = c.createLinearGradient(K.x, K.y, K.x - 160, K.y - 90); g.addColorStop(0, 'rgba(170,220,255,.8)'); g.addColorStop(1, 'rgba(170,220,255,0)');
+  c.fillStyle = g; c.beginPath(); c.moveTo(K.x, K.y - 5); c.lineTo(K.x - 160, K.y - 100); c.lineTo(K.x - 150, K.y - 80); c.lineTo(K.x, K.y + 5); c.fill(); c.fillStyle = '#eaf6ff'; c.beginPath(); c.arc(K.x, K.y, 5, 0, 7); c.fill();
+  // planeta errante peligroso
+  const P = { x: 220, y: 560, r: 46 }; g = c.createRadialGradient(P.x + 25, P.y - 20, 4, P.x, P.y, P.r); g.addColorStop(0, '#d6845a'); g.addColorStop(.6, '#6b2e1c'); g.addColorStop(1, '#0a0605'); c.fillStyle = g; c.beginPath(); c.arc(P.x, P.y, P.r, 0, 7); c.fill();
+  return { S, B, K, P };
+}
+
+function plateTex(cv, seed){
+  const w = cv.width, h = cv.height, c = cv.getContext('2d'), im = c.createImageData(w, h), d = im.data, n1 = makeNoise(seed), n2 = makeNoise(seed + 5);
+  const L = [-.45, -.55, .7]; const hgt = (x, y) => fbm(n1, x * .07, y * .07, 3);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const nx = (hgt(x - 1, y) - hgt(x + 1, y)) * 9, ny = (hgt(x, y - 1) - hgt(x, y + 1)) * 9, nl = Math.hypot(nx, ny, 1), lam = Math.max(0, (nx * L[0] + ny * L[1] + L[2]) / nl);
+    const ed = Math.min(x, y, w - x, h - y), wear = fbm(n2, x * .03, y * .03, 4) * .95 + Math.max(0, 1 - ed / 14) * .75 - .16, chip = ss(.985, 1, wear), rim = ss(.93, .985, wear) * (1 - chip);
+    let r = 52 * (.45 + .7 * lam), g = 90 * (.45 + .7 * lam), b = 85 * (.45 + .7 * lam);
+    r += (176 * (.5 + .6 * lam) - r) * chip; g += (178 * (.5 + .6 * lam) - g) * chip; b += (176 * (.5 + .6 * lam) - b) * chip;
+    const k = 1 - rim * .4, i = (y * w + x) * 4; d[i] = r * k; d[i + 1] = g * k; d[i + 2] = b * k; d[i + 3] = 255;
+  }
+  c.putImageData(im, 0, 0);
+}
+function plate(parent, x, y, w, h, inner, seed){
+  const el = document.createElement('div'); el.className = 'plate'; Object.assign(el.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h; el.appendChild(cv); plateTex(cv, seed);
+  el.insertAdjacentHTML('beforeend', '<span class="bolt" style="left:4px;top:4px"></span><span class="bolt" style="right:4px;top:4px"></span><span class="bolt" style="left:4px;bottom:4px"></span><span class="bolt" style="right:4px;bottom:4px"></span><div class="in">' + inner + '</div>');
+  parent.appendChild(el); return el;
+}
+const segs = (n, on) => '<div class="seg">' + Array.from({ length: n }, (_, i) => '<i class="' + (i < on ? '' : 'o') + '"></i>').join('') + '</div>';
+const tube = (n, on) => '<div class="tube">' + Array.from({ length: n }, (_, i) => '<i class="' + (i < on ? '' : 'o') + '"></i>').join('') + '</div>';
+const rings = '<div class="row" style="margin-top:6px"><span class="gd">INT</span><span class="g">●●●○</span></div><div class="row"><span class="gd">MED</span><span class="g">●●●●○○</span></div><div class="row"><span class="gd">EXT</span><span class="g">●●●○○○○○</span></div>';
+
+function build(id){
+  const el = document.getElementById(id); const cv = document.createElement('canvas'); cv.className = 'scene'; cv.width = W; cv.height = H; el.appendChild(cv); const sc = scene(cv);
+  if (id === 'a') {
+    const fr = document.createElement('div'); fr.className = 'abs'; Object.assign(fr.style, { inset: '0', boxShadow: 'inset 0 0 0 10px #0b0c0d, inset 0 0 0 12px #3a3022, inset 0 0 60px #000c', borderRadius: '18px', pointerEvents: 'none' }); el.appendChild(fr);
+    plate(el, 0, 580, 1280, 140, `<div style="display:grid;grid-template-columns:300px 260px 1fr 250px 190px;gap:22px;align-items:start;padding:6px 18px 0">
+      <div><div class="lab">ETAPA</div><div class="vfd"><div class="row"><span class="g big">ENANA AMARILLA</span><span class="g">62%</span></div>${segs(20, 12)}</div></div>
+      <div><div class="lab">MUNDOS EN ÓRBITA · 10</div><div class="vfd" style="font-size:12px">${rings}</div></div>
+      <div><div class="lab">REGISTRO</div><div class="vfd" style="font-size:12px"><div class="row"><span class="g">› ECLIPSE ×3</span><span class="am">RAYO</span></div><div class="row"><span class="gd">› CAPTURADO: LUNA DE HIELO</span></div><div class="row"><span class="gd">› CAZADOR DETECTADO</span><span class="am">!</span></div></div></div>
+      <div><div class="lab">AGUJERO NEGRO</div><div style="display:flex;gap:12px;align-items:center;margin-top:6px"><svg width="96" height="62" viewBox="0 0 96 62"><path d="M8 56 A 40 40 0 0 1 88 56" fill="#efe7cf" stroke="#000" stroke-width="2"/><path d="M62 22 A 40 40 0 0 1 88 56" fill="none" stroke="#c0392b" stroke-width="6"/>${[0,1,2,3,4,5,6,7,8].map(k=>{const a=Math.PI+k/8*Math.PI;return `<line x1="${48+Math.cos(a)*36}" y1="${56+Math.sin(a)*36}" x2="${48+Math.cos(a)*30}" y2="${56+Math.sin(a)*30}" stroke="#222" stroke-width="1.5"/>`}).join('')}<line x1="48" y1="56" x2="80" y2="30" stroke="#111" stroke-width="2.5"/><circle cx="48" cy="56" r="4" fill="#111"/></svg><div class="vfd" style="font-size:12px"><div class="am">4,2 UA</div><div class="gd">SE ACERCA</div></div></div></div>
+      <div style="display:flex;gap:14px"><div><div class="lab">SUPERNOVA</div><div style="margin-top:6px">${tube(9, 5)}</div></div><div><div class="lab">TIEMPO</div><div class="vfd"><span class="g big">08:41</span></div><div class="lab" style="margin-top:10px">POLVO</div><div class="vfd"><span class="g">0128</span></div></div></div>
+    </div>`, 7);
+  }
+  if (id === 'b') {
+    const glow = document.createElement('div'); glow.className = 'abs'; Object.assign(glow.style, { inset: '0', background: 'radial-gradient(ellipse at 100% 0%, rgba(255,160,40,.35), transparent 35%)', boxShadow: 'inset -6px 6px 0 -2px rgba(255,176,0,.35)', pointerEvents: 'none' }); el.appendChild(glow);
+    plate(el, 22, 22, 310, 92, `<div class="lab">ETAPA</div><div class="vfd"><div class="row"><span class="g big">ENANA AMARILLA</span><span class="g">62%</span></div>${segs(20, 12)}</div>`, 11);
+    plate(el, 1028, 22, 230, 92, `<div class="row"><div><div class="lab">TIEMPO</div><div class="vfd"><span class="g big">08:41</span></div></div><div><div class="lab">POLVO</div><div class="vfd"><span class="g big">0128</span></div></div></div>`, 12);
+    plate(el, 22, 586, 230, 112, `<div class="lab">MUNDOS · 10</div><div class="vfd" style="font-size:12px">${rings}</div>`, 13);
+    plate(el, 1050, 586, 208, 112, `<div style="display:flex;gap:14px"><div><div class="lab">SUPERNOVA</div><div style="margin-top:6px">${tube(9, 5)}</div></div><div><div class="lab">HONDA</div><div style="margin-top:10px"><span class="led"></span> <span class="led"></span> <span class="led off"></span></div><div class="lab" style="margin-top:14px">ECLIPSE</div><div class="vfd" style="font-size:12px"><span class="am">×3</span></div></div></div>`, 14);
+    el.insertAdjacentHTML('beforeend', '<div class="abs am" style="right:300px;top:30px;font-family:Sometype Mono;font-size:13px;letter-spacing:2px">▲ AGUJERO NEGRO · 4,2 UA</div>');
+  }
+  if (id === 'c') {
+    for (const [l, t, r2, b2] of [[20, 20, null, null], [null, 20, 20, null], [20, null, null, 20], [null, null, 20, 20]]) { const k = document.createElement('div'); k.className = 'corner'; Object.assign(k.style, { left: l != null ? l + 'px' : '', top: t != null ? t + 'px' : '', right: r2 != null ? r2 + 'px' : '', bottom: b2 != null ? b2 + 'px' : '', borderRight: r2 == null ? 'none' : '', borderLeft: l == null ? 'none' : '', borderBottom: b2 == null ? 'none' : '', borderTop: t == null ? 'none' : '' }); el.appendChild(k); }
+    const S = sc.S; const arc = (r, frac, w) => { const a0 = -Math.PI * .75, a1 = a0 + Math.PI * 1.5 * frac; return `<path d="M${S.x + Math.cos(a0) * r} ${S.y + Math.sin(a0) * r} A ${r} ${r} 0 ${frac > .66 ? 1 : 0} 1 ${S.x + Math.cos(a1) * r} ${S.y + Math.sin(a1) * r}" fill="none" stroke="#7af5c9" stroke-width="${w}" stroke-opacity=".75"/>`; };
+    el.insertAdjacentHTML('beforeend', `<svg class="abs" style="inset:0;filter:drop-shadow(0 0 3px #7af5c9)" width="1280" height="720">
+      ${arc(182, .75, 2)}${arc(190, .66, 2)}${arc(198, .37, 2)}
+      <path d="M${S.x - 205} ${S.y - 205} h-12 v12 M${S.x + 205} ${S.y - 205} h12 v12" fill="none" stroke="#7af5c9" stroke-opacity=".6"/>
+      <path d="M1210 58 l 18 -18" stroke="#ffb000" stroke-width="2" style="filter:drop-shadow(0 0 4px #ffb000)"/>
+    </svg>`);
+    el.insertAdjacentHTML('beforeend', `
+      <div class="abs ph" style="left:50%;top:26px;transform:translateX(-50%);text-align:center;font-size:13px;letter-spacing:3px">ENANA AMARILLA · 62%<div style="width:340px;margin-top:6px">${segs(24, 15)}</div></div>
+      <div class="abs ph" style="left:${sc.S.x + 210}px;top:${sc.S.y - 215}px;font-size:11px;letter-spacing:1px;opacity:.85">INT 3/4 · MED 4/6 · EXT 3/8</div>
+      <div class="abs ph" style="left:30px;top:66px;font-size:12px;letter-spacing:2px;opacity:.9">08:41<br><span style="opacity:.6">POLVO 0128</span></div>
+      <div class="abs am" style="right:60px;top:40px;font-family:Sometype Mono;font-size:12px;letter-spacing:2px;text-align:right">AGUJERO NEGRO<br>4,2 UA · SE ACERCA</div>
+      <div class="abs ph" style="left:50%;bottom:30px;transform:translateX(-50%);display:flex;gap:30px;font-size:12px;letter-spacing:2px;align-items:center">
+        <span>HONDA ●●○</span><span class="am">ECLIPSE ×3</span><span style="display:flex;gap:8px;align-items:center">SUPERNOVA <span style="display:flex;gap:2px">${Array.from({ length: 9 }, (_, i) => `<i style="display:block;width:10px;height:10px;background:${i < 5 ? '#ffb000' : '#ffb00022'};box-shadow:${i < 5 ? '0 0 5px #ffb000' : 'none'}"></i>`).join('')}</span></span></div>`);
+  }
+}
+['a', 'b', 'c'].forEach(build);
+</script>
+</body></html>
