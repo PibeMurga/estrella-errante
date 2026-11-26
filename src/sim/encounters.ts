@@ -1,6 +1,6 @@
 import { DT } from './config';
 import { breakPlanet } from './tidal';
-import { DEAD, FREE, KIND_GAS, KIND_ICE, KIND_ROCKY, type World } from './world';
+import { DEAD, FREE, KIND_GAS, KIND_ICE, KIND_ROCKY, starSize, type World } from './world';
 
 // Encuentros entre planetas libres. Dos planetas no se atraviesan: el más chico bordea al más grande por fuera,
 // en arco, y sigue con la misma dirección y velocidad que traía (sólo se corre su posición, nunca su velocidad).
@@ -62,7 +62,7 @@ export function stepEncounters(w: World): void {
       const ri = w.radius[i]!, rj = w.radius[j]!;
       // El grande es el de mayor radio (a igual radio, el de menor índice).
       const big = ri >= rj ? i : j, small = big === i ? j : i;
-      let dx = w.x[small]! - w.x[big]!, dy = w.y[small]! - w.y[big]!;
+      const dx = w.x[small]! - w.x[big]!, dy = w.y[small]! - w.y[big]!;
       if (Math.abs(dx) > hw || Math.abs(dy) > hh) continue;   // del otro lado de la costura: lejos de verdad
       const sum = ri + rj;
       const D = sum * c.encounterGap, range = D * 3;
@@ -73,34 +73,55 @@ export function stepEncounters(w: World): void {
         if (d < sum * 0.97) { const inv = d > 1e-6 ? 1 / d : 0; crash(w, big, small, d > 1e-6 ? dx * inv : 1, dy * inv); break; }
         continue;
       }
-      // Bordea: si el chico viene hacia el grande y lo pasaría a menos de D, se lo corre de costado, de a poco,
-      // repartiendo el corrimiento en lo que falta para el punto de máximo acercamiento. La velocidad no se toca,
-      // así que pasado el encuentro sigue en la misma dirección, sobre una línea paralela.
-      const vx = w.vx[small]! - w.vx[big]!, vy = w.vy[small]! - w.vy[big]!;
-      const v2 = vx * vx + vy * vy;
-      const closing = dx * vx + dy * vy;
-      if (v2 > 1e-6 && closing < 0) {
-        const v = Math.sqrt(v2), px = -vy / v, py = vx / v;
-        const lat = dx * px + dy * py;
-        const miss = Math.abs(lat);
-        if (miss < D) {
-          const tca = -closing / v2;                      // segundos hasta el máximo acercamiento
-          const f = Math.min(1, (1.6 * DT) / Math.max(tca, DT));
-          const side = lat >= 0 ? 1 : -1;
-          const push = (D - miss) * f * side;
-          w.x[small] = w.x[small]! + px * push;
-          w.y[small] = w.y[small]! + py * push;
-          dx += px * push; dy += py * push;
-        }
-      }
-      // Piso duro: nunca más cerca que D (por ejemplo, si quedaron casi quietos uno contra otro).
-      const e2 = dx * dx + dy * dy;
-      if (e2 < D * D) {
-        const e = Math.sqrt(e2);
-        const ux = e > 1e-6 ? dx / e : 1, uy = e > 1e-6 ? dy / e : 0;
-        w.x[small] = w.x[big]! + ux * D;
-        w.y[small] = w.y[big]! + uy * D;
-      }
+      bypass(w, small, w.x[big]!, w.y[big]!, w.vx[big]!, w.vy[big]!, dx, dy, sum * c.encounterGap);
     }
+  }
+}
+
+// Un planeta que la estrella no puede capturar, pero que es más chico que ella, no la atraviesa:
+// se acerca, la rodea en arco y sigue de largo. Los más grandes que la estrella chocan (eso lo resuelve el paso).
+export function stepStarFlybys(w: World): void {
+  const c = w.config, s = w.star;
+  const size = starSize(s.mass);
+  const hw = c.arenaHalfWidth, hh = c.arenaHalfHeight;
+  for (let i = 0; i < w.count; i++) {
+    const k = w.kind[i]!;
+    if (k < KIND_ROCKY || k > KIND_GAS || w.state[i] !== FREE || w.parent[i] !== -1) continue;
+    const r = w.radius[i]!;
+    if (r <= c.maxCaptureSize || r > size) continue;
+    const dx = w.x[i]! - s.x, dy = w.y[i]! - s.y;
+    if (Math.abs(dx) > hw || Math.abs(dy) > hh) continue;
+    const D = (size + r) * c.encounterGap;
+    if (dx * dx + dy * dy >= 9 * D * D) continue;
+    bypass(w, i, s.x, s.y, s.vx, s.vy, dx, dy, D);
+  }
+}
+
+// El cuerpo `i` bordea un obstáculo en (ox, oy) que se mueve a (ovx, ovy), sin acercarse a menos de D.
+// Si viene hacia él y lo pasaría demasiado cerca, se lo corre de costado de a poco, repartiendo el corrimiento
+// en lo que falta para el punto de máximo acercamiento. La velocidad no se toca: pasado el encuentro sigue igual.
+function bypass(w: World, i: number, ox: number, oy: number, ovx: number, ovy: number, dx: number, dy: number, D: number): void {
+  const vx = w.vx[i]! - ovx, vy = w.vy[i]! - ovy;
+  const v2 = vx * vx + vy * vy;
+  const closing = dx * vx + dy * vy;
+  if (v2 > 1e-6 && closing < 0) {
+    const v = Math.sqrt(v2), px = -vy / v, py = vx / v;
+    const lat = dx * px + dy * py;
+    const miss = Math.abs(lat);
+    if (miss < D) {
+      const tca = -closing / v2;
+      const f = Math.min(1, (1.6 * DT) / Math.max(tca, DT));
+      const push = (D - miss) * f * (lat >= 0 ? 1 : -1);
+      w.x[i] = w.x[i]! + px * push;
+      w.y[i] = w.y[i]! + py * push;
+      dx += px * push; dy += py * push;
+    }
+  }
+  // Piso duro: nunca más cerca que D.
+  const e2 = dx * dx + dy * dy;
+  if (e2 < D * D) {
+    const e = Math.sqrt(e2);
+    w.x[i] = ox + (e > 1e-6 ? dx / e : 1) * D;
+    w.y[i] = oy + (e > 1e-6 ? dy / e : 0) * D;
   }
 }

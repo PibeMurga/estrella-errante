@@ -8,6 +8,7 @@ export const DEAD = 3;           // tragado o destruido: no se mueve ni se dibuj
 export const PROJECTILE = 4;     // lanzado con la honda
 export const RETURNING = 5;      // vuelve a la órbita después del lanzamiento
 export const CARRIED = 6;        // robado por un cometa, va arrastrado detrás
+export const ABSORBING = 7;      // la estrella lo absorbe: cae en espiral hasta su superficie y después desaparece
 export const MAX_COMETS = 6;
 export const OVER_NONE = 0;
 export const OVER_SWALLOWED = 1; // la tragó el agujero negro

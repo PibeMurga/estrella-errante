@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG, type SimConfig } from '../../src/sim/config';
 import { crashPairRoll } from '../../src/sim/encounters';
 import { type Intent, step } from '../../src/sim/step';
-import { addBody, createWorld, DEAD, FREE, hashWorld, KIND_ASTEROID, KIND_GAS, KIND_ICE, KIND_ROCKY, type World } from '../../src/sim/world';
+import { addBody, createWorld, DEAD, FREE, hashWorld, starSize, KIND_ASTEROID, KIND_GAS, KIND_ICE, KIND_ROCKY, type World } from '../../src/sim/world';
 
 // Encuentros entre planetas: el chico bordea al grande y sigue su camino; sólo dos casi iguales pueden chocar, y rara vez.
 const IDLE: Intent = { targetX: 0, targetY: 0, hasTarget: false };
@@ -81,6 +81,18 @@ describe('encuentros entre planetas', () => {
     for (let i = 0; i < 60; i++) for (let j = i + 1; j < 60; j++) { n++; if (crashPairRoll(i, j) < 0.35) under++; }
     expect(under / n).toBeGreaterThan(0.28);
     expect(under / n).toBeLessThan(0.42);
+  });
+
+  it('un planeta que no se puede capturar, más chico que la estrella, la rodea y sigue: no la atraviesa', () => {
+    const w = createWorld(cfg(), 5, 10);
+    const size = starSize(w.star.mass);
+    const p = addBody(w, { x: -60, y: 0.5, vx: 9, vy: 0, radius: 3, kind: KIND_ROCKY });
+    let minD = Infinity;
+    run(w, 16, () => { minD = Math.min(minD, Math.hypot(w.x[p]! - w.star.x, w.y[p]! - w.star.y)); });
+    expect(minD).toBeGreaterThanOrEqual((size + 3) * DEFAULT_CONFIG.encounterGap - 1e-6);
+    expect(w.x[p]).toBeGreaterThan(60);
+    expect(w.vx[p]).toBe(9);
+    expect(w.state[p]).toBe(FREE);
   });
 
   it('el mapa completo sigue siendo determinista con los encuentros', () => {

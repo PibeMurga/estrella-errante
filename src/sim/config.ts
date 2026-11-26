@@ -21,6 +21,8 @@ export interface SimConfig {
   orbitMax: number;
   orbitCapacity: number;
   orbitEase: number;             // 0..1 por paso: qué tan rápido llega a su radio de órbita
+  orbitInfallSpeed: number;      // velocidad radial máxima al acomodarse en la órbita (para que se vea llegar, no saltar)
+  orbitClearance: number;        // la órbita más baja queda a (radio de la estrella × esto): nunca adentro de la estrella
   orbitSpeedK: number;           // rad/s en orbitMin
   blackHole: boolean;            // se puede apagar para pruebas y laboratorio
   bhStartRadius: number;
@@ -76,7 +78,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   starStartMass: 1,
   starMaxSpeed: 28,
   starAccel: 20,
-  starMassInertia: 0.025,
+  starMassInertia: 0.014,
   starSlowRadius: 30,
   starBrake: 0.5,
   starBaseCaptureRadius: 6,
@@ -87,6 +89,8 @@ export const DEFAULT_CONFIG: SimConfig = {
   orbitMax: 18,
   orbitCapacity: 240,
   orbitEase: 0.08,
+  orbitInfallSpeed: 12,
+  orbitClearance: 1.3,
   orbitSpeedK: 2.2,
   blackHole: true,
   bhStartRadius: 5,

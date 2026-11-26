@@ -1,9 +1,9 @@
 import { stepComets } from './comets';
 import { breakPlanet } from './tidal';
-import { stepEncounters } from './encounters';
+import { stepEncounters, stepStarFlybys } from './encounters';
 import { DT } from './config';
 import { stageFor } from './stages';
-import { CARRIED, captureRadiusFor, DEAD, FREE, KIND_GAS, KIND_ICE, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_DIMMED, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
+import { ABSORBING, CARRIED, captureRadiusFor, DEAD, FREE, KIND_GAS, KIND_ICE, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_DIMMED, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
 
 // target: hacia dónde ir. aim: hacia dónde apuntar la honda (stick derecho); sin aim se apunta al objetivo.
 export interface Intent {
@@ -13,6 +13,23 @@ export interface Intent {
 }
 
 const clamp = (v: number, lo: number, hi: number): number => (v < lo ? lo : v > hi ? hi : v);
+
+// Franja de órbitas: empieza un poco por fuera de la estrella y crece con ella, siempre con el mismo ancho.
+let bandLo = 0, bandHi = 0;
+function setOrbitBand(w: World): void {
+  const c = w.config;
+  bandLo = Math.max(c.orbitMin, starSize(w.star.mass) * c.orbitClearance);
+  bandHi = bandLo + (c.orbitMax - c.orbitMin);
+}
+
+// La estrella absorbe un cuerpo: no desaparece de golpe, cae en espiral hasta la superficie.
+function startAbsorb(w: World, i: number, dx: number, dy: number): void {
+  w.state[i] = ABSORBING;
+  w.parent[i] = -1;
+  w.orbitR[i] = Math.hypot(dx, dy);
+  w.orbitAngle[i] = Math.atan2(dy, dx);
+  w.absorbed++;
+}
 
 // Choque con un planeta grande: sin mundos en órbita la estrella se apaga; si no, pierde algunos y rebota.
 function hurt(w: World, p: number): void {
@@ -101,16 +118,15 @@ function flight(w: World, i: number, st: number): void {
       w.state[i] = RETURNING;
     }
   } else {
-    if (d < c.orbitMax && w.orbitingCount >= c.orbitCapacity) {
+    if (d < bandHi && w.orbitingCount >= c.orbitCapacity) {
       // Volvió con la órbita llena: la estrella lo absorbe (su masa ya estaba contada).
-      w.state[i] = DEAD;
-      w.absorbed++;
+      startAbsorb(w, i, -dx, -dy);
       return;
     }
-    if (d < c.orbitMax) {
+    if (d < bandHi) {
       w.state[i] = ORBITING;
       w.orbitR[i] = d;
-      w.orbitTarget[i] = clamp(d * 0.9, c.orbitMin, c.orbitMax);
+      w.orbitTarget[i] = clamp(d * 0.9, bandLo, bandHi);
       w.orbitAngle[i] = Math.atan2(-dy, -dx);
       w.orbitingCount++;
       return;
@@ -235,6 +251,7 @@ export function step(w: World, intent: Intent): void {
     return;
   }
 
+  setOrbitBand(w);
   const captureR = s.captureRadius;
   const size = starSize(s.mass);
   let hit = -1;
@@ -310,25 +327,29 @@ export function step(w: World, intent: Intent): void {
       const canSteal = st === FREE || starSize(s.mass) >= w.radius[w.parent[i]!] * c.stealSizeRatio;
       if (canSteal && d < captureR && w.radius[i] <= c.maxCaptureSize && w.orbitingCount >= c.orbitCapacity) {
         // Órbita llena: la estrella lo absorbe (suma su masa y el cuerpo queda libre para la reserva de escombros).
-        w.state[i] = DEAD;
-        w.parent[i] = -1;
+        startAbsorb(w, i, x - s.x, y - s.y);
         s.mass += w.mass[i];
-        w.absorbed++;
         continue;
       }
       if (canSteal && d < captureR && w.radius[i] <= c.maxCaptureSize) {
         w.state[i] = ORBITING;
         w.parent[i] = -1;
         w.orbitR[i] = d;
-        w.orbitTarget[i] = clamp(d * 0.9, c.orbitMin, c.orbitMax);
+        w.orbitTarget[i] = clamp(d * 0.9, bandLo, bandHi);
         w.orbitAngle[i] = Math.atan2(y - s.y, x - s.x);
         w.orbitingCount++;
         s.mass += w.mass[i];
         w.captured[w.capturedCount++] = i;
       }
     } else {
-      const r = w.orbitR[i] + (w.orbitTarget[i] - w.orbitR[i]) * c.orbitEase;
+      // Se acomoda en su órbita (o cae a la estrella si la está absorbiendo) a velocidad limitada:
+      // se lo ve acercarse e imantarse, no saltar. La franja sigue el tamaño de la estrella.
+      const absorbing = st === ABSORBING;
+      const target = absorbing ? size * 0.7 : clamp(w.orbitTarget[i], bandLo, bandHi);
+      const maxDr = c.orbitInfallSpeed * (absorbing ? 1.6 : 1) * DT;
+      const r = w.orbitR[i] + clamp((target - w.orbitR[i]) * c.orbitEase, -maxDr, maxDr);
       w.orbitR[i] = r;
+      if (absorbing && r <= size * 0.8) { w.state[i] = DEAD; continue; }
       const a = w.orbitAngle[i] + c.orbitSpeedK * Math.pow(c.orbitMin / Math.max(r, 1e-6), 1.5) * DT;
       w.orbitAngle[i] = a;
       w.x[i] = s.x + Math.cos(a) * r;
@@ -337,6 +358,7 @@ export function step(w: World, intent: Intent): void {
   }
 
   stepEncounters(w);
+  stepStarFlybys(w);
   if (hit >= 0) hurt(w, hit);
   if (w.over !== OVER_NONE) { w.tick++; return; }   // se apagó en este paso: no pasa nada más
   if (w.eclipseCd <= 0 && w.orbitingCount >= c.eclipseMin) eclipse(w);

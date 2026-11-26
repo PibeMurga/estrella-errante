@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG, DT, type SimConfig } from '../../src/sim/config';
 import { type Intent, step } from '../../src/sim/step';
 import {
-  addBody, addSatellite, captureRadiusFor, starSize, createWorld, FREE, hashWorld, KIND_ASTEROID, KIND_GAS, KIND_MOON, ORBIT_PLANET, ORBITING, DEAD } from '../../src/sim/world';
+  addBody, addSatellite, captureRadiusFor, starSize, createWorld, FREE, hashWorld, KIND_ASTEROID, KIND_GAS, KIND_MOON, ORBIT_PLANET, ORBITING, DEAD, ABSORBING } from '../../src/sim/world';
 
 const NO_INPUT: Intent = { targetX: 0, targetY: 0, hasTarget: false };
 
@@ -118,7 +118,7 @@ describe('captura', () => {
     expect(w.orbitingCount).toBe(0);
   });
 
-  it('con la órbita llena, la estrella absorbe el resto: suma su masa y el cuerpo desaparece', () => {
+  it('con la órbita llena, la estrella absorbe el resto: suma su masa, cae en espiral y desaparece', () => {
     const w = emptyWorld(10, { orbitCapacity: 2 });
     addBody(w, rock(2, 0));
     addBody(w, rock(0, 2));
@@ -126,8 +126,11 @@ describe('captura', () => {
     const m0 = w.star.mass;
     step(w, NO_INPUT);
     expect(w.orbitingCount).toBe(2);
-    expect(w.state[last]).toBe(DEAD);
+    expect(w.state[last]).toBe(ABSORBING);   // no desaparece de golpe: se lo ve caer
     expect(w.star.mass).toBeCloseTo(m0 + w.mass[0] + w.mass[1] + w.mass[last], 9);
+    expect(w.absorbed).toBe(1);
+    for (let k = 0; k < 120; k++) step(w, NO_INPUT);
+    expect(w.state[last]).toBe(DEAD);
     expect(w.absorbed).toBe(1);
   });
 
@@ -137,7 +140,7 @@ describe('captura', () => {
     step(w, NO_INPUT);
     const startAngle = w.orbitAngle[i];
     for (let k = 0; k < 600; k++) step(w, NO_INPUT);
-    expect(Math.hypot(w.x[i] - w.star.x, w.y[i] - w.star.y)).toBeCloseTo(DEFAULT_CONFIG.orbitMin, 6);
+    expect(Math.hypot(w.x[i] - w.star.x, w.y[i] - w.star.y)).toBeCloseTo(orbitFloor(w.star.mass), 6);
     expect(w.orbitAngle[i]).toBeGreaterThan(startAngle + 1);
   });
 
@@ -146,9 +149,35 @@ describe('captura', () => {
     const i = addBody(w, rock(3, 0, 0.5));
     for (let k = 0; k < 600; k++) step(w, NO_INPUT);
     for (let k = 0; k < 120; k++) step(w, { targetX: 60, targetY: 30, hasTarget: true });
-    expect(Math.hypot(w.x[i] - w.star.x, w.y[i] - w.star.y)).toBeCloseTo(DEFAULT_CONFIG.orbitMin, 6);
+    expect(Math.hypot(w.x[i] - w.star.x, w.y[i] - w.star.y)).toBeCloseTo(orbitFloor(w.star.mass), 6);
+  });
+
+  it('las órbitas nunca quedan adentro de la estrella, aunque crezca mucho', () => {
+    const w = emptyWorld();
+    const i = addBody(w, rock(3, 0, 0.5));
+    step(w, NO_INPUT);
+    w.star.mass = 300;   // supergigante
+    for (let k = 0; k < 600; k++) step(w, NO_INPUT);
+    const d = Math.hypot(w.x[i] - w.star.x, w.y[i] - w.star.y);
+    expect(d).toBeGreaterThanOrEqual(starSize(w.star.mass) * DEFAULT_CONFIG.orbitClearance - 1e-6);
+  });
+
+  it('al capturarlo se acerca a su órbita de a poco, sin saltar', () => {
+    const w = emptyWorld();
+    w.star.mass = 300; w.star.captureRadius = captureRadiusFor(w.config, 300);
+    const i = addBody(w, rock(w.star.captureRadius - 0.5, 0, 0.5));
+    step(w, NO_INPUT);
+    expect(w.state[i]).toBe(ORBITING);
+    let prev = w.orbitR[i]!, maxStep = 0;
+    for (let k = 0; k < 300; k++) { step(w, NO_INPUT); maxStep = Math.max(maxStep, Math.abs(w.orbitR[i]! - prev)); prev = w.orbitR[i]!; }
+    expect(maxStep).toBeLessThanOrEqual(DEFAULT_CONFIG.orbitInfallSpeed * DT + 1e-9);
   });
 });
+
+// Radio de la órbita más baja para una estrella de esa masa.
+function orbitFloor(mass: number): number {
+  return Math.max(DEFAULT_CONFIG.orbitMin, starSize(mass) * DEFAULT_CONFIG.orbitClearance);
+}
 
 describe('determinismo', () => {
   it('misma semilla y mismas órdenes dan la misma partida', () => {
