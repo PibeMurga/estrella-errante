@@ -24,10 +24,10 @@ export interface SimConfig {
 }
 
 export const DEFAULT_CONFIG: SimConfig = {
-  arenaHalfWidth: 160,
-  arenaHalfHeight: 90,
-  asteroidCount: 450,
-  planetCount: 9,
+  arenaHalfWidth: 450,
+  arenaHalfHeight: 280,
+  asteroidCount: 3200,
+  planetCount: 40,
   spawnClearRadius: 15,
   starStartMass: 1,
   starMaxSpeed: 28,
