@@ -199,9 +199,13 @@ export function createBrokenPlanetsLayer(world: World, sunPos: Vector3): Layer {
         // Con los pedazos sueltos, el núcleo queda entre los dos (lo dibuja el de arriba).
         const tw = w.twin[i]!;
         if (side === 1 && tw >= 0) pos.set((x + w.prevX[tw] + (w.x[tw] - w.prevX[tw]) * a) / 2, 0, -(y + w.prevY[tw] + (w.y[tw] - w.prevY[tw]) * a) / 2);
-        scl.setScalar(side === -1 ? 0 : r * 0.3 * Math.exp(-t / 25));
+        // El núcleo no queda flotando: brilla al rojo, a los 4 s se aviva, a los 5 estalla en un destello breve y desaparece.
+        const pop = smooth(4, 5, t), gone = t > 5.25;
+        const coreR = gone ? 0 : r * (0.3 * (1 - 0.25 * smooth(0, 4, t)) + 0.35 * pop * pop);
+        scl.setScalar(side === -1 ? 0 : coreR);
         m4.compose(pos, q, scl); core.setMatrixAt(k, m4);
-        core.setColorAt(k, col.setRGB(2.2 * heat, 0.7 * heat, 0.15 * heat));
+        const flare = 1 + 4 * pop;   // al estallar, mucho más brillante (lo toma el bloom)
+        core.setColorAt(k, col.setRGB(2.2 * heat * flare, 0.7 * heat * flare, 0.15 * heat * flare + 0.4 * pop));
         k++;
       }
       attrA.needsUpdate = attrB.needsUpdate = attrC.needsUpdate = true;
