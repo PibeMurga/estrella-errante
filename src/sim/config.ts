@@ -6,6 +6,7 @@ export interface SimConfig {
   arenaHalfHeight: number;
   asteroidCount: number;
   planetCount: number;
+  planetMaxRadius: number;       // el planeta más grande del mapa (muchos medianos, pocos inmensos)
   spawnClearRadius: number;
   starStartMass: number;
   starMaxSpeed: number;          // unidades por segundo
@@ -152,6 +153,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   arenaHalfHeight: 360,
   asteroidCount: 2600,
   planetCount: 40,
+  planetMaxRadius: 16,
   spawnClearRadius: 15,
   starStartMass: 1,
   starMaxSpeed: 32,

@@ -280,7 +280,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     do { px = rng.range(-hw, hw); py = rng.range(-hh, hh); } while (Math.hypot(px, py) < config.spawnClearRadius * 3);
     const ang = rng.range(0, Math.PI * 2), speed = 0.5 + 2.6 * Math.pow(rng.next(), 1.7);   // derivan pesados, cada uno a su ritmo
     // Tamaños muy desparejos: muchos medianos y chicos, pocos inmensos (hasta 16).
-    const r = 2 + 14 * Math.pow(rng.next(), 2.4);
+    const r = 2 + (config.planetMaxRadius - 2) * Math.pow(rng.next(), 2.4);
     const p = addBody(w, { x: px, y: py, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, radius: r, kind: KIND_ROCKY + Math.floor(rng.next() * 3) });
     if (p < 0) break;
     if (rng.next() < 0.45) {

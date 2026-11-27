@@ -1,5 +1,6 @@
 import { DT } from './config';
 import { hitPlanet, joinsOrbit, planetTier, TIER_BREAK } from './planetCapture';
+import { ownPlanet, ownPlanets } from './ownPlanets';
 import { breakPlanet, spawnDebris } from './tidal';
 import { DEAD, FREE, ORBITING, KIND_GAS, KIND_ICE, KIND_ROCKY, massGain, MAX_IMPACTS, noteBreak, starSize, type World } from './world';
 
@@ -130,14 +131,26 @@ export function stepEncounters(w: World): void {
 
 // Tus planetas en órbita también chocan: un planeta suelto que se les cruza recibe el golpe (pesado, sin rebote) y se
 // daña; el tuyo sigue en su órbita (lo sostiene tu estrella). Queda la marca en los dos.
+let FREE_NEAR = new Int32Array(64);
 export function stepOwnPlanetRams(w: World): void {
   const P = w.planets, s = w.star;
-  for (let a = 0; a < P.length * 2; a++) {
-    const o = a < P.length ? P[a]! : w.twin[P[a - P.length]!]!;
-    if (o < 0 || w.state[o] !== ORBITING) continue;
-    for (let b = 0; b < P.length * 2; b++) {
-      const f = b < P.length ? P[b]! : w.twin[P[b - P.length]!]!;
-      if (f < 0 || f === o || w.state[f] !== FREE || w.parent[f] !== -1) continue;
+  const nOwn = ownPlanets(w);
+  if (nOwn === 0) return;
+  // Sólo los sueltos que están cerca de tu sistema.
+  const reach = Math.max(60, s.captureRadius * 4);
+  let nf = 0;
+  if (FREE_NEAR.length < P.length * 2) FREE_NEAR = new Int32Array(P.length * 2);
+  for (let b = 0; b < P.length * 2; b++) {
+    const f = b < P.length ? P[b]! : w.twin[P[b - P.length]!]!;
+    if (f < 0 || w.state[f] !== FREE || w.parent[f] !== -1) continue;
+    if (Math.abs(w.x[f]! - s.x) > reach || Math.abs(w.y[f]! - s.y) > reach) continue;
+    FREE_NEAR[nf++] = f;
+  }
+  for (let a = 0; a < nOwn; a++) {
+    const o = ownPlanet(a);
+    for (let b = 0; b < nf; b++) {
+      const f = FREE_NEAR[b]!;
+      if (w.state[f] !== FREE) continue;
       const dx = w.x[f]! - w.x[o]!, dy = w.y[f]! - w.y[o]!, D = w.radius[f]! + w.radius[o]!, d2 = dx * dx + dy * dy;
       if (d2 >= D * D) continue;
       const d = Math.sqrt(d2) || 1, nx = dx / d, ny = dy / d;

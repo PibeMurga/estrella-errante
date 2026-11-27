@@ -2,6 +2,7 @@ import { stepComets } from './comets';
 import { breakPlanet } from './tidal';
 import { damageBody, stepIntegrity } from './integrity';
 import { stepRockImpacts } from './rockImpacts';
+import { OWN_LIST, ownPlanets } from './ownPlanets';
 import { stepEncounters, stepOwnPlanetRams, stepStarFlybys } from './encounters';
 import { DT, type SimConfig } from './config';
 import { IGNITION_MASS, stageFor } from './stages';
@@ -271,16 +272,16 @@ function moveOrbiting(w: World, i: number, absorbing: boolean, size: number, hol
   w.y[i] = s.y + Math.sin(a) * r;
 }
 
+
+
 // Tus planetas no se enciman: si dos se tocan en la órbita, se van separando de a poco a lo largo de ella
 // (el de adelante se adelanta y el de atrás se atrasa). También los dos pedazos de un partido.
 function separateOwnPlanets(w: World): void {
-  const P = w.planets, n = P.length;
-  for (let a = 0; a < n * 2; a++) {
-    const i = a < n ? P[a]! : w.twin[P[a - n]!]!;
-    if (i < 0 || w.state[i] !== ORBITING) continue;
-    for (let b = a + 1; b < n * 2; b++) {
-      const j = b < n ? P[b]! : w.twin[P[b - n]!]!;
-      if (j < 0 || w.state[j] !== ORBITING) continue;
+  const n = ownPlanets(w);
+  for (let a = 0; a < n; a++) {
+    const i = OWN_LIST()[a]!;
+    for (let b = a + 1; b < n; b++) {
+      const j = OWN_LIST()[b]!;
       const dx = w.x[i] - w.x[j], dy = w.y[i] - w.y[j], rr = (w.radius[i] + w.radius[j]) * 1.15;
       if (dx * dx + dy * dy >= rr * rr) continue;
       let da = Math.atan2(Math.sin(w.orbitAngle[i] - w.orbitAngle[j]), Math.cos(w.orbitAngle[i] - w.orbitAngle[j]));
