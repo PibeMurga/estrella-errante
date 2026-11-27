@@ -10,9 +10,9 @@ test('el sol tiene fulguraciones y eyecciones en el borde', async ({ page }) => 
   await page.mouse.move(640, 360);
   for (let k = 0; k < 8; k++) await page.mouse.wheel(0, -100);   // acercar
   await page.waitForTimeout(2500);
-  for (let k = 0; k < 4; k++) {
+  for (let k = 0; k < 8; k++) {
     await page.screenshot({ path: `artifacts/e2e/sol-${k}.png`, clip: { x: 440, y: 160, width: 400, height: 400 } });
-    await page.waitForTimeout(700);
+    await page.waitForTimeout(2200);
   }
   expect(errors).toEqual([]);
 });

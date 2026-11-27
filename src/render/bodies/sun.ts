@@ -22,7 +22,7 @@ void main(){ vO = position; vec4 w = modelMatrix*vec4(position,1.); vN = normali
 // Superficie del sol: granulación que hierve, manchas, fáculas y oscurecimiento hacia el borde.
 const HASH_GLSL = /* glsl */ `float h1(float n){ return fract(sin(n*1.7 + 3.1)*43758.5453); }
 `;
-const SUN_FRAG = /* glsl */ HASH_GLSL + `uniform float uTime; uniform float uIntensity; uniform vec3 uHot; uniform vec3 uMid; uniform vec3 uCool; varying vec3 vN; varying vec3 vO; varying vec3 vV;
+const SUN_FRAG = /* glsl */ HASH_GLSL + `uniform vec3 uCamDir; uniform float uTime; uniform float uIntensity; uniform vec3 uHot; uniform vec3 uMid; uniform vec3 uCool; varying vec3 vN; varying vec3 vO; varying vec3 vV;
 void main(){
   vec3 p = normalize(vO); float t = uTime;
   float mu = clamp(dot(normalize(vN), normalize(vV)), 0., 1.);
@@ -50,8 +50,9 @@ void main(){
     float fi = float(i), tt = t/(6. + fi*2.7) + fi*.37, id = floor(tt), ph = fract(tt);
     if (h1(id*2.3 + fi*5.9) < .45) continue;   // a veces no estalla: sin ritmo fijo
     float u1 = h1(id*12.9 + fi*7.1), u2 = h1(id*78.2 + fi*3.3)*2. - 1., sxy = sqrt(1. - u2*u2);
-    vec3 c = vec3(cos(u1*6.2832)*sxy, u2, sin(u1*6.2832)*sxy);
-    float dd = distance(p, c);
+    // Siempre del lado que mira a la cámara (en el mundo, no en la superficie que gira): que se vean.
+    vec3 c = normalize(vec3(cos(u1*6.2832)*sxy, u2, sin(u1*6.2832)*sxy) + uCamDir*1.3);
+    float dd = distance(normalize(vN), c);
     if (dd > .45) continue;
     float env = smoothstep(0., .05, ph) * exp(-ph*6.);
     float tur = snoise(p*40. + id) * .5 + .5;
@@ -78,24 +79,74 @@ void main(){
   float loops = smoothstep(.6, .8, flow) * exp(-h*9.) * smoothstep(0., .03, h);
   float spikes = smoothstep(.55, .9, fbm(vec3(cos(a)*7., sin(a)*7., uTime*.05), 4)*.5+.5);
   vec3 prom = uTint * vec3(1.,.7,.55) * loops * (1.2 + spikes) * 1.4;
-  // Eyecciones: un chorro de plasma sale del borde, sube retorciéndose, suelta una gota en la punta y se deshace.
+  // Eyecciones del borde: cada una distinta. Según su tipo es un arco de plasma con los dos pies en el borde, un chorro
+  // fino que se inclina, un abanico de filamentos o una nube de gas; cambian la altura, el grosor, la inclinación y el color.
   for (int i = 0; i < 2; i++) {
     float fi = float(i), tt = uTime/(7.5 + fi*3.4) + fi*.53, id = floor(tt), ph = fract(tt);
     if (h1(id*6.7 + fi*1.3) < .4) continue;
     float ang = h1(id*41.3 + fi*9.7) * 6.2832;
-    float da = abs(atan(sin(a - ang), cos(a - ang)));
-    if (da > .6) continue;
-    float top = (.12 + .55*h1(id*5.1 + fi)) * pow(ph, .55);   // hasta dónde llegó
-    float wid = .05 + .07*h;
-    float n = fbm(vec3(d*3.5, id + uTime*.6), 3)*.5+.5;
-    float jet = exp(-pow(da/wid, 2.)) * (1. - smoothstep(top*.55, top, h)) * smoothstep(0., .02, h);
-    float blob = exp(-(pow(h - top, 2.) + pow(da*r, 2.))/(.0025 + .004*ph));
+    float sa = atan(sin(a - ang), cos(a - ang));
+    if (abs(sa) > .9 || h < 0.) continue;
+    float kind = h1(id*11.1 + fi*4.4);
+    float top = (.1 + .5*h1(id*5.1 + fi)) * pow(ph, .55);
+    float wid = .02 + .06*h1(id*8.8 + fi);
+    float lean = (h1(id*2.2 + fi) - .5) * 1.4;
+    float x = sa - lean*h;                                  // coordenada a lo ancho, inclinada con la altura
+    float n = fbm(vec3(d*4. + id, uTime*.5), 3)*.5+.5;
+    float m;
+    if (kind < .3) {                                         // chorro fino que se inclina; a veces suelta una gota
+      m = exp(-pow(x/(wid*(1. + 2.5*h)), 2.)) * (1. - smoothstep(top*.5, top, h));
+      m += step(.6, h1(id*7.7)) * exp(-(pow(h - top, 2.) + x*x)/(.0015 + .003*ph)) * .9;
+    } else if (kind < .6) {                                  // arco: un lazo de plasma con los dos pies en el borde
+      float A = top*.8 + .03;
+      m = exp(-pow((length(vec2(x*1.2, h)) - A)/(wid*.7), 2.)) * (.5 + .9*n);
+    } else if (kind < .82) {                                 // abanico de filamentos que se abre
+      float fan = abs(sin(atan(x, h + .02)*9. + id*5. + n*2.));
+      m = smoothstep(.75, 1., fan) * (1. - smoothstep(top*.6, top*1.1, length(vec2(x, h)))) * (.6 + .8*n);
+    } else {                                                 // nube de gas que se hincha y se va
+      m = (1. - smoothstep(top*.25, top*.6*(1. + .4*n), length(vec2(x, h - top*.55)))) * (.4 + .7*n);
+    }
     float env = smoothstep(0., .08, ph) * (1. - smoothstep(.55, 1., ph));
-    prom += uTint * vec3(1.15,.8,.5) * (jet*(.5 + .9*n) + blob*1.3) * env * 2.2;
+    vec3 tcol = mix(uTint * vec3(1.15,.75,.45), uTint * vec3(1.3,1.1,.9), h1(id*9.3 + fi));   // más rojiza o más blanca
+    prom += tcol * m * env * 2.;
   }
   float breathe = .9 + .1*(fbm(vec3(cos(a)*1.5, sin(a)*1.5, uTime*.03), 3)*.5+.5);
   vec3 cor = uTint * exp(-h*2.2) * .28 * breathe;
   gl_FragColor = vec4((ring + prom + cor) * (1. - smoothstep(1.8, 3.3, r)), 1.);
+}`;
+
+// Eyecciones de frente: plasma que sube desde un punto del disco hacia la cámara. Visto de frente es un estallido
+// turbulento que se abre (estirado hacia afuera del disco, por la perspectiva) y vuelve a caer apagándose.
+const FRONT_FRAG = /* glsl */ HASH_GLSL + `uniform float uTime; uniform vec3 uTint; varying vec2 vUv;
+void main(){
+  vec2 d = (vUv*2.-1.)*1.1; float r = length(d);
+  if (r > 1.) discard;
+  vec3 col = vec3(0.);
+  for (int i = 0; i < 2; i++) {
+    float fi = float(i), tt = uTime/(8.5 + fi*3.9) + fi*.71 + .3, id = floor(tt), ph = fract(tt);
+    if (h1(id*3.9 + fi*8.1) < .4) continue;
+    float ra = sqrt(h1(id*17.3 + fi)) * .75, aa = h1(id*29.1 + fi*2.) * 6.2832;
+    vec2 c = vec2(cos(aa), sin(aa)) * ra;
+    vec2 q = d - c;
+    vec2 out1 = ra > .01 ? c/ra : vec2(1., 0.);
+    float along = dot(q, out1), side = dot(q, vec2(-out1.y, out1.x));
+    float stretch = 1. + 1.6*ra;                       // más cerca del borde, más se ve de costado: se estira
+    float R = .03 + .16*pow(ph, .5);
+    float e = length(vec2(along/stretch, side));
+    float n = fbm(vec3(q*18., id + uTime*.7), 3)*.5+.5;
+    float kind = h1(id*13.7 + fi*6.1), body;
+    if (kind < .4) body = 1. - smoothstep(R*.4, R*(1. + .5*n), e);                              // estallido
+    else if (kind < .75) {                                                                    // dos cintas paralelas que se separan
+      float rot = h1(id*4.4) * 3.1416, u = q.x*cos(rot) + q.y*sin(rot), v = -q.x*sin(rot) + q.y*cos(rot);
+      float gap = .01 + .07*ph;
+      body = (exp(-pow((abs(v) - gap)/.012, 2.)) * (1. - smoothstep(R*.6, R*1.4, abs(u)))) * (.5 + n);
+    } else body = exp(-pow((e - R*1.3)/(.015 + .02*n), 2.)) * (.4 + n);                          // onda que se abre
+    float env = smoothstep(0., .06, ph) * (1. - smoothstep(.45, 1., ph));
+    float fil = smoothstep(.55, .75, n) * body;        // filamentos más brillantes
+    vec3 tcol = mix(vec3(1.2,.85,.55), vec3(1.35,1.15,.95), h1(id*2.9 + fi));
+    col += uTint * tcol * (body*.6 + fil*1.2) * env * 1.8;
+  }
+  gl_FragColor = vec4(col * (1. - smoothstep(.9, 1., r)), 1.);
 }`;
 
 // Erupciones de la hipergigante: una cáscara de gas que sale despedida y se expande en un anillo (como Eta Carinae).
@@ -116,7 +167,8 @@ export const starRenderRadius = starSize;
 export function createSunLayer(sunPos: Vector3): Layer {
   const pal = Float32Array.from(PALETTES[0]!);
   const hot = new Vector3(), mid = new Vector3(), cool = new Vector3(), tint = new Vector3();
-  const sunMat = new ShaderMaterial({ uniforms: { uTime: { value: 0 }, uIntensity: { value: 1.45 }, uHot: { value: hot }, uMid: { value: mid }, uCool: { value: cool } }, vertexShader: SUN_VERT, fragmentShader: NOISE_GLSL + SUN_FRAG });
+  const camDir = new Vector3();
+  const sunMat = new ShaderMaterial({ uniforms: { uCamDir: { value: camDir }, uTime: { value: 0 }, uIntensity: { value: 1.45 }, uHot: { value: hot }, uMid: { value: mid }, uCool: { value: cool } }, vertexShader: SUN_VERT, fragmentShader: NOISE_GLSL + SUN_FRAG });
   const sun = new Mesh(new SphereGeometry(1, 128, 64), sunMat);
   const haloMat = new ShaderMaterial({
     uniforms: { uTime: { value: 0 }, uTint: { value: tint } }, vertexShader: HALO_VERT, fragmentShader: NOISE_GLSL + HALO_FRAG,
@@ -128,11 +180,17 @@ export function createSunLayer(sunPos: Vector3): Layer {
     depthWrite: false, transparent: true, blending: AdditiveBlending,
   });
   const shell = new Mesh(new PlaneGeometry(12, 12), shellMat);
+  const frontMat = new ShaderMaterial({
+    uniforms: { uTime: { value: 0 }, uTint: { value: tint } }, vertexShader: HALO_VERT, fragmentShader: NOISE_GLSL + FRONT_FRAG,
+    depthWrite: false, depthTest: false, transparent: true, blending: AdditiveBlending,
+  });
+  const front = new Mesh(new PlaneGeometry(2.2, 2.2), frontMat);
+  front.renderOrder = 2;
   shell.visible = false;
   let baseIntensity = 1.45, baseLight = 2.4;
   const light = new PointLight(0xffc890, 2.4, 0, 0);
   const group = new Group();
-  group.add(sun, halo, shell, light);
+  group.add(sun, halo, shell, front, light);
   let shownR = -1;   // radio que se ve: sigue al radio real con una curva suave, sin saltos
 
   return {
@@ -159,6 +217,10 @@ export function createSunLayer(sunPos: Vector3): Layer {
       sun.visible = halo.visible = shownR * k > 0.05;
       sun.position.copy(sunPos); sun.scale.setScalar(r); sun.rotation.y = ctx.time * 0.03;
       halo.position.copy(sunPos); halo.scale.setScalar(r); halo.quaternion.copy(ctx.camera.quaternion);
+      front.visible = sun.visible;
+      // Un poco hacia la cámara, para que quede delante de la superficie.
+      camDir.copy(ctx.camera.position).sub(sunPos).normalize();
+      front.position.copy(sunPos).addScaledVector(camDir, r * 1.02); front.scale.setScalar(r); front.quaternion.copy(ctx.camera.quaternion);
       // Erupciones de la hipergigante: cada tanto sale una cáscara de gas.
       const et = ctx.time % ERUPTION_EVERY;
       shell.visible = hyper && et < ERUPTION_LAST;
@@ -172,6 +234,7 @@ export function createSunLayer(sunPos: Vector3): Layer {
       tint.set(pal[3]!, pal[4]!, pal[5]!).multiplyScalar(1.05);
       sunMat.uniforms['uTime']!.value = ctx.time;
       haloMat.uniforms['uTime']!.value = ctx.time;
+      frontMat.uniforms['uTime']!.value = ctx.time;
     },
     applyParams(p) {
       baseIntensity = p.sunIntensity;
