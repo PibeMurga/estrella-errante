@@ -1,4 +1,5 @@
 import './nameScreen.css';
+import { drawPlanetPreview, PREVIEW_COLORS } from './planetPreview';
 import { NAME_MAX, PLANET_TYPES, savedName, savedPlanetType, setPlanetType, setPlayerName, suggestName } from './playerName';
 
 // «NOMBRÁ TU MUNDO»: antes de la partida. Enter (o A en el mando) empieza; «SUGERIR» (o X) propone un nombre.
@@ -11,7 +12,7 @@ export function createNameScreen(parent: HTMLElement, onStart: (name: string, pl
       <div class="title">NOMBRÁ TU MUNDO</div>
       <div class="sub">NACE COMO PLANETA · SE ENCIENDE COMO ESTRELLA · TERMINA COMO AGUJERO NEGRO</div>
       <input type="text" maxlength="${NAME_MAX}" spellcheck="false" autocomplete="off">
-      <div class="types">${PLANET_TYPES.map((t, i) => `<button class="type t${i}" data-t="${i}"><i></i>${t}</button>`).join('')}</div>
+      <div class="types">${PLANET_TYPES.map((t, i) => `<button class="type t${i}" data-t="${i}"><canvas width="72" height="72"></canvas><span>${t}</span></button>`).join('')}</div>
       <div class="row"><button class="suggest">SUGERIR</button><button class="go">EMPEZAR</button></div>
       <div class="keys">[ENTER] EMPEZAR</div>
     </div>`;
@@ -23,6 +24,14 @@ export function createNameScreen(parent: HTMLElement, onStart: (name: string, pl
   const pick = (t: number): void => { type = t; typeBtns.forEach((b, i) => b.classList.toggle('on', i === t)); };
   typeBtns.forEach((b, i) => b.addEventListener('click', () => { pick(i); input.focus(); }));
   pick(type);
+  // Los planetitas giran despacio mientras elegís.
+  const previews = typeBtns.map((b) => b.querySelector('canvas') as HTMLCanvasElement);
+  const spin = (now: number): void => {
+    if (done) return;
+    previews.forEach((cv, i) => drawPlanetPreview(cv, PREVIEW_COLORS[i]!, now / 1000 + i * 2, 1.3 + i));
+    requestAnimationFrame(spin);
+  };
+  requestAnimationFrame(spin);
   const start = (): void => {
     if (done) return;
     done = true;
