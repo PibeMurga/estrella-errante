@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG } from '../../src/sim/config';
-import { STAGES, stageFor, stageProgress } from '../../src/sim/stages';
+import { STAGE_HYPER, STAGES, stageFor, stageProgress } from '../../src/sim/stages';
 import { type Intent, step } from '../../src/sim/step';
 import { addBody, createWorld, KIND_ASTEROID } from '../../src/sim/world';
 
@@ -13,6 +13,13 @@ describe('etapas de la estrella', () => {
     expect(stageFor(100)).toBe(3);
     expect(stageFor(160)).toBe(4);
     expect(stageFor(1e9)).toBe(STAGES.length - 1);
+  });
+
+  it('la hipergigante es la última etapa, desde masa 280', () => {
+    expect(STAGES[STAGE_HYPER]!.name).toBe('HIPERGIGANTE');
+    expect(STAGES.length - 1).toBe(STAGE_HYPER);
+    expect(stageFor(279.9)).toBe(4);
+    expect(stageFor(280)).toBe(STAGE_HYPER);
   });
 
   it('masa negativa o inválida es la primera etapa', () => {

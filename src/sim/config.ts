@@ -67,6 +67,13 @@ export interface SimConfig {
   encounterGap: number;          // dos planetas libres no se acercan a menos de (suma de radios × esto): el chico bordea al grande
   crashSizeRatio: number;        // sólo pueden chocar planetas rocosos o helados casi iguales (cociente de radios hasta esto)
   crashChance: number;           // y de esos pares, sólo esta parte choca de verdad (el resto se esquiva)
+  rivalMassScale: number;        // masa del rival en la carrera = esto × la masa física del agujero negro
+  collapseTime: number;          // segundos de la cinemática del colapso (supernova y nacimiento)
+  mergeTime: number;             // segundos de la cinemática de la fusión
+  huntTimeLimit: number;         // segundos para alcanzar al rival en la caza; si no, se escapa
+  huntFleeSpeed: number;         // velocidad del rival cuando huye
+  huntSwallowFactor: number;     // tu agujero negro traga lo que pasa a menos de (su radio × esto)
+  huntStartMaxDist: number;      // al empezar la caza, el rival nunca queda más lejos que esto
 }
 
 export const DEFAULT_CONFIG: SimConfig = {
@@ -135,4 +142,11 @@ export const DEFAULT_CONFIG: SimConfig = {
   encounterGap: 1.12,
   crashSizeRatio: 1.35,
   crashChance: 0.8,
+  rivalMassScale: 50,
+  collapseTime: 6,
+  mergeTime: 5,
+  huntTimeLimit: 60,
+  huntFleeSpeed: 14,
+  huntSwallowFactor: 1.2,
+  huntStartMaxDist: 260,
 };
