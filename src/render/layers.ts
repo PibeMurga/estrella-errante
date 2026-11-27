@@ -33,7 +33,7 @@ export function buildLayers(deps: LayerDeps): BuiltLayers {
     layers: [
       createSky(deps.quality, deps.rng),
       createSunLayer(sunPos),
-      createPlayerPlanetLayer(sunPos, Math.floor(deps.rng.next() * 3)),
+      createPlayerPlanetLayer(sunPos),
       planets,
       createPlanetScarsLayer(deps.world, sunPos, new Vector3(1.25, 1.02, 0.8), planets.spinOf),
       createBrokenPlanetsLayer(deps.world, sunPos),

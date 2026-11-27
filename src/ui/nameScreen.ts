@@ -1,9 +1,9 @@
 import './nameScreen.css';
-import { NAME_MAX, savedName, setPlayerName, suggestName } from './playerName';
+import { NAME_MAX, PLANET_TYPES, savedName, savedPlanetType, setPlanetType, setPlayerName, suggestName } from './playerName';
 
 // «NOMBRÁ TU MUNDO»: antes de la partida. Enter (o A en el mando) empieza; «SUGERIR» (o X) propone un nombre.
 // Lo guardado aparece ya escrito. Vacío: se usa una sugerencia.
-export function createNameScreen(parent: HTMLElement, onStart: (name: string) => void): void {
+export function createNameScreen(parent: HTMLElement, onStart: (name: string, planetType: number) => void): void {
   const root = document.createElement('div');
   root.className = 'namescreen';
   root.innerHTML = `
@@ -11,19 +11,25 @@ export function createNameScreen(parent: HTMLElement, onStart: (name: string) =>
       <div class="title">NOMBRÁ TU MUNDO</div>
       <div class="sub">NACE COMO PLANETA · SE ENCIENDE COMO ESTRELLA · TERMINA COMO AGUJERO NEGRO</div>
       <input type="text" maxlength="${NAME_MAX}" spellcheck="false" autocomplete="off">
+      <div class="types">${PLANET_TYPES.map((t, i) => `<button class="type t${i}" data-t="${i}"><i></i>${t}</button>`).join('')}</div>
       <div class="row"><button class="suggest">SUGERIR</button><button class="go">EMPEZAR</button></div>
       <div class="keys">[ENTER] EMPEZAR</div>
     </div>`;
   parent.appendChild(root);
   const input = root.querySelector('input') as HTMLInputElement;
   input.value = savedName() || suggestName();
-  let done = false, padHeld = true;
+  let done = false, padHeld = true, type = savedPlanetType();
+  const typeBtns = Array.from(root.querySelectorAll<HTMLElement>('.type'));
+  const pick = (t: number): void => { type = t; typeBtns.forEach((b, i) => b.classList.toggle('on', i === t)); };
+  typeBtns.forEach((b, i) => b.addEventListener('click', () => { pick(i); input.focus(); }));
+  pick(type);
   const start = (): void => {
     if (done) return;
     done = true;
     const name = setPlayerName(input.value);
+    setPlanetType(type);
     root.classList.add('off');
-    onStart(name);
+    onStart(name, type);
   };
   input.addEventListener('input', () => { const p = input.selectionStart; input.value = input.value.toUpperCase(); input.setSelectionRange(p, p); });
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); start(); } e.stopPropagation(); });

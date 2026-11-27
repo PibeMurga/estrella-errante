@@ -4,6 +4,8 @@ import { showFatal } from '../render/context';
 import { createSpaceView } from '../render/spaceView';
 import { GAME_CONFIG } from '../sim/config';
 import { createNameScreen } from '../ui/nameScreen';
+import { savedPlanetType } from '../ui/playerName';
+import { playerLook } from '../render/playerLook';
 import { createAmbient } from '../audio/ambient';
 import { stageFor, STAGE_HYPER } from '../sim/stages';
 import { FixedStepper } from '../sim/loop';
@@ -62,7 +64,8 @@ if (!view.ok) {
   window.addEventListener('keydown', (e) => { startMusic(); if ((e.key === 'm' || e.key === 'M') && named) music.toggleMute(); });
   let lastIgn = world.ignitions;
   let named = asStar || params.get('n') === '1';
-  if (!named) createNameScreen(document.body, (name) => { named = true; hud.setName(name); last = performance.now(); });
+  playerLook.planetType = savedPlanetType();
+  if (!named) createNameScreen(document.body, (name, type) => { named = true; playerLook.planetType = type; hud.setName(name); last = performance.now(); });
   let last = performance.now();
   const frame = (now: number): void => {
     const elapsed = (now - last) / 1000;

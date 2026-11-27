@@ -3,6 +3,7 @@ import { OVER_SWALLOWED, PHASE_IGNITION, starSize, type World } from '../../sim/
 import { toWorld } from '../cameraRig';
 import type { Layer } from '../layer';
 import { sceneLight } from '../lighting';
+import { playerLook } from '../playerLook';
 import { NOISE_GLSL } from '../shaders/noise';
 import { smoothToward } from '../smooth';
 
@@ -51,14 +52,15 @@ const PALETTES: readonly (readonly [string, string, string])[] = [
 
 const smooth01 = (x: number): number => { const t = Math.min(1, Math.max(0, x)); return t * t * (3 - 2 * t); };
 
-export function createPlayerPlanetLayer(sunPos: Vector3, paletteIndex: number): Layer {
-  const pal = PALETTES[((paletteIndex % PALETTES.length) + PALETTES.length) % PALETTES.length]!;
+export function createPlayerPlanetLayer(sunPos: Vector3): Layer {
+  let shownType = playerLook.planetType;
+  const pal = PALETTES[shownType % PALETTES.length]!;
   const light = new Vector3();
   const mat = new ShaderMaterial({
     uniforms: {
       uTime: { value: 0 }, uSunPos: { value: sunPos }, uLight: { value: light },
       uA: { value: new Color(pal[0]) }, uB: { value: new Color(pal[1]) }, uC: { value: new Color(pal[2]) },
-      uHeat: { value: 0 }, uCore: { value: 0 }, uFade: { value: 1 }, uSeed: { value: (paletteIndex * 7.13) % 10 },
+      uHeat: { value: 0 }, uCore: { value: 0 }, uFade: { value: 1 }, uSeed: { value: 3.7 },
     },
     vertexShader: VERT, fragmentShader: NOISE_GLSL + FRAG,
   });
@@ -83,6 +85,11 @@ export function createPlayerPlanetLayer(sunPos: Vector3, paletteIndex: number): 
       mesh.rotation.y = ctx.time * 0.12;
       light.set(1.25, 1.02, 0.8).multiplyScalar(sceneLight.level * 1.1);
       const u = mat.uniforms;
+      if (playerLook.planetType !== shownType) {   // lo eligió en la pantalla del nombre
+        shownType = playerLook.planetType;
+        const p = PALETTES[shownType % PALETTES.length]!;
+        (u['uA']!.value as Color).set(p[0]); (u['uB']!.value as Color).set(p[1]); (u['uC']!.value as Color).set(p[2]);
+      }
       u['uTime']!.value = ctx.time;
       u['uHeat']!.value = smooth01((w.star.mass - 16) / 14);   // enana marrón desde 18, al rojo al llegar a la ignición
       u['uCore']!.value = igniting ? smooth01(t / 1.2) * (0.45 + 0.55 * smooth01((t - 1.0) / 0.2)) : 0;   // contenido
