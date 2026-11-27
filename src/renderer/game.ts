@@ -43,6 +43,7 @@ if (!view.ok) {
   const canPause = (): boolean => named && world.over === 0 && world.phase !== PHASE_COLLAPSE && world.phase !== PHASE_MERGE;
   const pause = createPause(document.body, {
     canPause, onRestart: restart,
+    onVolume: (m, x) => { music.setVolume(m); sfx.setVolume(x); },
     onChange: (on) => { if (!on) input.poll(world.star.x, world.star.y); },   // al retomar se descarta lo apretado durante la pausa
   });
   window.__GAME__ = { diagnostics: view.diagnostics, world, forceOver: (kind: number) => { world.over = kind; } };

@@ -9,15 +9,29 @@ export interface Pause {
   pollPad(canPause: boolean): void;
 }
 
-export function createPause(parent: HTMLElement, opts: { canPause: () => boolean; onRestart: () => void; onChange?: (on: boolean) => void }): Pause {
+export function createPause(parent: HTMLElement, opts: { canPause: () => boolean; onRestart: () => void; onChange?: (on: boolean) => void; onVolume?: (music: number, sfx: number) => void }): Pause {
   const root = document.createElement('div');
   root.className = 'pause';
   root.innerHTML = `
     <div class="panel">
       <div class="title">PAUSA</div>
+      <div class="vols">
+        <label>MÚSICA <input type="range" class="vmusic" min="0" max="100" step="1"></label>
+        <label>EFECTOS <input type="range" class="vsfx" min="0" max="100" step="1"></label>
+      </div>
       <div class="keys"><span>[ESC] SEGUIR</span><span>[R] NUEVA PARTIDA</span></div>
     </div>`;
   parent.appendChild(root);
+  // Volúmenes: se guardan en el equipo.
+  const vm = root.querySelector('.vmusic') as HTMLInputElement, vs = root.querySelector('.vsfx') as HTMLInputElement;
+  const read = (k: string, d: number): number => { try { const v = Number(localStorage.getItem(k)); return localStorage.getItem(k) !== null && Number.isFinite(v) ? v : d; } catch { return d; } };
+  vm.value = String(read('magnar.vol.musica', 70)); vs.value = String(read('magnar.vol.efectos', 80));
+  const applyVol = (): void => {
+    try { localStorage.setItem('magnar.vol.musica', vm.value); localStorage.setItem('magnar.vol.efectos', vs.value); } catch { /* sin almacenamiento */ }
+    opts.onVolume?.(Number(vm.value) / 100, Number(vs.value) / 100);
+  };
+  vm.addEventListener('input', applyVol); vs.addEventListener('input', applyVol);
+  queueMicrotask(applyVol);
   let paused = false, padHeld = true;
 
   const api: Pause = {

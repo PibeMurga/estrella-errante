@@ -7,6 +7,7 @@ export interface Ambient {
   start(): void;
   toggleMute(): boolean;      // devuelve si quedó en silencio
   setGrowth(g: number): void;  // 0 (planeta recién nacido) a 1 (hipergigante)
+  setVolume(v: number): void;  // 0 a 1
   swell(): void;               // un golpe de volumen y brillo (ignición)
 }
 
@@ -22,7 +23,8 @@ export function createAmbient(): Ambient {
   let ctx: AudioContext | null = null;
   let master: GainNode, padFilter: BiquadFilterNode, droneFilter: BiquadFilterNode, delayIn: GainNode;
   const pads: OscillatorNode[] = [];
-  let muted = false, growth = 0, chordIx = 0, timer = 0;
+  let muted = false, growth = 0, chordIx = 0, timer = 0, vol = 1;
+  const level = (): number => (muted ? 0 : 0.32 * vol);
 
   const build = (): void => {
     const a = new AudioContext();
@@ -30,7 +32,7 @@ export function createAmbient(): Ambient {
     master = a.createGain(); master.gain.value = 0;
     const comp = a.createDynamicsCompressor();
     master.connect(comp); comp.connect(a.destination);
-    master.gain.setTargetAtTime(muted ? 0 : 0.32, a.currentTime, 2.5);   // entra suave
+    master.gain.setTargetAtTime(level(), a.currentTime, 2.5);   // entra suave
 
     // Eco estéreo: dos retardos cruzados (izquierda ↔ derecha) con realimentación.
     delayIn = a.createGain(); delayIn.gain.value = 0.5;
@@ -113,15 +115,16 @@ export function createAmbient(): Ambient {
     },
     toggleMute() {
       muted = !muted;
-      if (ctx) master.gain.setTargetAtTime(muted ? 0 : 0.32, ctx.currentTime, 0.3);
+      if (ctx) master.gain.setTargetAtTime(level(), ctx.currentTime, 0.3);
       return muted;
     },
     setGrowth(g) { growth = Math.max(0, Math.min(1, g)); },
+    setVolume(v) { vol = Math.max(0, Math.min(1, v)); if (ctx) master.gain.setTargetAtTime(level(), ctx.currentTime, 0.15); },
     swell() {
       if (!ctx || muted) return;
       const t = ctx.currentTime;
-      master.gain.setTargetAtTime(0.5, t, 0.6);
-      master.gain.setTargetAtTime(0.32, t + 3.5, 2);
+      master.gain.setTargetAtTime(0.5 * vol, t, 0.6);
+      master.gain.setTargetAtTime(level(), t + 3.5, 2);
       padFilter.frequency.setTargetAtTime(2400, t, 0.8);
       padFilter.frequency.setTargetAtTime(900, t + 3, 3);
     },

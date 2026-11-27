@@ -5,6 +5,7 @@
 export interface Sfx {
   start(): void;
   setMuted(m: boolean): void;
+  setVolume(v: number): void;   // 0 a 1
   capture(): void;
   sling(): void;
   bolt(size: number): void;
@@ -20,7 +21,7 @@ export interface Sfx {
 
 export function createSfx(): Sfx {
   let a: AudioContext | null = null, out: GainNode, noise: AudioBuffer, rumbleGain: GainNode, rumbleFilter: BiquadFilterNode;
-  let muted = false;
+  let muted = false, vol = 1;
   const last: Record<string, number> = {};
   const ok = (key: string, gap: number): boolean => {
     if (!a || muted) return false;
@@ -32,7 +33,7 @@ export function createSfx(): Sfx {
 
   const build = (): void => {
     a = new AudioContext();
-    out = a.createGain(); out.gain.value = 0.55;
+    out = a.createGain(); out.gain.value = 0.55 * vol;
     const comp = a.createDynamicsCompressor(); comp.threshold.value = -16;
     out.connect(comp); comp.connect(a.destination);
     noise = a.createBuffer(1, a.sampleRate * 2, a.sampleRate);
@@ -65,7 +66,8 @@ export function createSfx(): Sfx {
       if (a) { void a.resume(); return; }
       try { build(); } catch { /* sin audio */ }
     },
-    setMuted(m) { muted = m; if (a) out.gain.setTargetAtTime(m ? 0 : 0.55, a.currentTime, 0.1); },
+    setMuted(m) { muted = m; if (a) out.gain.setTargetAtTime(m ? 0 : 0.55 * vol, a.currentTime, 0.1); },
+    setVolume(v) { vol = Math.max(0, Math.min(1, v)); if (a && !muted) out.gain.setTargetAtTime(0.55 * vol, a.currentTime, 0.1); },
     // Algo se suma a tu órbita: un toque cristalino y bajito.
     capture() { if (!ok('cap', 0.09)) return; tone(1150 + Math.random() * 500, 900, 0.18, 0.025, 'sine'); },
     // Honda: una ráfaga corta que sube.
