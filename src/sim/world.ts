@@ -50,6 +50,9 @@ export interface Comets {
   readonly mode: Uint8Array;     // 0 apagado, 1 caza, 2 huye
   readonly timer: Float32Array;  // segundos de huida que quedan
   readonly carry: Int32Array;    // cuántos cuerpos lleva robados (cada uno tiene parent = índice del cometa)
+  // Cada cometa es distinto: tamaño, velocidad, manera de girar, color y brillo, y el vaivén de su rumbo.
+  readonly size: Float32Array; readonly speedMul: Float32Array; readonly turnMul: Float32Array;
+  readonly tint: Float32Array; readonly bright: Float32Array; readonly wander: Float32Array;
 }
 
 export interface World {
@@ -238,6 +241,8 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       x: new Float64Array(MAX_COMETS), y: new Float64Array(MAX_COMETS), prevX: new Float64Array(MAX_COMETS), prevY: new Float64Array(MAX_COMETS),
       vx: new Float64Array(MAX_COMETS), vy: new Float64Array(MAX_COMETS), hp: new Float32Array(MAX_COMETS), mode: new Uint8Array(MAX_COMETS),
       timer: new Float32Array(MAX_COMETS), carry: new Int32Array(MAX_COMETS),
+      size: new Float32Array(MAX_COMETS).fill(1), speedMul: new Float32Array(MAX_COMETS).fill(1), turnMul: new Float32Array(MAX_COMETS).fill(1),
+      tint: new Float32Array(MAX_COMETS), bright: new Float32Array(MAX_COMETS).fill(1), wander: new Float32Array(MAX_COMETS),
     },
     cometClock: config.cometFirst, cometSteals: 0, cometKills: 0, rng: createRng(seed ^ 0x9e3779b9),
     over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, fireSlow: 0, fireSlowK: 0, fireSlowT: 1, breakFxCount: 0, breakFxX: 0, breakFxY: 0, breakFxR: 0, breakFxKind: 0, breakFxAx: 1, breakFxAy: 0, ignited: !config.planetStart, ignitions: 0, rockHits: 0, contactHits: 0, disintegrated: 0, diskGrazes: 0, inDisk: 0, tide: 0, diskStripAcc: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,

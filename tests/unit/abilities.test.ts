@@ -70,8 +70,9 @@ describe('habilidades por cantidad de planetas', () => {
   });
   it('desde el segundo escalón, un cometa también puede llevarse un planeta, y al morir suelta todo', () => {
     let stolePlanet = false;
-    for (let seed = 1; seed <= 6 && !stolePlanet; seed++) {
+    for (let seed = 1; seed <= 12 && !stolePlanet; seed++) {
       const w = system(6);
+      for (let j = 0; j < seed * 3; j++) w.rng.next();   // otra tirada en cada vuelta (el mundo es el mismo)
       const k = spawnComet(w, w.star.x + 2, w.star.y);
       step(w, idle);
       for (let i = 0; i < w.count; i++) if (w.state[i] === CARRIED && w.kind[i] === KIND_ROCKY) stolePlanet = true;

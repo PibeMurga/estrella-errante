@@ -21,6 +21,13 @@ export function spawnComet(w: World, x: number, y: number): number {
     cm.hp[k] = w.config.cometHp;
     cm.timer[k] = 0;
     cm.carry[k] = 0;
+    // Cada uno distinto: los grandes son más lentos y giran peor; los chicos, ágiles y rápidos.
+    const r = w.rng, sz = 0.6 + 1.0 * r.next();
+    cm.size[k] = sz;
+    cm.speedMul[k] = (1.35 - 0.35 * sz) * r.range(0.85, 1.15);
+    cm.turnMul[k] = (1.3 - 0.5 * sz) * r.range(0.7, 1.1);
+    cm.tint[k] = r.next(); cm.bright[k] = r.range(0.6, 1.4); cm.wander[k] = r.range(0, Math.PI * 2);
+    cm.hp[k] = Math.max(1, Math.round(w.config.cometHp * sz));
     return k;
   }
   return -1;
@@ -97,13 +104,16 @@ export function stepComets(w: World): void {
 
     // Rumbo: hacia la estrella al cazar, en contra al huir, con giro limitado.
     const hunting = cm.mode[k] === COMET_HUNT;
-    const want = hunting ? Math.atan2(dy, dx) : Math.atan2(-dy, -dx);
+    // No va derecho como un misil: su rumbo hace un vaivén lento (más amplio de lejos) y corrige de a poco.
+    const sway = (0.25 + 0.55 * Math.min(1, d / 120)) * Math.sin(w.tick / 60 * 0.5 + cm.wander[k]!);
+    const want = (hunting ? Math.atan2(dy, dx) : Math.atan2(-dy, -dx)) + sway;
     const heading = Math.atan2(cm.vy[k]!, cm.vx[k]!);
     let turn = want - heading;
     while (turn > Math.PI) turn -= Math.PI * 2;
     while (turn < -Math.PI) turn += Math.PI * 2;
-    const h = heading + clamp(turn, -c.cometTurn * DT, c.cometTurn * DT);
-    const sp = hunting ? c.cometSpeed : c.cometFleeSpeed;
+    const tr = c.cometTurn * cm.turnMul[k]!;
+    const h = heading + clamp(turn, -tr * DT, tr * DT);
+    const sp = (hunting ? c.cometSpeed : c.cometFleeSpeed) * cm.speedMul[k]!;
     cm.vx[k] = Math.cos(h) * sp; cm.vy[k] = Math.sin(h) * sp;
     x += cm.vx[k]! * DT;
     y += cm.vy[k]! * DT;
@@ -121,7 +131,8 @@ export function stepComets(w: World): void {
       // a veces, al azar, también el planeta más chico de tu sistema. Después huye.
       returnGathered(w);   // te toca: se desarma el montón y puede robar igual
       if (cm.carry[k] === 0 && w.orbitingCount > 0) {
-        const want = c.cometStealMin + Math.floor(w.rng.next() * (c.cometStealMax - c.cometStealMin + 1));
+        // Uno grande se lleva más.
+        const want = Math.round((c.cometStealMin + Math.floor(w.rng.next() * (c.cometStealMax - c.cometStealMin + 1))) * cm.size[k]!);
         let got = 0;
         while (got < want) {
           let best = -1, bestD = Infinity;
