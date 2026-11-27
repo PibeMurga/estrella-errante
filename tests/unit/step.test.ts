@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG, DT, type SimConfig } from '../../src/sim/config';
-import { type Intent, step } from '../../src/sim/step';
+import { type Intent, orbitBandWidth, step } from '../../src/sim/step';
 import {
   addBody, addSatellite, captureRadiusFor, starSize, createWorld, FREE, hashWorld, KIND_ASTEROID, KIND_GAS, KIND_MOON, ORBIT_PLANET, ORBITING, DEAD, ABSORBING } from '../../src/sim/world';
 
@@ -149,7 +149,7 @@ describe('captura', () => {
     step(w, NO_INPUT);
     const startAngle = w.orbitAngle[i];
     for (let k = 0; k < 600; k++) step(w, NO_INPUT);
-    expect(Math.hypot(w.x[i] - w.star.x, w.y[i] - w.star.y)).toBeCloseTo(orbitFloor(w.star.mass), 6);
+    { const d = Math.hypot(w.x[i] - w.star.x, w.y[i] - w.star.y), lo = orbitFloor(w.star.mass); expect(d).toBeGreaterThanOrEqual(lo - 1e-6); expect(d).toBeLessThanOrEqual(lo + orbitBandWidth(w.config, w.star.mass) + 1e-6); }   // en su cinturón
     expect(w.orbitAngle[i]).toBeGreaterThan(startAngle + 1);
   });
 
@@ -158,7 +158,7 @@ describe('captura', () => {
     const i = addBody(w, rock(3, 0, 0.5));
     for (let k = 0; k < 600; k++) step(w, NO_INPUT);
     for (let k = 0; k < 120; k++) step(w, { targetX: 60, targetY: 30, hasTarget: true });
-    expect(Math.hypot(w.x[i] - w.star.x, w.y[i] - w.star.y)).toBeCloseTo(orbitFloor(w.star.mass), 6);
+    { const d = Math.hypot(w.x[i] - w.star.x, w.y[i] - w.star.y), lo = orbitFloor(w.star.mass); expect(d).toBeGreaterThanOrEqual(lo - 1e-6); expect(d).toBeLessThanOrEqual(lo + orbitBandWidth(w.config, w.star.mass) + 1e-6); }   // en su cinturón
   });
 
   it('las órbitas nunca quedan adentro de la estrella, aunque crezca mucho', () => {

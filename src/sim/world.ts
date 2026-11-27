@@ -306,10 +306,16 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     // Cinturones: más probables y más poblados cuanto más grande el planeta (los gigantes también imantan mucho).
     if (rng.next() < 0.22 + 0.55 * Math.min(1, Math.max(0, (r - 4) / 8))) {
       const n = Math.min(MAX_DEBRIS, 20 + Math.floor((0.4 + 0.6 * rng.next()) * (r / 16) * (MAX_DEBRIS - 20)));
-      const inner = r * 2.1, outer = r * 3.4;
-      for (let d = 0; d < n; d++) {
-        const orbit = rng.range(inner, outer);
-        addSatellite(w, p, orbit, rng.range(0, Math.PI * 2), rng.range(0.25, 0.7), KIND_ASTEROID, 1.6 / Math.pow(orbit / r, 1.5));
+      // De 1 a 3 anillos, irregulares: cada uno con su ancho, su separación y su parte de los escombros.
+      const rings = 1 + Math.floor(Math.pow(rng.next(), 1.3) * 3);
+      let edge = r * rng.range(1.9, 2.3);
+      for (let k = 0; k < rings; k++) {
+        const width = r * rng.range(0.25, 0.7), share = Math.round(n / rings * rng.range(0.6, 1.4));
+        for (let d = 0; d < share; d++) {
+          const orbit = edge + rng.next() * width;
+          addSatellite(w, p, orbit, rng.range(0, Math.PI * 2), rng.range(0.25, 0.7), KIND_ASTEROID, 1.6 / Math.pow(orbit / r, 1.5));
+        }
+        edge += width + r * rng.range(0.3, 0.8);   // hueco entre anillos
       }
     }
   }

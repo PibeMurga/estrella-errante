@@ -33,7 +33,7 @@ describe('escalones de los planetas', () => {
     step(w, idle);
     expect(w.state[p]).toBe(ORBITING);
     expect(w.planetCaptures).toBe(1);
-    run(w, 6);
+    run(w, 16);   // se va a su línea de órbita de a poco
     let maxAst = 0;
     for (let i = 0; i < w.count; i++) if (w.state[i] === ORBITING && w.kind[i] === KIND_ASTEROID) maxAst = Math.max(maxAst, w.orbitR[i]);
     expect(w.orbitR[p]).toBeGreaterThan(maxAst + cfg.planetOrbitGap * 0.5);

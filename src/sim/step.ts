@@ -331,7 +331,17 @@ function moveOrbiting(w: World, i: number, absorbing: boolean, size: number, hol
   // Los planetas van en una franja propia, más afuera y más lenta que la de los asteroides.
   const planet = isPlanetKind(w.kind[i]!);
   const lo = planet ? bandHi + c.planetOrbitGap : bandLo, hi = planet ? lo + c.planetOrbitSpan : bandHi;
-  let target = absorbing ? size * 0.7 : clamp(w.orbitTarget[i], lo, hi);
+  // Tu sistema se ordena en cinturones: uno siendo chico, hasta tres a medida que crecés (con huecos entre ellos);
+  // tus planetas, en dos líneas de órbita. Cada cuerpo tiene su lugar fijo dentro de su cinturón.
+  let target: number;
+  if (absorbing) target = size * 0.7;
+  else if (planet) target = lo + (i % 2 === 0 ? 0.15 : 0.8) * (hi - lo) + (((i * 0.381966) % 1) - 0.5) * 0.12 * (hi - lo);
+  else {
+    const nb = 1 + Math.min(2, Math.floor(Math.sqrt(Math.max(0, w.star.mass)) / 6));   // 1 a 3 cinturones
+    const f = (i * 0.618034) % 1, k = Math.min(nb - 1, Math.floor(f * nb));
+    const within = ((i * 0.414214) % 1) - 0.5;
+    target = lo + ((k + 0.5) / nb + within * 0.55 / nb) * (hi - lo);
+  }
   // Recién atrapado se imanta: conserva el giro con que venía, se frena, baja un poco más que su órbita y después vuelve
   // suave a su lugar. Cada cuerpo a su manera: cuánto baja y cuánto tarda cambian (más lento si es un planeta).
   const v1 = (i * 0.618034) % 1, v2 = (i * 0.414214) % 1;
