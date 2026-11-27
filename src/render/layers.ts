@@ -6,6 +6,7 @@ import { createBlackHoleLayer } from './blackhole/blackHole';
 import { createAsteroidLayer } from './bodies/asteroids';
 import { createBrokenPlanetsLayer } from './bodies/brokenPlanets';
 import { createPlanetsLayer } from './bodies/planets';
+import { createPlanetScarsLayer } from './bodies/planetScars';
 import { createSunLayer } from './bodies/sun';
 import { createBoltLayer } from './fx/bolt';
 import { createCometsLayer } from './fx/comets';
@@ -29,6 +30,7 @@ export function buildLayers(deps: LayerDeps): BuiltLayers {
       createSky(deps.quality, deps.rng),
       createSunLayer(sunPos),
       planets,
+      createPlanetScarsLayer(deps.world, sunPos, new Vector3(1.25, 1.02, 0.8), planets.spinOf),
       createBrokenPlanetsLayer(deps.world, sunPos),
       createAsteroidLayer(deps.world, deps.rng),
       ambient,

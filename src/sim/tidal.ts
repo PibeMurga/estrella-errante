@@ -34,6 +34,7 @@ export function breakPlanet(w: World, i: number, ax: number, ay: number, tidal =
   w.breakAx[i] = ax; w.breakAy[i] = ay;
   if (tidal) w.tidalBreaks++;
   const R = w.radius[i];
+  w.breakFxCount++; w.breakFxX = w.x[i]; w.breakFxY = w.y[i]; w.breakFxR = R;   // el render dibuja una explosión
   spawnDebris(w, w.x[i], w.y[i], w.vx[i], w.vy[i], R, ax, ay, c.tidalDebris);
   w.radius[i] = R * 0.85;
   w.mass[i] = w.radius[i] ** 3;

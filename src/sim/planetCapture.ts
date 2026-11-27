@@ -42,14 +42,23 @@ export function graveHit(w: World, p: number): void {
 // Golpe a un planeta: sólo los que se pueden partir acumulan daño. Al llegar a su aguante se parte:
 // los rocosos y helados, en dos pedazos (el dibujo de planeta partido); los gaseosos pierden su envoltura.
 // Partido, entra solo a tu órbita. Devuelve true si lo partió.
+// Golpes que aguanta un planeta antes de partirse: los que dañan aguantan bastante más; los graves, infinito (-1).
+export function planetHp(w: World, p: number): number {
+  const c = w.config, t = planetTier(w.radius[p], w.star.mass);
+  if (t === TIER_GRAVE || t === TIER_CAPTURE) return -1;
+  return Math.ceil(c.planetHpPerRadius * (t === TIER_HURT ? c.hurtHpMul : 1) * w.radius[p]);
+}
+
 export function hitPlanet(w: World, p: number, dmg: number): boolean {
   const c = w.config;
-  if (w.state[p] !== FREE || w.broken[p]! > 0 || planetTier(w.radius[p], w.star.mass) !== TIER_BREAK) return false;   // ya partido: no se vuelve a partir
+  const hp = planetHp(w, p);
+  if (w.state[p] !== FREE || w.broken[p]! > 0 || hp < 0) return false;   // ya partido: no se vuelve a partir
   w.planetDmg[p] = w.planetDmg[p]! + dmg;
-  if (w.planetDmg[p]! < Math.ceil(c.planetHpPerRadius * w.radius[p])) return false;
+  if (w.planetDmg[p]! < hp) return false;
   const R = w.radius[p];
   let ax = w.x[p] - w.star.x, ay = w.y[p] - w.star.y;
   const d = Math.hypot(ax, ay) || 1; ax /= d; ay /= d;
+  if (w.kind[p] === KIND_GAS) { w.breakFxCount++; w.breakFxX = w.x[p]; w.breakFxY = w.y[p]; w.breakFxR = R; }
   if (w.kind[p] === KIND_GAS) spawnDebris(w, w.x[p], w.y[p], w.vx[p], w.vy[p], R, ax, ay, c.tidalDebris);
   else breakPlanet(w, p, ax, ay, false);
   // Además de los escombros, fragmentos rocosos más grandes que un asteroide, que se pueden sumar a tu órbita.

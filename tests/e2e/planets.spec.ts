@@ -88,3 +88,26 @@ test('un asteroide que le pega a un planeta deja una pequeña explosión en el t
   }
   expect(errors).toEqual([]);
 });
+
+test('los golpes dejan cráteres en el planeta y, en los que se pueden partir, grietas al rojo', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  await page.goto('/?seed=20261124');
+  await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
+  await page.evaluate(() => {
+    const w = window.__GAME__!.world; const s = w.star;
+    let p = -1;
+    for (let q = 0; q < w.planets.length; q++) { const i = w.planets[q]!; if (w.kind[i] === 1 || w.kind[i] === 2) { p = i; break; } }
+    w.x[p] = w.prevX[p] = s.x + 24; w.y[p] = w.prevY[p] = s.y; w.vx[p] = w.vy[p] = 0; w.radius[p] = 6; w.mass[p] = 216;
+    w.planetDmg[p] = 12;
+    for (let k = 0; k < 4; k++) {
+      const o = (w.impactCount % 16) * 4;
+      w.impacts[o] = p; w.impacts[o + 1] = Math.PI + (k - 1.5) * 0.35; w.impacts[o + 2] = k % 2 ? 1 : 0.45;
+      w.impactCount++;
+    }
+  });
+  await page.waitForTimeout(1600);
+  await page.screenshot({ path: 'artifacts/e2e/crateres.png', clip: { x: 640, y: 200, width: 360, height: 320 } });
+  expect(errors).toEqual([]);
+});

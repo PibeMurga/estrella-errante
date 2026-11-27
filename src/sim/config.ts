@@ -74,6 +74,7 @@ export interface SimConfig {
   planetOrbitGap: number;        // la órbita de los planetas empieza esto por fuera de la de los asteroides
   planetOrbitSpan: number;       // ancho de la franja de órbitas de los planetas
   planetHpPerRadius: number;     // golpes para partir un planeta = esto × su radio
+  hurtHpMul: number;             // los que dañan aguantan esto más veces
   ability1: number;              // fracción de los planetas de la pantalla en órbita para la habilidad 1
   ability2: number;
   ability3: number;
@@ -202,6 +203,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   planetOrbitGap: 6,
   planetOrbitSpan: 14,
   planetHpPerRadius: 2.5,
+  hurtHpMul: 2.5,
   ability1: 0.15,
   ability2: 0.30,
   ability3: 0.45,
@@ -210,7 +212,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   cometStealMin: 3,
   cometStealMax: 5,
   cometPlanetChance: 0.5,
-  halfSplitSpeed: 1.4,
+  halfSplitSpeed: 0.5,
   bhDiskR: 4.5,
   bhSwallowR: 1.5,
   bhDiskStrip: 1.2,

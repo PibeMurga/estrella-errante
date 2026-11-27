@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG } from '../../src/sim/config';
-import { hitPlanet, planetTier, TIER_BREAK, TIER_CAPTURE, TIER_GRAVE, TIER_HURT } from '../../src/sim/planetCapture';
+import { hitPlanet, planetHp, planetTier, TIER_BREAK, TIER_CAPTURE, TIER_GRAVE, TIER_HURT } from '../../src/sim/planetCapture';
 import { STAGES } from '../../src/sim/stages';
 import { type Intent, step } from '../../src/sim/step';
 import { addBody, addSatellite, BOLT, DEAD, massGain, createWorld, FREE, KIND_GAS, PROJECTILE, RETURNING, KIND_ASTEROID, KIND_MOON, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_NONE, starSize, type World } from '../../src/sim/world';
@@ -94,12 +94,16 @@ describe('partir planetas a golpes', () => {
     expect(Math.cbrt(w.mass[p] + w.mass[w.twin[p]!])).toBeGreaterThan(E * 0.8 * 0.8);
     expect(hitPlanet(w, p, 1000)).toBe(false);   // ya partido: no se vuelve a partir
   });
-  it('a los que dañan no se los puede partir', () => {
+  it('a los que dañan también se los puede partir, pero aguantan bastante más; a los graves, no', () => {
     const w = guarded(100);
     const E = starSize(w.star.mass);
     const p = addBody(w, { x: 40, y: 0, vx: 0, vy: 0, radius: E * 1.3, kind: KIND_ROCKY });
-    for (let k = 0; k < 100; k++) hitPlanet(w, p, 1);
-    expect(w.planetBreaks).toBe(0);
+    expect(planetHp(w, p)).toBe(Math.ceil(cfg.planetHpPerRadius * cfg.hurtHpMul * E * 1.3));
+    for (let k = 0; k < planetHp(w, p) - 1; k++) expect(hitPlanet(w, p, 1)).toBe(false);
+    expect(hitPlanet(w, p, 1)).toBe(true);
+    const g = addBody(w, { x: -40, y: 0, vx: 0, vy: 0, radius: E * 1.8, kind: KIND_ROCKY });
+    for (let k = 0; k < 500; k++) hitPlanet(w, g, 1);
+    expect(w.broken[g]).toBe(0);
   });
   it('un gaseoso partido conserva su tamaño, suelta escombros y no desaparece', () => {
     const w = guarded(100);

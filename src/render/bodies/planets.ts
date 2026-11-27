@@ -253,7 +253,8 @@ interface Entry {
   indices: Int32Array; spin: Float32Array; seed: Float32Array;
 }
 
-export interface PlanetsLayer extends Layer { readonly typesShown: number }
+// spinOf: giro de cada cuerpo (rad/s alrededor del eje y), para que otras capas acompañen la superficie (cráteres).
+export interface PlanetsLayer extends Layer { readonly typesShown: number; readonly spinOf: Float32Array }
 
 export function createPlanetsLayer(world: World, segments: number, octaves: number, rng: Rng, sunPos: Vector3): PlanetsLayer {
   const group = new Group();
@@ -262,6 +263,7 @@ export function createPlanetsLayer(world: World, segments: number, octaves: numb
   const light = LIGHT_BASE.clone();
   const time = { value: 0 };
   const entries: Entry[] = [];
+  const spinOf = new Float32Array(world.capacity);
   const materials: ShaderMaterial[] = [];
   const sun = { value: sunPos };
   const C = (h: string | undefined): Color => new Color(h ?? '#808080');
@@ -304,6 +306,7 @@ export function createPlanetsLayer(world: World, segments: number, octaves: numb
       // Cada planeta gira a su ritmo: muchos lentos (algunos parecen casi quietos), pocos rápidos, sin exagerar.
       // Uno de cada seis, al revés (como Venus o Urano).
       spin[s] = (0.03 + 0.72 * Math.pow((seed[s]! * 7.31) % 1, 1.8)) * (((seed[s]! * 13.7) % 1) < 0.17 ? -1 : 1);
+      spinOf[indices[s]!] = spin[s]!;
       seedCol.setRGB(seed[s]!, 0, 0);
       hi.setColorAt(s, seedCol); lo.setColorAt(s, seedCol); clouds?.setColorAt(s, seedCol); atmo?.setColorAt(s, seedCol);
     }
@@ -341,6 +344,7 @@ export function createPlanetsLayer(world: World, segments: number, octaves: numb
   return {
     object: group,
     typesShown: entries.length,
+    spinOf,
     update(ctx) {
       const w = ctx.world, a = ctx.alpha, cam = ctx.camera.position;
       const pxPerUnit = (ctx.height / 2) / Math.tan((ctx.camera.fov * Math.PI) / 360);

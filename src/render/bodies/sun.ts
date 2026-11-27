@@ -95,16 +95,16 @@ void main(){
     float x = sa - lean*h;                                  // coordenada a lo ancho, inclinada con la altura
     float n = fbm(vec3(d*4. + id, uTime*.5), 3)*.5+.5;
     float m;
-    if (kind < .3) {                                         // chorro fino que se inclina; a veces suelta una gota
+    if (kind < .35) {                                         // chorro fino que se inclina; a veces suelta una gota
       m = exp(-pow(x/(wid*(1. + 2.5*h)), 2.)) * (1. - smoothstep(top*.5, top, h));
       m += step(.6, h1(id*7.7)) * exp(-(pow(h - top, 2.) + x*x)/(.0015 + .003*ph)) * .9;
-    } else if (kind < .6) {                                  // arco: un lazo de plasma con los dos pies en el borde
+    } else if (kind < .45) {                                 // arco (raro): un lazo de plasma con los dos pies en el borde
       float A = top*.8 + .03;
       float ar = length(vec2(x*1.2, h)), wob = .35*wid*snoise(vec3(x*20., h*20., uTime*.4 + id));
       float th = wid*(.4 + .8*n);                            // grosor irregular a lo largo del arco
       m = exp(-pow((ar - A + wob)/th, 2.));
       m *= smoothstep(.25, .6, n) * (1. - .55*smoothstep(.0, A, h)) * (.6 + .9*n);   // cortes, nudos y la cima más tenue
-    } else if (kind < .82) {                                 // columna ancha y difusa que sube y se dobla (como un surge)
+    } else if (kind < .8) {                                  // columna ancha y difusa que sube y se dobla (como un surge)
       float bend = x - .25*top*sin(h/max(top, .01)*2.2 + id);
       m = exp(-pow(bend/(wid*2.2 + .05*h), 2.)) * (1. - smoothstep(top*.7, top*1.05, h)) * (.35 + .9*n);
     } else {                                                 // nube de gas que se hincha y se va
