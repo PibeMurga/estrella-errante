@@ -1,3 +1,4 @@
+import { ABILITY_NAMES } from '../sim/abilities';
 import { canCollapse, rivalMass } from '../sim/phase';
 import { MAX_COMETS, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, type World } from '../sim/world';
 import { STAGE_HYPER, STAGES, stageFor, stageProgress } from '../sim/stages';
@@ -32,7 +33,7 @@ export function createHud(parent: HTMLElement): Hud {
     <div class="note am"></div>
     <div class="clock"><span class="time">00:00</span><br><span class="dim mass">MASA 0000</span></div>
     <div class="bhinfo am">AGUJERO NEGRO<br><span class="bhdist"></span></div>
-    <div class="bottom"><span class="sling">HONDA ●</span><span class="worlds">EN ÓRBITA 000</span></div>
+    <div class="bottom"><span class="sling">HONDA ●</span><span class="worlds">EN ÓRBITA 000</span><span class="sys">PLANETAS 00/00</span></div>
     <div class="log">${'<div></div>'.repeat(LOG_LINES)}</div>
     <div class="arrow am"><svg width="22" height="22" viewBox="-11 -11 22 22"><path d="M-6 -8 L7 0 L-6 8" fill="none" stroke="#ffb000" stroke-width="2.4"/></svg><span class="adist"></span></div>
     <div class="brackets"><i></i><i></i><i></i><i></i></div>`;
@@ -47,6 +48,7 @@ export function createHud(parent: HTMLElement): Hud {
   const logEls = Array.from(root.querySelectorAll<HTMLElement>('.log div'));
   const arrow = q<HTMLElement>('.arrow'), arrowSvg = q<SVGElement>('.arrow svg'), arrowDist = q<HTMLElement>('.adist');
   const brackets = q<HTMLElement>('.brackets');
+  const sysEl = q<HTMLElement>('.sys');
   const race = q<HTMLElement>('.race'), mvEl = q<HTMLElement>('.mv'), rvEl = q<HTMLElement>('.rvv');
   const mb = q<HTMLElement>('.mb'), rb = q<HTMLElement>('.rb'), note = q<HTMLElement>('.note');
   let lastRace = -1, lastNote = '';
@@ -57,7 +59,7 @@ export function createHud(parent: HTMLElement): Hud {
   let shownMode = -1, lastTx = NaN, lastTy = NaN, lastHalf = NaN, lastAng = NaN, visible = true;
   let acc = 1, lastSeg = -1, lastBhDist = Infinity, lastOrbit = 0;
   let lastFlip = false;
-  let seen = { stageUps: 0, bolts: 0, bh: 0, steals: 0, kills: 0, hits: 0, comets: 0, tidal: 0, crashes: 0, phase: 0 };
+  let seen = { stageUps: 0, bolts: 0, bh: 0, pcap: 0, pbrk: 0, grave: 0, aup: 0, adn: 0, steals: 0, kills: 0, hits: 0, comets: 0, tidal: 0, crashes: 0, phase: 0 };
 
   const log = (text: string): void => {
     logText.unshift(text); logAge.unshift(0);
@@ -69,7 +71,7 @@ export function createHud(parent: HTMLElement): Hud {
   const hud: Hud = {
     root,
     reset(w) {
-      seen = { stageUps: w.stageUps, bolts: w.bolts, bh: w.boltHitsBh, steals: w.cometSteals, kills: w.cometKills, hits: w.hits, comets: activeComets(w), tidal: w.tidalBreaks, crashes: w.planetCrashes, phase: w.phase };
+      seen = { stageUps: w.stageUps, bolts: w.bolts, bh: w.boltHitsBh, pcap: w.planetCaptures, pbrk: w.planetBreaks, grave: w.graveHits, aup: w.abilityUps, adn: w.abilityDowns, steals: w.cometSteals, kills: w.cometKills, hits: w.hits, comets: activeComets(w), tidal: w.tidalBreaks, crashes: w.planetCrashes, phase: w.phase };
       logText.length = 0; logAge.length = 0;
       lastSeg = -1; acc = 1; lastBhDist = Infinity; lastOrbit = w.orbitingCount;
     },
@@ -152,10 +154,21 @@ export function createHud(parent: HTMLElement): Hud {
       slingEl.textContent = w.charge >= w.config.tapTime ? `BÓLIDO ×${w.gathered}` : w.slingCd > 0 ? 'HONDA ○' : 'HONDA ●';
       slingEl.className = w.orbitingCount > 0 ? 'sling' : 'sling off';
       worldsEl.textContent = `EN ÓRBITA ${pad(w.orbitingCount, 3)}`;
+      // Tu sistema: planetas en órbita contra el próximo umbral de habilidad, y la habilidad activa.
+      const total = w.planets.length, c = w.config;
+      const nextF = w.ability === 0 ? c.ability1 : w.ability === 1 ? c.ability2 : w.ability === 2 ? c.ability3 : 0;
+      const next = nextF > 0 ? pad(Math.ceil(total * nextF - 1e-9), 2) : 'MÁX';
+      sysEl.textContent = `PLANETAS ${pad(w.planetsHeld, 2)}/${next}${w.ability > 0 ? ` · ${ABILITY_NAMES[w.ability]}` : ''}`;
 
       // Registro de sucesos.
       if (w.stageUps > seen.stageUps) log(`ETAPA: ${STAGES[w.stage]!.name}`);
-      if (w.cometSteals > seen.steals) log('UN COMETA SE LLEVÓ UN CUERPO DE TU ÓRBITA');
+      if (w.cometSteals > seen.steals) log(`UN COMETA SE LLEVÓ ${w.lastStealCount} CUERPOS DE TU ÓRBITA`);
+      if (w.planetCaptures > seen.pcap) log('PLANETA CAPTURADO: ENTRÓ A TU ÓRBITA');
+      if (w.planetBreaks > seen.pbrk) log('PARTISTE UN PLANETA: EL PEDAZO ES TUYO');
+      if (w.graveHits > seen.grave) log('GOLPE GRAVE: PERDISTE UNA ETAPA');
+      if (w.abilityUps > seen.aup) log(`HABILIDAD: ${ABILITY_NAMES[w.ability]}`);
+      if (w.abilityDowns > seen.adn) log('PERDISTE UNA HABILIDAD');
+      seen.pcap = w.planetCaptures; seen.pbrk = w.planetBreaks; seen.grave = w.graveHits; seen.aup = w.abilityUps; seen.adn = w.abilityDowns;
       if (w.cometKills > seen.kills) log('COMETA DESTRUIDO');
       if (w.bolts > seen.bolts) log(`BÓLIDO: SALIERON ${w.lastBoltSize} ASTEROIDES DE TU ÓRBITA`);
       if (w.boltHitsBh > seen.bh) log('EL BÓLIDO FRENÓ AL AGUJERO NEGRO, PERO LO ALIMENTÓ');
@@ -179,7 +192,7 @@ export function createHud(parent: HTMLElement): Hud {
         if (k < logText.length && logAge[k]! < LOG_LIFE) {
           el.textContent = logText[k]!;
           el.style.opacity = String(1 - logAge[k]! / LOG_LIFE);
-          el.className = logText[k]!.startsWith('COMETA: TE') || logText[k]!.startsWith('IMPACTO') ? 'am' : '';
+          el.className = logText[k]!.startsWith('GOLPE GRAVE') || logText[k]!.startsWith('PERDISTE UNA HABILIDAD') || logText[k]!.startsWith('UN COMETA') ? 'am' : '';
         } else el.textContent = '';
       }
     },

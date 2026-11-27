@@ -22,6 +22,7 @@ export interface Diagnostics {
   lensRadius: number;
   planetTypes: number;
   planetOctaves: number;
+  dangerMarks: number;   // marcas de peligro encendidas
 }
 
 export interface SpaceView {
@@ -76,7 +77,7 @@ export function createSpaceView(canvas: HTMLCanvasElement, opts: SpaceViewOption
 
   const diagnostics: Diagnostics = {
     frames: 0, quality: quality.level, calls: 0, triangles: 0, orbiting: 0,
-    canvasWidth: 0, canvasHeight: 0, lastFrameMs: 0, lensEnabled: 0, lensRadius: 0, planetTypes: built.planetTypes, planetOctaves: quality.planetOctaves,
+    canvasWidth: 0, canvasHeight: 0, lastFrameMs: 0, lensEnabled: 0, lensRadius: 0, planetTypes: built.planetTypes, planetOctaves: quality.planetOctaves, dangerMarks: 0,
   };
   const ctx: FrameContext = {
     world: opts.world, alpha: 1, time: 0, dt: 0, frame: 0, starX: opts.world.star.x, starY: opts.world.star.y,
@@ -147,6 +148,7 @@ export function createSpaceView(canvas: HTMLCanvasElement, opts: SpaceViewOption
       diagnostics.orbiting = ctx.world.orbitingCount;
       diagnostics.lensEnabled = lensU.uEnabled.value;
       diagnostics.lensRadius = lensU.uEinsteinR.value;
+      diagnostics.dangerMarks = built.marks.shown;
       diagnostics.lastFrameMs = performance.now() - t0;
     },
     applyParams,
