@@ -232,3 +232,41 @@ Lucas jugó las Entregas 1 a 3 y ganó en 2:50, 3:11 y 2:42. Con eso quedó deci
 - **Planetas partidos reconocibles:** cada mitad conserva los colores de su tipo (desierto, oceánico, lava, hielo, mineral…). Los gaseosos (como los de anillo) conservan su tamaño y su aspecto al partirse; sueltan escombros y entran a tu órbita.
 - **Chocar con un planeta más grande duele según su tamaño:** perdés del 15 % (apenas más grande) al 40 % (1,5 veces tu tamaño) de tu órbita, como mínimo 3 cuerpos, y entre el 5 % y el 15 % de tu masa. El escudo de órbita sigue entregando un planeta en lugar de eso.
 - **Más vértigo y más crecimiento (pedido de Lucas):** la estrella va más rápido (velocidad máxima 32, aceleración 24), es un poco más grande (`starSize = 4 + 0,55·√masa`) y los planetas derivan más rápido (1,2 a 3). Los umbrales de etapa se reparten más parejos (40, 90, 145, 205 y 280), así la barra no se llena de golpe al principio. Lo que gira en tu órbita se ve más iluminado.
+
+## 14. Pedidos de Lucas al jugar (27/11/2026, tercera ronda): lista completa
+
+Hecho:
+
+- Los cometas roban un planeta al azar (en la mitad de las pasadas), sin depender de la habilidad. El golpe grave en la etapa 0 queda como está.
+- Las dos mitades de un planeta partido son dos cuerpos que siguen cada uno por su cuenta.
+- Un asteroide que golpea un planeta deja una pequeña explosión en el terreno.
+- Zoom de cámara: con la rueda del mouse, o con LB y RB en el mando.
+- El sol tiene:
+  - plasma que hierve;
+  - fulguraciones del lado que se ve;
+  - eyecciones variadas, poco frecuentes y en un orden al azar en cada partida;
+  - giro más rápido, con el ecuador más rápido que los polos;
+  - una corona que titila.
+- Planetas con giros desparejos: algunos casi quietos, otros más rápidos y algunos al revés. Las bandas y las nubes se mueven.
+- Asteroides de tamaños y velocidades desparejos, y menos cantidad. Los planetas derivan cada uno a su ritmo.
+- Al disparar, la estrella se frena un poco y recupera la marcha.
+- El disco del agujero negro ya no se cruza gratis: te frena y te arranca cuerpos y masa. El agujero te traga desde 1,5 radios.
+- El polvo del bólido se revuelve y deja una estela.
+- Los asteroides lanzados chocan como piedras pesadas: se deshacen o quedan sueltos casi sin rebote.
+
+Pendiente:
+
+1. Varios golpes sobre un mismo planeta lo marcan: quedan cráteres, y en los que se pueden partir aparecen grietas que crecen hasta partirlo.
+2. Arrancar como planeta gaseoso chico entre planetas inmensos, pasar por enana marrón y encenderse como estrella. Es un diseño propio, en curso. Pregunta abierta: qué se puede hacer siendo planeta.
+3. El movimiento de la estrella: más pesada, pero que reaccione más rápido. Propuesta: arranca y gira enseguida, y le cuesta frenar.
+4. Un agujero negro más absorbente:
+   - que se vea cómo arrastra lo que tiene alrededor;
+   - que te atraiga;
+   - que quede claro que golpearlo lo frena, con un aviso y su disco apagado mientras dura.
+5. Señalar las fuerzas gravitatorias y los objetos que vienen hacia vos.
+6. Más cosas que esquivar y variaciones en el mapa. Propuestas:
+   - lluvias de escombros;
+   - rocas grandes;
+   - nubes de gas;
+   - ondas de una supernova lejana.
+7. Habilidades: contar sólo los planetas que siguen existiendo (recomendado; falta la respuesta de Lucas).
