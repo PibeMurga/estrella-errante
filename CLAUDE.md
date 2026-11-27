@@ -9,6 +9,7 @@ Bitácora: Notion "Estudio Game", usando SOLO el MCP `notion-juego`. Antes de es
 - Steamworks se usa sólo desde el proceso principal de Electron, a través de IPC y preload. Nunca se desactiva `contextIsolation`.
 - Se prefieren dependencias chicas y especializadas. Antes de sumar una dependencia o cambiar la arquitectura, preguntarle a Lucas.
 - Sólo se usa código y recursos con licencia que permita la venta (MIT, BSD, Apache, zlib, Unlicense). Si un repo no tiene licencia, se puede mirar pero no copiar.
+- Sonidos: se aceptan los que tienen licencia CC0 o están en dominio público (como los de la NASA, revisados archivo por archivo y sin usar su logo ni insinuar su respaldo). El origen de cada archivo se anota.
 
 ## Calidad visual
 - El estilo cinemático es un requisito del producto, no un adorno.
