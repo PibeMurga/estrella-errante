@@ -9,6 +9,7 @@ import { createWorld, PHASE_COLLAPSE, PHASE_MERGE } from '../sim/world';
 import { createGameOver } from '../ui/gameOver';
 import { createHud } from '../ui/hud';
 import { createCinematic } from '../ui/cinematic';
+import { createPause } from '../ui/pause';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 // Cada partida, un mapa distinto. Con ?seed=N se repite un mapa (lo usan las pruebas).
@@ -27,15 +28,21 @@ if (!view.ok) {
   const cine = createCinematic(document.body);
   hud.reset(world);
   // Nueva partida: se recarga con otra semilla (mapa nuevo). Las capas del dibujo arman sus índices al empezar.
-  const gameOver = createGameOver(document.body, () => {
-    location.replace(`${location.pathname}?seed=${1 + Math.floor(Math.random() * (2 ** 31 - 2))}`);
+  const restart = (): void => location.replace(`${location.pathname}?seed=${1 + Math.floor(Math.random() * (2 ** 31 - 2))}`);
+  const gameOver = createGameOver(document.body, restart);
+  // Pausa con ESC (o Start): sólo mientras se juega, no en las cinemáticas ni en el cartel final.
+  const canPause = (): boolean => world.over === 0 && world.phase !== PHASE_COLLAPSE && world.phase !== PHASE_MERGE;
+  const pause = createPause(document.body, {
+    canPause, onRestart: restart,
+    onChange: (on) => { if (!on) input.poll(world.star.x, world.star.y); },   // al retomar se descarta lo apretado durante la pausa
   });
   window.__GAME__ = { diagnostics: view.diagnostics, world, forceOver: (kind: number) => { world.over = kind; } };
   let last = performance.now();
   const frame = (now: number): void => {
     const elapsed = (now - last) / 1000;
     last = now;
-    const steps = stepper.advance(elapsed);
+    pause.pollPad(canPause());
+    const steps = pause.paused ? 0 : stepper.advance(elapsed);
     // El control se lee sólo en los cuadros que avanzan la simulación: así un clic muy corto no se pierde
     // en un cuadro sin pasos (a más de 60 cuadros por segundo los hay).
     if (steps > 0) {

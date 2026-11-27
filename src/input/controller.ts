@@ -16,8 +16,6 @@ export class InputController {
   private usingGamepad = false;
   private pointerHeld = false;    // clic izquierdo apretado ahora
   private pressPending = false;   // hubo un clic desde el último poll (aunque ya se haya soltado)
-  private collapsePending = false;   // ESPACIO, C o botón Y todavía no entregado
-  private yHeld = false;
 
   constructor(el: HTMLElement, private readonly toWorld: ToWorld, private readonly reach = 40) {
     el.addEventListener('pointermove', (e: PointerEvent) => {
@@ -50,16 +48,6 @@ export class InputController {
     el.addEventListener('pointercancel', drop);
     el.addEventListener('lostpointercapture', drop);
     if (typeof window !== 'undefined') window.addEventListener('blur', drop);   // Alt+Tab con el botón apretado
-    // ESPACIO o C: colapsar (sólo hace algo cuando se puede; la simulación lo decide).
-    // Se ignoran la autorrepetición (mantener apretado no decide por vos), los atajos con Ctrl/Alt/Cmd
-    // y lo que se escribe en campos de texto (el laboratorio).
-    if (typeof window !== 'undefined') window.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
-      const t = e.target as { tagName?: string; isContentEditable?: boolean } | null;
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
-      if (e.key === ' ') { this.collapsePending = true; e.preventDefault(); }   // que el espacio no desplace la página
-      else if (e.key === 'c' || e.key === 'C') this.collapsePending = true;
-    });
   }
 
   poll(starX: number, starY: number): Intent {
@@ -70,12 +58,6 @@ export class InputController {
     // Mantenido carga el bólido. Un clic más rápido que un cuadro igual cuenta (pressPending).
     this.intent.hold = this.pointerHeld || this.pressPending || trigger;
     this.pressPending = false;
-    let y = false;
-    for (let k = 0; k < pads.length; k++) if (pads[k]?.buttons?.[3]?.pressed) y = true;
-    if (y && !this.yHeld) this.collapsePending = true;
-    this.yHeld = y;
-    this.intent.collapse = this.intent.collapse === true || this.collapsePending;
-    this.collapsePending = false;
     this.intent.fire = false;
     // Stick derecho: mira propia de la honda (en el joystick, Y positivo es abajo).
     this.intent.hasAim = false;

@@ -1,5 +1,5 @@
 import { ABILITY_NAMES } from '../sim/abilities';
-import { canCollapse, rivalMass } from '../sim/phase';
+import { rivalMass } from '../sim/phase';
 import { MAX_COMETS, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, type World } from '../sim/world';
 import { STAGE_HYPER, STAGES, stageFor, stageProgress } from '../sim/stages';
 import './hud.css';
@@ -31,11 +31,12 @@ export function createHud(parent: HTMLElement): Hud {
     <div class="stage"><span class="name"></span> · <span class="pct"></span><div class="seg">${'<i class="o"></i>'.repeat(SEGMENTS)}</div></div>
     <div class="race"><span class="me">VOS <b class="mv">0000</b></span><div class="bar"><i class="mb"></i><i class="rb"></i></div><span class="rv"><b class="rvv">0000</b> RIVAL</span></div>
     <div class="note am"></div>
+    <div class="banner"><b>SOS UN AGUJERO NEGRO</b><span>ATRAPÁ AL RIVAL ANTES DE QUE ESCAPE</span></div>
     <div class="clock"><span class="time">00:00</span><br><span class="dim mass">MASA 0000</span></div>
-    <div class="bhinfo am">AGUJERO NEGRO<br><span class="bhdist"></span></div>
+    <div class="bhinfo">AGUJERO NEGRO<br><span class="bhdist"></span></div>
     <div class="bottom"><span class="sling">HONDA ●</span><span class="worlds">EN ÓRBITA 000</span><span class="sys">PLANETAS 00/00</span></div>
     <div class="log">${'<div></div>'.repeat(LOG_LINES)}</div>
-    <div class="arrow am"><svg width="22" height="22" viewBox="-11 -11 22 22"><path d="M-6 -8 L7 0 L-6 8" fill="none" stroke="#ffb000" stroke-width="2.4"/></svg><span class="adist"></span></div>
+    <div class="arrow"><svg width="22" height="22" viewBox="-11 -11 22 22"><path d="M-6 -8 L7 0 L-6 8" fill="none" stroke="currentColor" stroke-width="2.4"/></svg><span class="adist"></span></div>
     <div class="brackets"><i></i><i></i><i></i><i></i></div>`;
   parent.appendChild(root);
 
@@ -51,6 +52,8 @@ export function createHud(parent: HTMLElement): Hud {
   const sysEl = q<HTMLElement>('.sys');
   const race = q<HTMLElement>('.race'), mvEl = q<HTMLElement>('.mv'), rvEl = q<HTMLElement>('.rvv');
   const mb = q<HTMLElement>('.mb'), rb = q<HTMLElement>('.rb'), note = q<HTMLElement>('.note');
+  const banner = q<HTMLElement>('.banner');
+  let bannerOn = false, lastHunting = false;
   let lastRace = -1, lastNote = '';
 
   const logText: string[] = [], logAge: number[] = [];
@@ -138,10 +141,15 @@ export function createHud(parent: HTMLElement): Hud {
       if (w.phase === PHASE_HUNT) {
         const left = Math.max(0, w.config.huntTimeLimit - w.phaseTime);
         nt = `CAZA · ALCANZALO ANTES DE ${pad(left / 60, 2)}:${pad(left % 60, 2)}`;
-      } else if (canCollapse(w)) nt = 'COLAPSO DISPONIBLE · [ESPACIO]';
-      else if (w.phase === 0 && w.stage >= STAGE_HYPER) nt = 'HIPERGIGANTE · SUPERÁ AL RIVAL PARA COLAPSAR';
+      } else if (w.phase === 0 && w.stage >= STAGE_HYPER) nt = 'HIPERGIGANTE · SUPERÁ AL RIVAL Y COLAPSÁS';
       if (nt !== lastNote) { note.textContent = nt; note.className = nt.startsWith('COLAPSO') ? 'note am blink' : 'note am'; lastNote = nt; }
       if (w.phase >= PHASE_HUNT) nameEl.textContent = 'AGUJERO NEGRO';
+      // Alertas del agujero negro: rojas mientras te persigue; verdes (el fósforo del visor) cuando lo perseguís vos.
+      const hunting = w.phase >= PHASE_HUNT;
+      if (hunting !== lastHunting) { root.classList.toggle('hunting', hunting); lastHunting = hunting; }
+      // Al nacer tu agujero negro, un aviso grande y claro de qué hacer ahora.
+      const bOn = w.phase === PHASE_HUNT && w.phaseTime < 4.5 && w.over === 0;
+      if (bOn !== bannerOn) { banner.classList.toggle('on', bOn); bannerOn = bOn; }
 
       if (bh.active) {
         const d = Math.max(0, Math.hypot(bh.x - s.x, bh.y - s.y) - bh.radius);

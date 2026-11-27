@@ -88,6 +88,7 @@ export interface SimConfig {
   breakFragments: number;        // fragmentos rocosos (más grandes que un asteroide) que salen al partir un planeta
   orbitWidenK: number;           // la franja de órbita se ensancha esto por cada unidad de radio de la estrella
   huntStartMinDist: number;      // al empezar la caza, el rival nunca queda más cerca que esto
+  autoCollapse: boolean;         // colapsar solo al superar al rival siendo hipergigante (las pruebas lo pueden apagar)
   rivalMassScale: number;        // masa del rival en la carrera = esto × la masa física del agujero negro
   collapseTime: number;          // segundos de la cinemática del colapso (supernova y nacimiento)
   mergeTime: number;             // segundos de la cinemática de la fusión
@@ -191,4 +192,5 @@ export const DEFAULT_CONFIG: SimConfig = {
   breakFragments: 6,
   orbitWidenK: 0.8,
   huntStartMinDist: 120,
+  autoCollapse: true,
 };

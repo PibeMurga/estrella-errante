@@ -216,3 +216,11 @@ Lucas jugó las Entregas 1 a 3 y ganó en 2:50, 3:11 y 2:42. Con eso quedó deci
 1. ¿Las habilidades se calculan sobre todos los planetas de la pantalla, o sólo sobre los que siguen existiendo? Hoy se cuentan todos, y a medida que el rival se come planetas, el 45 % se vuelve casi imposible.
 2. ¿Un cometa roba un planeta desde la habilidad 2 y en la mitad de las pasadas, como hoy?
 3. ¿Un golpe grave en la primera etapa quita la mitad de la masa, como hoy?
+
+## 13. Cambios pedidos por Lucas al jugar (27/11/2026, segunda ronda)
+
+- **El colapso es automático** (reemplaza la decisión 1 de la §11). Apenas sos hipergigante y superás al rival en masa, colapsás solo; ya no hay tecla. El aviso de la hipergigante dice «SUPERÁ AL RIVAL Y COLAPSÁS».
+- **Aviso claro al empezar la caza:** un cartel grande en el centro, «SOS UN AGUJERO NEGRO · ATRAPÁ AL RIVAL ANTES DE QUE ESCAPE», durante unos 4 segundos.
+- **Pausa con ESC** (o Start en el mando), con la opción de empezar una partida nueva (R).
+- **Colores de las alertas del agujero negro rival** (flecha, corchetes y distancia): rojas mientras te persigue y verde fósforo cuando lo perseguís vos.
+- **Un planeta que partís sigue siendo el mismo planeta:** conserva su tamaño, se ve colapsado y en dos mitades, y entra a tu órbita aunque sea grande. Los gaseosos, que no tienen corteza, pierden su envoltura y se achican.

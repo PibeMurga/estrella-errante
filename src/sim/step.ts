@@ -14,7 +14,7 @@ export interface Intent {
   targetX: number; targetY: number; hasTarget: boolean;
   fire?: boolean;
   aimX?: number; aimY?: number; hasAim?: boolean;
-  collapse?: boolean;   // apretó la tecla de colapso
+  collapse?: boolean;   // pide el colapso a mano (sólo pruebas; en el juego es automático, ver config.autoCollapse)
   hold?: boolean;       // el botón de lanzar está apretado (mantener carga el bólido)
 }
 
@@ -385,6 +385,6 @@ export function step(w: World, intent: Intent): void {
   if (hunting) {
     w.phaseTime += DT;
     if (w.phaseTime >= c.huntTimeLimit) w.over = OVER_ESCAPED;
-  } else if (intent.collapse && canCollapse(w)) startCollapse(w);
+  } else if ((c.autoCollapse || intent.collapse) && canCollapse(w)) startCollapse(w);   // la última transformación es automática
   w.tick++;
 }

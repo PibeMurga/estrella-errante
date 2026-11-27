@@ -1,0 +1,15 @@
+/* Pausa: velo oscuro y panel de fósforo, como el cartel final. */
+.pause {
+  position: fixed; inset: 0; z-index: 25; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at center, #02060599 0%, #000000c8 75%);
+  opacity: 0; pointer-events: none; transition: opacity .25s ease;
+  font-family: 'Cascadia Mono', 'Consolas', 'DejaVu Sans Mono', 'Liberation Mono', monospace;
+  color: #7af5c9; text-shadow: 0 0 4px #7af5c9cc, 0 0 12px #7af5c944; letter-spacing: 3px;
+}
+.pause.on { opacity: 1; pointer-events: auto; }
+.pause .panel {
+  min-width: 380px; padding: 30px 44px; text-align: center; background-color: #000000b3;
+  border: 1.5px solid #7af5c966; box-shadow: 0 0 18px #7af5c922, inset 0 0 30px #7af5c90d;
+}
+.pause .title { font-size: 30px; font-weight: 700; letter-spacing: 10px; }
+.pause .keys { margin-top: 22px; display: flex; gap: 34px; justify-content: center; font-size: 12px; opacity: .85; }

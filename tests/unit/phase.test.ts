@@ -5,7 +5,7 @@ import { STAGE_HYPER } from '../../src/sim/stages';
 import { type Intent, step } from '../../src/sim/step';
 import { addBody, BOLT, CARRIED, createWorld, DEAD, FREE, GATHERING, hashWorld, KIND_ASTEROID, ORBITING, OVER_ESCAPED, OVER_NONE, OVER_WON, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PHASE_PLAY, PROJECTILE, type World } from '../../src/sim/world';
 
-const cfg = { ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, cometFirst: 1e9 };
+const cfg = { ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, cometFirst: 1e9, autoCollapse: false };   // estas pruebas disparan el colapso a mano
 
 describe('la carrera de masa', () => {
   it('la masa del rival es la del agujero negro por la escala', () => {
