@@ -19,3 +19,5 @@
 .gameover .stats span { opacity: .65; }
 .gameover .again { font-size: 12px; animation: blink 1.4s steps(2, start) infinite; }
 @keyframes blink { 50% { opacity: .35; } }
+.gameover.won .title { color: #7af5c9; text-shadow: 0 0 8px #7af5c9aa, 0 0 20px #7af5c944; }
+.gameover .panel { background-color: #000000b3; backdrop-filter: blur(3px); }

@@ -1,0 +1,12 @@
+/* Bandas, destello y ondas de las cinemáticas (supernova y fusión). */
+.cine { position: fixed; inset: 0; pointer-events: none; z-index: 15; overflow: hidden; }
+.cine .bar { position: absolute; left: 0; right: 0; height: 9vh; background: #000; transform: scaleY(0); transition: transform .8s ease; }
+.cine .bar.t { top: 0; transform-origin: top; }
+.cine .bar.b { bottom: 0; transform-origin: bottom; }
+.cine.on .bar { transform: scaleY(1); }
+.cine .flash { position: absolute; inset: 0; opacity: 0; background: radial-gradient(circle at 50% 50%, #fffaf0 0%, #fff3d8 35%, #ffe2b0 100%); }
+.cine .nova, .cine .gw { position: absolute; left: 50%; top: 50%; width: 100vmax; height: 100vmax; margin: -50vmax 0 0 -50vmax; border-radius: 50%; opacity: 0; transform: scale(0); }
+.cine .nova { mix-blend-mode: screen; background: radial-gradient(circle, transparent 60%, #ffe9c255 66%, #fff6e0cc 69%, #ffc27a44 72%, transparent 76%); }
+.cine .gw { backdrop-filter: blur(2.5px) brightness(1.25) saturate(1.2);
+  -webkit-mask-image: radial-gradient(circle, transparent 62%, #000 68%, #000 71%, transparent 77%);
+  mask-image: radial-gradient(circle, transparent 62%, #000 68%, #000 71%, transparent 77%); }

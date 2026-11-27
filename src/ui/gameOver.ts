@@ -1,4 +1,4 @@
-import { OVER_SWALLOWED, type World } from '../sim/world';
+import { OVER_ESCAPED, OVER_SWALLOWED, OVER_WON, type World } from '../sim/world';
 import { STAGES } from '../sim/stages';
 import './gameOver.css';
 
@@ -27,7 +27,8 @@ export function createGameOver(parent: HTMLElement, onRestart: () => void): Game
   const why = root.querySelector('.why') as HTMLElement;
   const stats = root.querySelector('.stats') as HTMLElement;
 
-  let wait = DELAY, shown = false, done = false, padHeld = true;
+  // Una derrota se muestra a los 1,2 s; la victoria espera además a que termine la onda gravitatoria (3,8 s).
+  let wait = DELAY + 2.6, shown = false, done = false, padHeld = true;
   const restart = (): void => { if (shown && !done) { done = true; onRestart(); } };
   root.addEventListener('pointerdown', restart);
   window.addEventListener('keydown', (e) => { if (e.key === 'r' || e.key === 'R') restart(); });
@@ -47,11 +48,16 @@ export function createGameOver(parent: HTMLElement, onRestart: () => void): Game
         return;
       }
       wait -= dt;
-      if (wait > 0) return;
+      if (wait > (w.over === OVER_WON ? 0 : 2.6)) return;
       shown = true;
-      const swallowed = w.over === OVER_SWALLOWED;
-      title.textContent = swallowed ? 'ESTRELLA TRAGADA' : 'ESTRELLA APAGADA';
-      why.textContent = swallowed ? 'EL AGUJERO NEGRO TE ALCANZÓ' : 'CHOCASTE CONTRA UN PLANETA SIN NADA EN ÓRBITA QUE TE PROTEJA';
+      const titles: Record<number, [string, string]> = {
+        [OVER_SWALLOWED]: ['ESTRELLA TRAGADA', 'EL AGUJERO NEGRO TE ALCANZÓ'],
+        [OVER_ESCAPED]: ['EL RIVAL SE ESCAPÓ', 'NO LO ALCANZASTE A TIEMPO'],
+        [OVER_WON]: ['FUSIÓN', 'TE COMISTE AL AGUJERO NEGRO RIVAL · GANASTE LA PANTALLA'],
+      };
+      const [tt, wy] = titles[w.over] ?? ['ESTRELLA APAGADA', 'CHOCASTE CONTRA UN PLANETA SIN NADA EN ÓRBITA QUE TE PROTEJA'];
+      title.textContent = tt; why.textContent = wy;
+      root.classList.toggle('won', w.over === OVER_WON);
       const secs = w.tick / 60;
       stats.innerHTML = `
         <div><span>TIEMPO</span><b>${pad(secs / 60, 2)}:${pad(secs % 60, 2)}</b></div>

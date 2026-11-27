@@ -30,6 +30,7 @@ export function buildLayers(deps: LayerDeps): BuiltLayers {
       createAsteroidLayer(deps.world, deps.rng),
       ambient,
       createBlackHoleLayer(deps.pipeline),
+      createBlackHoleLayer(deps.pipeline, 'player'),
       createBeamLayer(),
       createCometsLayer(),
       createImpactLayer(),

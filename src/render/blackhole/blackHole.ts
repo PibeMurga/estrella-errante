@@ -3,6 +3,8 @@ import { toWorld } from '../cameraRig';
 import type { Layer } from '../layer';
 import type { Pipeline } from '../pipeline';
 import { NOISE_GLSL } from '../shaders/noise';
+import { playerHoleRadius } from '../../sim/phase';
+import { OVER_WON, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, type World } from '../../sim/world';
 
 const DISK_VERT = /* glsl */ `varying vec3 vL; void main(){ vL = position; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }`;
 const DISK_FRAG = /* glsl */ `uniform float uTime; uniform float uIntensity; varying vec3 vL;
@@ -22,7 +24,18 @@ const edge = new Vector3();
 const ndc = new Vector3();
 const toBH = new Vector3();
 
-export function createBlackHoleLayer(pipeline: Pipeline): Layer {
+const smoothStep = (a: number, b: number, x: number): number => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+// Tu agujero negro nace en el colapso (después del estallido) y ya está entero en la caza y la fusión.
+function playerGrowth(w: World): number {
+  if (w.phase === PHASE_HUNT || w.phase === PHASE_MERGE) return 1;
+  if (w.phase === PHASE_COLLAPSE) return smoothStep(2.3, 4.5, w.phaseTime);
+  return 0;
+}
+// Su disco de acreción se enciende de a poco.
+const ignition = (w: World): number => (w.phase === PHASE_COLLAPSE ? smoothStep(2.6, 5.5, w.phaseTime) : 1);
+
+// role 'rival': el agujero negro que te persigue. role 'player': el tuyo, que nace al colapsar.
+export function createBlackHoleLayer(pipeline: Pipeline, role: 'rival' | 'player' = 'rival'): Layer {
   const group = new Group();
   group.add(new Mesh(new SphereGeometry(HORIZON, 48, 24), new MeshBasicMaterial({ color: 0x000000 })));
   const diskMat = new ShaderMaterial({
@@ -33,19 +46,34 @@ export function createBlackHoleLayer(pipeline: Pipeline): Layer {
   disk.rotation.x = -Math.PI / 2 + 0.18;
   group.add(disk);
   const lens = pipeline.lens.lensUniforms;
+  let diskBase = 4;
 
   return {
     object: group,
     update(ctx) {
       const p = ctx.params, cam = ctx.camera, rig = ctx.rig;
       // En partida manda la simulación; con el agujero negro apagado (laboratorio, banco) mandan los parámetros.
-      const bh = ctx.world.bh;
-      const radius = bh.active ? bh.radius : p.blackHoleRadius;
-      if (bh.active) toWorld(bh.prevX + (bh.x - bh.prevX) * ctx.alpha, bh.prevY + (bh.y - bh.prevY) * ctx.alpha, center);
-      else toWorld(p.blackHoleX, p.blackHoleY, center);
+      const w = ctx.world, bh = w.bh;
+      const mine = playerGrowth(w);
+      let radius: number;
+      if (role === 'player') {
+        group.visible = mine > 0.001;
+        if (!group.visible) return;
+        toWorld(ctx.starX, ctx.starY, center);
+        radius = playerHoleRadius(w) * mine;
+      } else {
+        group.visible = w.over !== OVER_WON;   // después de la fusión queda uno solo: el tuyo
+        if (!group.visible) return;
+        radius = bh.active ? bh.radius : p.blackHoleRadius;
+        if (bh.active) toWorld(bh.prevX + (bh.x - bh.prevX) * ctx.alpha, bh.prevY + (bh.y - bh.prevY) * ctx.alpha, center);
+        else toWorld(p.blackHoleX, p.blackHoleY, center);
+      }
       group.position.copy(center);
       group.scale.setScalar(radius / HORIZON);
       diskMat.uniforms['uTime']!.value = ctx.time;
+      diskMat.uniforms['uIntensity']!.value = diskBase * (role === 'player' ? ignition(w) : 1);
+      // Hay una sola lente: cuando existe tu agujero negro, la maneja él (está en el centro de la pantalla).
+      if (role === 'rival' && mine > 0.001) return;
 
       // Lente: sólo si el agujero negro está delante de la cámara y cerca de la pantalla.
       toBH.copy(center).sub(cam.position);
@@ -60,6 +88,6 @@ export function createBlackHoleLayer(pipeline: Pipeline): Layer {
       edge.set(center.x + rig.right.x * er, center.y + rig.right.y * er, center.z + rig.right.z * er).project(cam);
       lens.uEinsteinR.value = Math.abs(edge.x - ndc.x) * 0.5 * (ctx.width / ctx.height);
     },
-    applyParams(p) { diskMat.uniforms['uIntensity']!.value = p.diskIntensity; },
+    applyParams(p) { diskBase = p.diskIntensity; },
   };
 }

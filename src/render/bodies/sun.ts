@@ -1,17 +1,19 @@
 import { AdditiveBlending, Group, Mesh, PlaneGeometry, PointLight, ShaderMaterial, SphereGeometry, Vector3 } from 'three';
-import { OVER_SWALLOWED, starSize } from '../../sim/world';
+import { STAGE_HYPER } from '../../sim/stages';
+import { OVER_SWALLOWED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PHASE_PLAY, starSize } from '../../sim/world';
 import { toWorld } from '../cameraRig';
 import type { Layer } from '../layer';
 import { NOISE_GLSL } from '../shaders/noise';
 import { smoothToward } from '../smooth';
 
-// Paleta del sol por etapa (caliente, media, borde). Enana roja → amarilla → blanca → gigante azul → supergigante.
+// Paleta del sol por etapa (caliente, media, borde). Enana roja → amarilla → blanca → gigante azul → supergigante → hipergigante.
 const PALETTES: readonly (readonly number[])[] = [
   [1.0, 0.42, 0.10, 0.85, 0.16, 0.03, 0.50, 0.05, 0.01],
   [1.0, 0.58, 0.18, 0.95, 0.30, 0.05, 0.62, 0.09, 0.015],
   [1.0, 0.90, 0.72, 1.0, 0.70, 0.42, 0.78, 0.38, 0.18],
   [0.78, 0.88, 1.0, 0.46, 0.62, 1.0, 0.24, 0.30, 0.72],
   [0.92, 0.96, 1.0, 0.62, 0.76, 1.0, 0.36, 0.42, 0.86],
+  [1.0, 0.86, 0.55, 1.0, 0.62, 0.25, 0.80, 0.30, 0.08],
 ];
 
 const SUN_VERT = /* glsl */ `varying vec3 vN; varying vec3 vO; varying vec3 vV;
@@ -61,6 +63,18 @@ void main(){
   gl_FragColor = vec4((ring + prom + cor) * (1. - smoothstep(1.8, 3.3, r)), 1.);
 }`;
 
+// Erupciones de la hipergigante: una cáscara de gas que sale despedida y se expande en un anillo (como Eta Carinae).
+const SHELL_FRAG = /* glsl */ `uniform float uT; uniform vec3 uTint; varying vec2 vUv;
+void main(){
+  vec2 d = (vUv*2.-1.)*6.; float r = length(d); float a = atan(d.y, d.x);
+  float R = 1.2 + 3.8*(1. - exp(-uT*.6));
+  float n = fbm(vec3(cos(a)*2.5, sin(a)*2.5, uT*.2), 4)*.5+.5;
+  float ring = exp(-pow((r - R)/(.25 + .35*n), 2.)) * (1. - smoothstep(2., 5., uT)) * smoothstep(0., .3, uT) * (.4 + .8*n);
+  gl_FragColor = vec4(uTint * ring * .6, 1.);
+}`;
+const ERUPTION_EVERY = 13, ERUPTION_LAST = 5, PULSE_PERIOD = 5.5;
+const smooth01 = (x: number): number => { const t = Math.min(1, Math.max(0, x)); return t * t * (3 - 2 * t); };
+
 export const starRenderRadius = starSize;
 
 // La estrella del jugador como un sol, con su luz para los cuerpos (posición compartida en `sunPos`).
@@ -74,23 +88,48 @@ export function createSunLayer(sunPos: Vector3): Layer {
     depthWrite: false, transparent: true, blending: AdditiveBlending,
   });
   const halo = new Mesh(new PlaneGeometry(7, 7), haloMat);
+  const shellMat = new ShaderMaterial({
+    uniforms: { uT: { value: 0 }, uTint: { value: tint } }, vertexShader: HALO_VERT, fragmentShader: NOISE_GLSL + SHELL_FRAG,
+    depthWrite: false, transparent: true, blending: AdditiveBlending,
+  });
+  const shell = new Mesh(new PlaneGeometry(12, 12), shellMat);
+  shell.visible = false;
+  let baseIntensity = 1.45, baseLight = 2.4;
   const light = new PointLight(0xffc890, 2.4, 0, 0);
   const group = new Group();
-  group.add(sun, halo, light);
+  group.add(sun, halo, shell, light);
   let shownR = -1;   // radio que se ve: sigue al radio real con una curva suave, sin saltos
 
   return {
     object: group,
     update(ctx) {
       toWorld(ctx.starX, ctx.starY, sunPos);
-      // Tragada por el agujero negro: se achica hasta desaparecer.
-      const swallowed = ctx.world.over === OVER_SWALLOWED;
-      const target = swallowed ? 0 : starRenderRadius(ctx.world.star.mass);
-      shownR = shownR < 0 ? target : smoothToward(shownR, target, swallowed ? 2.5 : 1.2, ctx.dt);
-      const r = Math.max(shownR, 1e-3);
-      sun.visible = halo.visible = shownR > 0.05;
+      const w = ctx.world;
+      // Tragada por el agujero negro, o ya convertida en agujero negro: no hay estrella.
+      const swallowed = w.over === OVER_SWALLOWED;
+      const gone = w.phase === PHASE_HUNT || w.phase === PHASE_MERGE;
+      const target = swallowed || gone ? 0 : starRenderRadius(w.star.mass);
+      shownR = gone ? 0 : shownR < 0 ? target : smoothToward(shownR, target, swallowed ? 2.5 : 1.2, ctx.dt);
+      // La hipergigante late: se hincha y se contrae despacio, y el brillo acompaña cada pulso.
+      const hyper = w.stage >= STAGE_HYPER && w.phase === PHASE_PLAY && w.over === 0;
+      const pulse = hyper ? Math.sin(ctx.time * ((Math.PI * 2) / PULSE_PERIOD)) : 0;
+      let k = 1 + 0.035 * pulse, bright = 1 + 0.12 * pulse;
+      // Colapso: se encoge de golpe y se apaga (2 s); después estalla y desaparece.
+      if (w.phase === PHASE_COLLAPSE) {
+        const t = w.phaseTime;
+        if (t < 2) { k = 1 - 0.65 * smooth01(t / 2); bright = 1 - 0.5 * smooth01(t / 2); }
+        else { k = Math.max(0, 0.35 * (1 - (t - 2) / 0.25)); bright = 3; }
+      }
+      const r = Math.max(shownR * k, 1e-3);
+      sun.visible = halo.visible = shownR * k > 0.05;
       sun.position.copy(sunPos); sun.scale.setScalar(r); sun.rotation.y = ctx.time * 0.03;
       halo.position.copy(sunPos); halo.scale.setScalar(r); halo.quaternion.copy(ctx.camera.quaternion);
+      // Erupciones de la hipergigante: cada tanto sale una cáscara de gas.
+      const et = ctx.time % ERUPTION_EVERY;
+      shell.visible = hyper && et < ERUPTION_LAST;
+      if (shell.visible) { shell.position.copy(sunPos); shell.scale.setScalar(r); shell.quaternion.copy(ctx.camera.quaternion); shellMat.uniforms['uT']!.value = et; }
+      sunMat.uniforms['uIntensity']!.value = baseIntensity * bright;
+      light.intensity = baseLight * (gone ? 0.35 : 1);
       light.position.copy(sunPos);
       const palTarget = PALETTES[Math.min(ctx.world.stage, PALETTES.length - 1)]!;
       for (let k = 0; k < 9; k++) pal[k] = smoothToward(pal[k]!, palTarget[k]!, 0.8, ctx.dt);
@@ -100,8 +139,8 @@ export function createSunLayer(sunPos: Vector3): Layer {
       haloMat.uniforms['uTime']!.value = ctx.time;
     },
     applyParams(p) {
-      sunMat.uniforms['uIntensity']!.value = p.sunIntensity;
-      light.intensity = p.lightIntensity;
+      baseIntensity = p.sunIntensity;
+      baseLight = p.lightIntensity;
     },
   };
 }

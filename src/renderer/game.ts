@@ -8,6 +8,7 @@ import { step } from '../sim/step';
 import { createWorld, PHASE_COLLAPSE, PHASE_MERGE } from '../sim/world';
 import { createGameOver } from '../ui/gameOver';
 import { createHud } from '../ui/hud';
+import { createCinematic } from '../ui/cinematic';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 // Cada partida, un mapa distinto. Con ?seed=N se repite un mapa (lo usan las pruebas).
@@ -23,6 +24,7 @@ if (!view.ok) {
   const stepper = new FixedStepper();
   const governor = new QualityGovernor('high');
   const hud = createHud(document.body);
+  const cine = createCinematic(document.body);
   hud.reset(world);
   // Nueva partida: se recarga con otra semilla (mapa nuevo). Las capas del dibujo arman sus índices al empezar.
   const gameOver = createGameOver(document.body, () => {
@@ -41,6 +43,7 @@ if (!view.ok) {
     hud.setVisible(world.over === 0 && world.phase !== PHASE_COLLAPSE && world.phase !== PHASE_MERGE);
     hud.update(world, view, elapsed, window.innerWidth, window.innerHeight);
     gameOver.update(world, elapsed);
+    cine.update(world, elapsed);
     const next = governor.sample(elapsed * 1000);
     if (next) view.setQuality(next);
     requestAnimationFrame(frame);
