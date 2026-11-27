@@ -143,12 +143,28 @@ export function stepBolts(w: World, bandHi: number): void {
   }
 }
 
-// Colapso: lo que se juntaba vuelve a la órbita y lo que vuela (bólido u honda) queda suelto.
-export function releaseLaunch(w: World): void {
+// Se desarma el montón: lo que se juntaba vuelve a la órbita desde donde está (sin saltos). Lo usan un choque,
+// un cometa que te toca y el colapso. Mientras se junta, el montón sigue siendo tuyo.
+export function returnGathered(w: World): void {
+  if (w.gathered === 0 && w.charge === 0) return;
+  const s = w.star;
   for (let i = 0; i < w.count; i++) {
-    const st = w.state[i];
-    if (st === GATHERING) { w.state[i] = ORBITING; w.orbitingCount++; }
-    else if (st === BOLT || st === PROJECTILE || st === RETURNING) w.state[i] = FREE;
+    if (w.state[i] !== GATHERING) continue;
+    const dx = w.x[i] - s.x, dy = w.y[i] - s.y;
+    w.state[i] = ORBITING;
+    w.orbitR[i] = Math.hypot(dx, dy);
+    w.orbitTarget[i] = w.orbitR[i];
+    w.orbitAngle[i] = Math.atan2(dy, dx);
+    w.orbitingCount++;
   }
   w.charge = 0; w.gathered = 0;
+}
+
+// Colapso: lo que se juntaba vuelve a la órbita y lo que vuela (bólido u honda) queda suelto.
+export function releaseLaunch(w: World): void {
+  returnGathered(w);
+  for (let i = 0; i < w.count; i++) {
+    const st = w.state[i];
+    if (st === BOLT || st === PROJECTILE || st === RETURNING) w.state[i] = FREE;
+  }
 }

@@ -3,7 +3,7 @@ import { breakPlanet } from './tidal';
 import { stepEncounters, stepStarFlybys } from './encounters';
 import { DT } from './config';
 import { stageFor } from './stages';
-import { sling, slingAngle, stepBolts, stepLaunch } from './launch';
+import { returnGathered, sling, slingAngle, stepBolts, stepLaunch } from './launch';
 import { canCollapse, playerHoleRadius, startCollapse, startHunt, startMerge, stepMerge } from './phase';
 import { ABSORBING, BOLT, CARRIED, captureRadiusFor, DEAD, FREE, GATHERING, KIND_GAS, KIND_ICE, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_DIMMED, OVER_ESCAPED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
 
@@ -38,6 +38,7 @@ function startAbsorb(w: World, i: number, dx: number, dy: number): void {
 // Choque con un planeta grande: sin mundos en órbita la estrella se apaga; si no, pierde algunos y rebota.
 function hurt(w: World, p: number): void {
   const c = w.config, s = w.star;
+  returnGathered(w);   // el golpe desarma el montón: vuelve a la órbita y cuenta como tuyo
   if (w.orbitingCount === 0) { w.over = OVER_DIMMED; return; }
   w.hits++;
   w.invuln = c.hurtInvuln;
@@ -78,7 +79,7 @@ function flight(w: World, i: number, st: number): void {
       w.state[i] = RETURNING;
     }
   } else {
-    if (d < bandHi && w.orbitingCount >= c.orbitCapacity) {
+    if (d < bandHi && w.orbitingCount + w.gathered >= c.orbitCapacity) {
       // Volvió con la órbita llena: la estrella lo absorbe (su masa ya estaba contada).
       startAbsorb(w, i, -dx, -dy);
       return;
@@ -302,7 +303,7 @@ export function step(w: World, intent: Intent): void {
       if (w.noCatch[i]! > 0) { w.noCatch[i] = w.noCatch[i]! - DT; continue; }
       // Para robarle algo a un planeta, la estrella tiene que ser claramente más grande que él.
       const canSteal = st === FREE || starSize(s.mass) >= w.radius[w.parent[i]!] * c.stealSizeRatio;
-      if (canSteal && d < captureR && w.radius[i] <= c.maxCaptureSize && w.orbitingCount >= c.orbitCapacity) {
+      if (canSteal && d < captureR && w.radius[i] <= c.maxCaptureSize && w.orbitingCount + w.gathered >= c.orbitCapacity) {
         // Órbita llena: la estrella lo absorbe (suma su masa y el cuerpo queda libre para la reserva de escombros).
         startAbsorb(w, i, x - s.x, y - s.y);
         s.mass += w.mass[i];

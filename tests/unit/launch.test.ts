@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG } from '../../src/sim/config';
 import { type Intent, step } from '../../src/sim/step';
-import { addBody, BOLT, createWorld, FREE, GATHERING, KIND_ASTEROID, KIND_ROCKY, ORBITING, PROJECTILE, type World } from '../../src/sim/world';
+import { spawnComet } from '../../src/sim/comets';
+import { ABSORBING, addBody, BOLT, createWorld, FREE, GATHERING, KIND_ASTEROID, KIND_ROCKY, ORBITING, PROJECTILE, type World } from '../../src/sim/world';
 
 const cfg = { ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, cometFirst: 1e9, blackHole: false };
 const count = (w: World, st: number): number => { let n = 0; for (let i = 0; i < w.count; i++) if (w.state[i] === st) n++; return n; };
@@ -101,5 +102,38 @@ describe('lanzamiento cargado', () => {
     expect(w.boltHitsBh).toBeGreaterThan(0);
     expect(w.bh.mass).toBeGreaterThan(m0);
     expect(w.bhSlow).toBeGreaterThan(0);
+  });
+});
+
+describe('correcciones de la revisión (lanzamiento)', () => {
+  it('un choque mientras cargás no te apaga: el montón vuelve a la órbita donde estaba', () => {
+    const w = orbitWorld(8);
+    run(w, 3, hold());
+    expect(w.orbitingCount).toBe(0);
+    let g = -1;
+    for (let i = 0; i < w.count; i++) if (w.state[i] === GATHERING) g = i;
+    const p = addBody(w, { x: w.star.x + 5, y: w.star.y, vx: 0, vy: 0, radius: 9, kind: KIND_ROCKY });
+    expect(p).toBeGreaterThanOrEqual(0);
+    step(w, hold());
+    expect(w.over).toBe(0);
+    expect(w.hits).toBe(1);
+    expect(w.gathered).toBe(0);
+    expect(w.charge).toBeLessThan(cfg.tapTime);   // si seguís apretando, la carga arranca de nuevo desde cero
+    if (w.state[g] === ORBITING) expect(Math.abs(w.orbitR[g] - Math.hypot(w.x[g] - w.star.x, w.y[g] - w.star.y))).toBeLessThan(1.5);
+  });
+  it('un cometa que te toca mientras cargás roba igual', () => {
+    const w = orbitWorld(8);
+    run(w, 3, hold());
+    spawnComet(w, w.star.x + 1, w.star.y);
+    step(w, hold());
+    expect(w.cometSteals).toBe(1);
+  });
+  it('lo que se está juntando cuenta para el tope de la órbita', () => {
+    const w = orbitWorld(10, { ...cfg, orbitCapacity: 10 });
+    run(w, 1, hold());
+    expect(w.gathered).toBeGreaterThan(0);
+    const a = addBody(w, { x: w.star.x - 8, y: w.star.y, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID });
+    step(w, hold());
+    expect(w.state[a]).toBe(ABSORBING);
   });
 });

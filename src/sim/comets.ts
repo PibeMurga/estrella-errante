@@ -1,4 +1,5 @@
 import { DT } from './config';
+import { returnGathered } from './launch';
 import { BOLT, CARRIED, DEAD, FREE, KIND_ASTEROID, MAX_COMETS, ORBITING, PROJECTILE, RETURNING, starSize, type World } from './world';
 
 export const COMET_OFF = 0;
@@ -104,6 +105,7 @@ export function stepComets(w: World): void {
       if (cm.timer[k]! <= 0) cm.mode[k] = COMET_HUNT;
     } else if (d < size + c.cometRadius) {
       // Toca la estrella: le roba el mundo en órbita más cercano (si no lleva uno) y huye.
+      returnGathered(w);   // te toca: se desarma el montón y puede robar igual
       if (cm.carry[k]! < 0 && w.orbitingCount > 0) {
         let best = -1, bestD = Infinity;
         for (let i = 0; i < w.count; i++) {

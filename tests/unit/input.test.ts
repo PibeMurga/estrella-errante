@@ -108,6 +108,21 @@ describe('InputController', () => {
     expect(input.poll(0, 0).hold).toBe(false);
   });
 
+  it('el botón no queda trabado: soltar el izquierdo con otro apretado, o perder la captura, lo suelta', () => {
+    vi.stubGlobal('navigator', { getGamepads: () => [] });
+    const { el, listeners } = fakeElement();
+    const input = new InputController(el, toWorld);
+    const ev = (t: string, e: Record<string, unknown>): void => (listeners[t] as unknown as (e: Record<string, unknown>) => void)(e);
+    ev('pointerdown', { clientX: 10, clientY: 20, button: 0, buttons: 1, pointerId: 1 });
+    input.poll(0, 0);
+    ev('pointermove', { clientX: 10, clientY: 20, buttons: 2 });   // soltó el izquierdo, el derecho sigue apretado
+    expect(input.poll(0, 0).hold).toBe(false);
+    ev('pointerdown', { clientX: 10, clientY: 20, button: 0, buttons: 1, pointerId: 1 });
+    input.poll(0, 0);
+    ev('lostpointercapture', { pointerId: 1 });
+    expect(input.poll(0, 0).hold).toBe(false);
+  });
+
   it('el gatillo derecho del joystick es el botón de lanzar mientras se mantiene', () => {
     const pad = { axes: [1, 0], buttons: [] as { pressed: boolean }[] };
     for (let k = 0; k < 8; k++) pad.buttons.push({ pressed: false });

@@ -26,6 +26,8 @@ export class InputController {
       this.pointerY = e.clientY - r.top;
       this.hasPointer = true;
       this.usingGamepad = false;
+      // Si se soltó el izquierdo con otro botón apretado, no llega pointerup: se mira qué botones siguen abajo.
+      if (typeof e.buttons === 'number' && (e.buttons & 1) === 0) this.pointerHeld = false;
     });
     // Clic izquierdo: botón de lanzar. Un toque es la honda; mantenido carga el bólido (lo decide la simulación).
     // Se captura el puntero para que soltar fuera de la ventana también llegue y el botón no quede trabado.
@@ -39,9 +41,15 @@ export class InputController {
       this.pressPending = true;
       (el as { setPointerCapture?: (id: number) => void }).setPointerCapture?.(e.pointerId);
     });
-    const release = (e: PointerEvent): void => { if (e.button === 0 || e.type === 'pointercancel') this.pointerHeld = false; };
+    const release = (e: PointerEvent): void => {
+      if (typeof e.buttons === 'number') { if ((e.buttons & 1) === 0) this.pointerHeld = false; }
+      else if (e.button === 0) this.pointerHeld = false;
+    };
+    const drop = (): void => { this.pointerHeld = false; };
     el.addEventListener('pointerup', release);
-    el.addEventListener('pointercancel', release);
+    el.addEventListener('pointercancel', drop);
+    el.addEventListener('lostpointercapture', drop);
+    if (typeof window !== 'undefined') window.addEventListener('blur', drop);   // Alt+Tab con el botón apretado
     // ESPACIO o C: colapsar (sólo hace algo cuando se puede; la simulación lo decide).
     // Se ignoran la autorrepetición (mantener apretado no decide por vos), los atajos con Ctrl/Alt/Cmd
     // y lo que se escribe en campos de texto (el laboratorio).
