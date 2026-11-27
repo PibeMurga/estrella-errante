@@ -96,6 +96,10 @@ export interface World {
   stageUps: number;    // cuántas veces subió de etapa (el dibujo y la interfaz lo usan como evento)
   maxMass: number;     // la mayor masa alcanzada en la partida
   absorbed: number;    // cuerpos absorbidos con la órbita llena
+  planets: Int32Array;             // índices de los planetas de la pantalla (fijo desde que se arma el mapa)
+  readonly planetDmg: Float32Array;   // daño acumulado de cada planeta (para partirlo a golpes)
+  planetCaptures: number;          // planetas que entraron a tu órbita (evento)
+  graveHits: number;               // golpes graves (evento)
   readonly captured: Int32Array;   // índices capturados en el último paso
   capturedCount: number;
 }
@@ -194,6 +198,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     state: new Uint8Array(capacity), kind: new Uint8Array(capacity), noCatch: new Float32Array(capacity), life: new Float32Array(capacity),
     broken: new Float32Array(capacity), breakAx: new Float32Array(capacity), breakAy: new Float32Array(capacity), tidalBreaks: 0, planetCrashes: 0, crashX: 0, crashY: 0, crashR: 0,
     orbitingCount: 0, stage: 0, stageUps: 0, maxMass: config.starStartMass, absorbed: 0, captured: new Int32Array(capacity), capturedCount: 0,
+    planets: new Int32Array(0), planetDmg: new Float32Array(capacity), planetCaptures: 0, graveHits: 0,
   };
   const rng = createRng(seed);
   const hw = config.arenaHalfWidth, hh = config.arenaHalfHeight;
@@ -253,6 +258,10 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     w.broken[i] = 60; w.breakAx[i] = Math.cos(a); w.breakAy[i] = Math.sin(a);
     w.radius[i] *= 0.85; w.mass[i] = w.radius[i] ** 3;
   }
+  // Lista fija de los planetas de la pantalla (se arma una sola vez, con el mapa).
+  const pl: number[] = [];
+  for (let i = 0; i < w.count; i++) if (w.kind[i]! >= KIND_ROCKY && w.kind[i]! <= KIND_GAS) pl.push(i);
+  w.planets = Int32Array.from(pl);
   return w;
 }
 

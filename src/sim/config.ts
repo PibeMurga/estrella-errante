@@ -71,6 +71,17 @@ export interface SimConfig {
   boltBhFeed: number;            // masa física que suma el agujero negro por unidad de masa del bólido
   boltBhSlow: number;            // segundos que lo frena un bólido
   boltBhSlowFactor: number;      // fracción de su velocidad mientras está frenado
+  planetOrbitGap: number;        // la órbita de los planetas empieza esto por fuera de la de los asteroides
+  planetOrbitSpan: number;       // ancho de la franja de órbitas de los planetas
+  planetHpPerRadius: number;     // golpes para partir un planeta = esto × su radio
+  planetBreakKeep: number;       // al partirlo, el pedazo que queda mide esto de su radio (entra solo)
+  ability1: number;              // fracción de los planetas de la pantalla en órbita para la habilidad 1
+  ability2: number;
+  ability3: number;
+  abilityGravityMul: number;     // gravedad ampliada: el radio de captura se multiplica por esto
+  abilityBoltBonus: number;      // bólido mayor: cuerpos extra en el tope del bólido
+  cometStealMin: number;         // cuerpos que roba un cometa por pasada (mínimo y máximo)
+  cometStealMax: number;
   rivalMassScale: number;        // masa del rival en la carrera = esto × la masa física del agujero negro
   collapseTime: number;          // segundos de la cinemática del colapso (supernova y nacimiento)
   mergeTime: number;             // segundos de la cinemática de la fusión
@@ -157,4 +168,15 @@ export const DEFAULT_CONFIG: SimConfig = {
   boltBhFeed: 0.02,
   boltBhSlow: 3,
   boltBhSlowFactor: 0.6,
+  planetOrbitGap: 6,
+  planetOrbitSpan: 14,
+  planetHpPerRadius: 2.5,
+  planetBreakKeep: 0.5,
+  ability1: 0.15,
+  ability2: 0.30,
+  ability3: 0.45,
+  abilityGravityMul: 1.3,
+  abilityBoltBonus: 6,
+  cometStealMin: 3,
+  cometStealMax: 5,
 };

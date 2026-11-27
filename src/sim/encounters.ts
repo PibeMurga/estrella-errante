@@ -88,7 +88,7 @@ export function stepStarFlybys(w: World): void {
     const k = w.kind[i]!;
     if (k < KIND_ROCKY || k > KIND_GAS || w.state[i] !== FREE || w.parent[i] !== -1) continue;
     const r = w.radius[i]!;
-    if (r <= c.maxCaptureSize || r > size) continue;
+    if (r <= Math.max(c.maxCaptureSize, size * 0.5) || r > size) continue;   // los chicos entran solos: no esquivan
     const dx = w.x[i]! - s.x, dy = w.y[i]! - s.y;
     if (Math.abs(dx) > hw || Math.abs(dy) > hh) continue;
     const D = (size + r) * c.encounterGap;
