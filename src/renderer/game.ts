@@ -7,6 +7,7 @@ import { createNameScreen } from '../ui/nameScreen';
 import { savedPlanetType } from '../ui/playerName';
 import { playerLook } from '../render/playerLook';
 import { createAmbient } from '../audio/ambient';
+import { createSfx } from '../audio/sfx';
 import { stageFor, STAGE_HYPER } from '../sim/stages';
 import { FixedStepper } from '../sim/loop';
 import { step } from '../sim/step';
@@ -58,10 +59,35 @@ if (!view.ok) {
   // Antes de jugar se elige el nombre (salvo al reiniciar o en las pruebas que arrancan como estrella).
   const params = new URLSearchParams(location.search);
   // Música de fondo: arranca con el primer gesto (el navegador no deja sonar antes). M la silencia.
-  const music = createAmbient();
-  const startMusic = (): void => { music.start(); };
+  const music = createAmbient(), sfx = createSfx();
+  const startMusic = (): void => { music.start(); sfx.start(); };
   window.addEventListener('pointerdown', startMusic);
-  window.addEventListener('keydown', (e) => { startMusic(); if ((e.key === 'm' || e.key === 'M') && named) music.toggleMute(); });
+  window.addEventListener('keydown', (e) => { startMusic(); if ((e.key === 'm' || e.key === 'M') && named) sfx.setMuted(music.toggleMute()); });
+  // Efectos: se disparan cuando cambian los contadores de eventos de la simulación.
+  const ev = { orb: 0, shots: 0, bolts: 0, imp: 0, brk: 0, hits: 0, grave: 0, rock: 0, frac: 0, ign: 0, kills: 0, dis: 0 };
+  const syncEv = (): void => {
+    ev.orb = world.orbitingCount; ev.shots = world.shots; ev.bolts = world.bolts; ev.imp = world.impactCount; ev.brk = world.breakFxCount;
+    ev.hits = world.hits; ev.grave = world.graveHits; ev.rock = world.rockHits; ev.frac = world.fractures; ev.ign = world.ignitions;
+    ev.kills = world.cometKills; ev.dis = world.disintegrated;
+  };
+  syncEv();
+  const playEvents = (): void => {
+    const w = world;
+    if (w.orbitingCount > ev.orb) sfx.capture();
+    if (w.shots > ev.shots) sfx.sling();
+    if (w.bolts > ev.bolts) sfx.bolt(w.lastBoltSize);
+    if (w.impactCount > ev.imp) sfx.impact(w.impacts[((w.impactCount - 1) % 16) * 4 + 2]!);
+    if (w.breakFxCount > ev.brk || w.disintegrated > ev.dis) sfx.breakPlanet();
+    if (w.hits > ev.hits || w.graveHits > ev.grave) sfx.hurt();
+    if (w.rockHits > ev.rock) sfx.rockHit();
+    if (w.fractures > ev.frac) sfx.fracture();
+    if (w.ignitions > ev.ign) sfx.ignition();
+    if (w.cometKills > ev.kills) sfx.cometDown();
+    // El rugido del agujero negro: crece al acercarte a su zona de marea.
+    const bh = w.bh, d = Math.hypot(bh.x - w.star.x, bh.y - w.star.y), reach = bh.radius * w.config.bhTidalR * 2.2;
+    sfx.rumble(bh.active && w.ignited && w.phase === 0 && w.over === 0 ? Math.max(w.tide, 1 - d / reach) : 0);
+    syncEv();
+  };
   let lastIgn = world.ignitions;
   let named = asStar || params.get('n') === '1';
   playerLook.planetType = savedPlanetType();
@@ -85,6 +111,7 @@ if (!view.ok) {
     hud.update(world, view, elapsed, window.innerWidth, window.innerHeight);
     music.setGrowth(stageFor(world.star.mass) / STAGE_HYPER);
     if (world.ignitions > lastIgn) { lastIgn = world.ignitions; music.swell(); }
+    playEvents();
     gameOver.update(world, elapsed);
     cine.update(world, elapsed);
     const next = governor.sample(elapsed * 1000);

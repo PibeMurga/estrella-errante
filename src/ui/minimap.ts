@@ -3,7 +3,7 @@ import { DEAD, KIND_ASTEROID, MAX_COMETS, ORBITING, starSize, type World } from 
 
 // Mapa chico, abajo a la derecha: lo que tenés cerca, minimalista y con el fósforo del visor. Vos al centro.
 // Planetas a escala con el color de su marca: amarillo se puede partir, rojo daña, verde son tuyos, gris entran solos.
-// Asteroides como puntitos, cometas con su color y el agujero negro en rojo con su zona de marea (o una flecha si está lejos).
+// La densidad de asteroides como una sombra suave, cometas con su color y el agujero negro en rojo con su zona de marea (o una flecha si está lejos).
 const RANGE = 160;   // unidades del mundo del centro al borde
 
 export interface Minimap { draw(w: World): void }
@@ -17,6 +17,13 @@ export function createMinimap(parent: HTMLElement): Minimap {
   const g = cv.getContext('2d')!;
   let acc = 0;
   const C = SIZE / 2, k = C / RANGE;
+  const GRID = 16, CELL = (RANGE * 2) / GRID, dens = new Uint16Array(GRID * GRID);
+  // Mancha suave para la densidad y fondo que se desvanece: se arman una sola vez.
+  const blob = document.createElement('canvas'); blob.width = blob.height = 32;
+  { const b = blob.getContext('2d')!, gr = b.createRadialGradient(16, 16, 0, 16, 16, 16);
+    gr.addColorStop(0, 'rgba(170,150,130,1)'); gr.addColorStop(1, 'rgba(170,150,130,0)'); b.fillStyle = gr; b.fillRect(0, 0, 32, 32); }
+  const bg = g.createRadialGradient(C, C, C * 0.55, C, C, C);
+  bg.addColorStop(0, 'rgba(2,10,8,0.6)'); bg.addColorStop(1, 'rgba(2,10,8,0)');
 
   return {
     draw(w) {
@@ -25,20 +32,29 @@ export function createMinimap(parent: HTMLElement): Minimap {
       g.clearRect(0, 0, SIZE, SIZE);
       g.save();
       g.beginPath(); g.arc(C, C, C - 1, 0, Math.PI * 2); g.clip();
-      g.fillStyle = 'rgba(2,10,8,0.72)'; g.fillRect(0, 0, SIZE, SIZE);
+      // Sin borde: se desvanece hacia afuera.
+      g.fillStyle = bg; g.fillRect(0, 0, SIZE, SIZE);
       // Anillos de distancia.
-      g.strokeStyle = 'rgba(122,245,201,0.12)'; g.lineWidth = 1;
+      g.strokeStyle = 'rgba(122,245,201,0.07)'; g.lineWidth = 1;
       for (const r of [0.33, 0.66]) { g.beginPath(); g.arc(C, C, C * r, 0, Math.PI * 2); g.stroke(); }
       const s = w.star, size = starSize(s.mass);
       const X = (x: number): number => C + (x - s.x) * k, Y = (y: number): number => C - (y - s.y) * k;
-      // Asteroides sueltos.
-      g.fillStyle = 'rgba(190,170,150,0.55)';
+      // Densidad de asteroides: una sombra suave por zonas (no cada punto).
+      dens.fill(0);
       for (let i = 0; i < w.count; i++) {
         if (w.kind[i] !== KIND_ASTEROID || w.state[i] === DEAD) continue;
-        const dx = w.x[i] - s.x, dy = w.y[i] - s.y;
-        if (Math.abs(dx) > RANGE || Math.abs(dy) > RANGE) continue;
-        g.fillRect(X(w.x[i]), Y(w.y[i]), 1, 1);
+        const gx = Math.floor((w.x[i] - s.x + RANGE) / CELL), gy = Math.floor((s.y - w.y[i] + RANGE) / CELL);
+        if (gx < 0 || gy < 0 || gx >= GRID || gy >= GRID) continue;
+        dens[gy * GRID + gx]++;
       }
+      for (let gy = 0; gy < GRID; gy++) for (let gx = 0; gx < GRID; gx++) {
+        const v = dens[gy * GRID + gx]!;
+        if (v === 0) continue;
+        const cx = C + (gx + 0.5 - GRID / 2) * CELL * k, cy = C + (gy + 0.5 - GRID / 2) * CELL * k, rad = CELL * k * 1.1;
+        g.globalAlpha = Math.min(0.55, v * 0.05);
+        g.drawImage(blob, cx - rad, cy - rad, rad * 2, rad * 2);
+      }
+      g.globalAlpha = 1;
       // Planetas.
       for (let i = 0; i < w.count; i++) {
         if (!isPlanetKind(w.kind[i]!) || w.state[i] === DEAD) continue;
@@ -82,8 +98,6 @@ export function createMinimap(parent: HTMLElement): Minimap {
           g.fill();
         }
       }
-      g.strokeStyle = 'rgba(122,245,201,0.5)'; g.lineWidth = 1.2;
-      g.beginPath(); g.arc(C, C, C - 1, 0, Math.PI * 2); g.stroke();
     },
   };
 }
