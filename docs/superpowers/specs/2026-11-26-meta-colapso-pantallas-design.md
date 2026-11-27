@@ -224,4 +224,4 @@ Lucas jugó las Entregas 1 a 3 y ganó en 2:50, 3:11 y 2:42. Con eso quedó deci
 - **Pausa con ESC** (o Start en el mando), con la opción de empezar una partida nueva (R).
 - **Colores de las alertas del agujero negro rival** (flecha, corchetes y distancia): rojas mientras te persigue y verde fósforo cuando lo perseguís vos.
 - **Un planeta que partís sigue siendo el mismo planeta:** conserva su tamaño, se ve colapsado y en dos mitades, y entra a tu órbita aunque sea grande. Los gaseosos, que no tienen corteza, pierden su envoltura y se achican.
-- **Marcas de peligro en rojo:** el planeta que daña lleva un aro rojo; el del golpe grave, un aro rojo doble que late; el que se puede partir, trazos verdes; el que entra solo, sin marca. Reemplaza el ámbar del §2.
+- **Marcas, revisadas con Lucas:** el que se puede partir es tu blanco y lleva un aro doble amarillo que late; el que daña, un aro rojo fino; el del golpe grave, un aro rojo grueso con un halo quieto; el que entra solo, sin marca. Reemplaza los trazos verdes y el ámbar del §2.
