@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG, type SimConfig } from '../../src/sim/config';
 import { spawnComet } from '../../src/sim/comets';
 import { type Intent, step } from '../../src/sim/step';
-import { addBody, BOLT, CARRIED, createWorld, FREE, KIND_ASTEROID, MAX_COMETS, ORBITING, PROJECTILE, type World } from '../../src/sim/world';
+import { addBody, BOLT, CARRIED, createWorld, FREE, KIND_ASTEROID, KIND_ROCKY, MAX_COMETS, ORBITING, PROJECTILE, type World } from '../../src/sim/world';
 
 const IDLE: Intent = { targetX: 0, targetY: 0, hasTarget: false };
 const cfg = (o: Partial<SimConfig> = {}): SimConfig => ({ ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, blackHole: false, ...o });
@@ -54,6 +54,21 @@ describe('cometa cazador', () => {
     for (let i = 0; i < w.count; i++) if (w.state[i] === CARRIED) expect(Math.hypot(w.x[i] - w.comets.x[k]!, w.y[i] - w.comets.y[k]!)).toBeLessThan(14);
     for (let s = 0; s < DEFAULT_CONFIG.cometFleeTime * 60; s++) step(w, IDLE);
     expect(w.comets.mode[k]).toBe(1);
+  });
+
+  it('a veces, al azar, también se lleva un planeta de tu órbita (sin importar la habilidad)', () => {
+    const run = (chance: number): number => {
+      const w = createWorld(cfg({ cometPlanetChance: chance }), 2, 20);
+      withOrbit(w, 8);
+      const p = addBody(w, { x: 0, y: 14, vx: 0, vy: 0, radius: 1.2, kind: KIND_ROCKY });
+      w.state[p] = ORBITING; w.orbitR[p] = 14; w.orbitTarget[p] = 14; w.orbitAngle[p] = Math.PI / 2; w.orbitingCount++;
+      expect(w.ability).toBe(0);
+      spawnComet(w, 3, 0);
+      step(w, IDLE);
+      return w.state[p]!;
+    };
+    expect(run(1)).toBe(CARRIED);
+    expect(run(0)).toBe(ORBITING);
   });
 
   it('un golpe de honda le saca uno de vida', () => {

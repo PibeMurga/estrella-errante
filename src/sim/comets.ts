@@ -116,8 +116,8 @@ export function stepComets(w: World): void {
       cm.timer[k] = cm.timer[k]! - DT;
       if (cm.timer[k]! <= 0) cm.mode[k] = COMET_HUNT;
     } else if (d < size + c.cometRadius) {
-      // Toca la estrella: le roba de 3 a 5 cuerpos de la órbita (los más cercanos) y, desde el segundo escalón
-      // de planetas, a veces también el planeta más chico de tu sistema. Después huye.
+      // Toca la estrella: le roba de 3 a 5 cuerpos de la órbita (los más cercanos) y,
+      // a veces, al azar, también el planeta más chico de tu sistema. Después huye.
       returnGathered(w);   // te toca: se desarma el montón y puede robar igual
       if (cm.carry[k] === 0 && w.orbitingCount > 0) {
         const want = c.cometStealMin + Math.floor(w.rng.next() * (c.cometStealMax - c.cometStealMin + 1));
@@ -132,7 +132,7 @@ export function stepComets(w: World): void {
           if (best < 0) break;
           steal(w, k, best); got++;
         }
-        if (w.ability >= 2 && w.rng.next() < 0.5) {
+        if (w.rng.next() < c.cometPlanetChance) {
           let small = -1;
           for (let q = 0; q < w.planets.length; q++) { const p = w.planets[q]!; if (w.state[p] === ORBITING && (small < 0 || w.radius[p] < w.radius[small])) small = p; }
           if (small >= 0) { steal(w, k, small); got++; }

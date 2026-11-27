@@ -214,8 +214,8 @@ Lucas jugó las Entregas 1 a 3 y ganó en 2:50, 3:11 y 2:42. Con eso quedó deci
 
 **Consultas abiertas para Lucas:**
 1. ¿Las habilidades se calculan sobre todos los planetas de la pantalla, o sólo sobre los que siguen existiendo? Hoy se cuentan todos, y a medida que el rival se come planetas, el 45 % se vuelve casi imposible.
-2. ¿Un cometa roba un planeta desde la habilidad 2 y en la mitad de las pasadas, como hoy?
-3. ¿Un golpe grave en la primera etapa quita la mitad de la masa, como hoy?
+2. ~~¿Un cometa roba un planeta desde la habilidad 2 y en la mitad de las pasadas, como hoy?~~ **Decidido (27/11):** sí, al azar y sin importar la habilidad: en la mitad de las pasadas se lleva además el planeta más chico de tu órbita (`cometPlanetChance` 0,5).
+3. ~~¿Un golpe grave en la primera etapa quita la mitad de la masa, como hoy?~~ **Decidido (27/11):** sí, queda como está.
 
 ## 13. Cambios pedidos por Lucas al jugar (27/11/2026, segunda ronda)
 
