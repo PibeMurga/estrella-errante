@@ -14,7 +14,7 @@ function createWindow(): void {
     backgroundColor: '#000000',
     show: false,
     autoHideMenuBar: true,
-    title: 'Enjambre gravitatorio',
+    title: 'MAGNAR',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,

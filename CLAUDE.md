@@ -1,4 +1,4 @@
-# Enjambre gravitatorio — reglas del proyecto
+# MAGNAR — reglas del proyecto
 
 Diseño: `docs/superpowers/specs/2026-11-24-enjambre-gravitatorio-design.md`.
 Bitácora: Notion "Estudio Game", usando SOLO el MCP `notion-juego`. Antes de escribir, confirmar que la cuenta sea lfigueiraduarte@gmail.com. Cada decisión, avance o tarea se registra ahí.
