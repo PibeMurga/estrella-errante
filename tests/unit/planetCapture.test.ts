@@ -122,3 +122,17 @@ describe('partir planetas a golpes', () => {
     expect(w.planetDmg[p]).toBe(2);
   });
 });
+
+describe('cuánto suma un planeta', () => {
+  it('un planeta capturado suma su masa por planetMassGain (y lo mismo resta si se pierde)', () => {
+    const w = guarded(100);
+    const E = starSize(w.star.mass);
+    const p = addBody(w, { x: 14, y: 0, vx: 0, vy: 0, radius: E * 0.4, kind: KIND_ROCKY });
+    const m0 = w.star.mass;
+    step(w, idle);
+    expect(w.state[p]).toBe(ORBITING);
+    let others = 0;   // lo que entró en el mismo paso, además del planeta
+    for (let c = 0; c < w.capturedCount; c++) { const i = w.captured[c]!; if (i !== p) others += w.mass[i]; }
+    expect(w.star.mass - m0 - others).toBeCloseTo(w.mass[p] * cfg.planetMassGain, 6);
+  });
+});

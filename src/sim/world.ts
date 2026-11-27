@@ -114,6 +114,13 @@ export interface BodySpec { x: number; y: number; vx: number; vy: number; radius
 const MAX_MOONS = 4;
 const MAX_DEBRIS = 60;
 
+// Masa que aporta a tu estrella el cuerpo i al entrar a tu sistema (y la que se lleva al irse).
+// Un planeta suma sólo una parte: si sumara entero, la carrera contra el rival se ganaría sola.
+export function massGain(w: World, i: number): number {
+  const k = w.kind[i]!;
+  return k >= KIND_ROCKY && k <= KIND_GAS ? w.mass[i] * w.config.planetMassGain : w.mass[i];
+}
+
 // Tamaño (radio) de la estrella según su masa. Lo usan la simulación y el dibujo.
 export function starSize(mass: number): number {
   return 4 + 0.5 * Math.sqrt(mass);

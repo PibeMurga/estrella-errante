@@ -1,7 +1,7 @@
 import { DT } from './config';
 import { returnGathered } from './launch';
 import { isPlanetKind } from './planetCapture';
-import { BOLT, CARRIED, DEAD, FREE, KIND_ASTEROID, MAX_COMETS, ORBITING, PROJECTILE, RETURNING, starSize, type World } from './world';
+import { BOLT, CARRIED, DEAD, FREE, KIND_ASTEROID, MAX_COMETS, massGain, ORBITING, PROJECTILE, RETURNING, starSize, type World } from './world';
 
 export const COMET_OFF = 0;
 export const COMET_HUNT = 1;
@@ -78,7 +78,7 @@ function steal(w: World, k: number, i: number): void {
   w.state[i] = CARRIED;
   w.parent[i] = k;
   w.orbitingCount--;
-  w.star.mass = Math.max(w.config.starStartMass, w.star.mass - w.mass[i]);
+  w.star.mass = Math.max(w.config.starStartMass, w.star.mass - massGain(w, i));
 }
 
 // Cometas cazadores: aparecen por los bordes, persiguen a la estrella, le roban cuerpos y huyen.

@@ -82,6 +82,7 @@ export interface SimConfig {
   abilityBoltBonus: number;      // bólido mayor: cuerpos extra en el tope del bólido
   cometStealMin: number;         // cuerpos que roba un cometa por pasada (mínimo y máximo)
   cometStealMax: number;
+  planetMassGain: number;        // fracción de la masa de un planeta que suma (o resta) a tu estrella
   rivalMassScale: number;        // masa del rival en la carrera = esto × la masa física del agujero negro
   collapseTime: number;          // segundos de la cinemática del colapso (supernova y nacimiento)
   mergeTime: number;             // segundos de la cinemática de la fusión
@@ -179,4 +180,5 @@ export const DEFAULT_CONFIG: SimConfig = {
   abilityBoltBonus: 6,
   cometStealMin: 3,
   cometStealMax: 5,
+  planetMassGain: 0.1,
 };

@@ -7,7 +7,7 @@ import { stepAbilities } from './abilities';
 import { graveHit, isPlanetKind, stepPlanetHits, planetTier, TIER_CAPTURE, TIER_GRAVE, TIER_HURT } from './planetCapture';
 import { returnGathered, sling, slingAngle, stepBolts, stepLaunch } from './launch';
 import { canCollapse, playerHoleRadius, startCollapse, startHunt, startMerge, stepMerge } from './phase';
-import { ABSORBING, BOLT, CARRIED, captureRadiusFor, DEAD, FREE, GATHERING, KIND_GAS, KIND_ICE, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_DIMMED, OVER_ESCAPED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
+import { ABSORBING, BOLT, CARRIED, captureRadiusFor, DEAD, massGain, FREE, GATHERING, KIND_GAS, KIND_ICE, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_DIMMED, OVER_ESCAPED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
 
 // target: hacia dónde ir. aim: hacia dónde apuntar la honda (stick derecho); sin aim se apunta al objetivo.
 export interface Intent {
@@ -59,7 +59,7 @@ function hurt(w: World, p: number): void {
       w.vx[out] = Math.cos(a) * c.lostSpeed + s.vx * 0.3; w.vy[out] = Math.sin(a) * c.lostSpeed + s.vy * 0.3;
       w.noCatch[out] = c.noCatchTime;
       w.orbitingCount--;
-      s.mass = Math.max(c.starStartMass, s.mass - w.mass[out]);
+      s.mass = Math.max(c.starStartMass, s.mass - massGain(w, out));
       return;
     }
   }
@@ -313,7 +313,7 @@ export function step(w: World, intent: Intent): void {
       const d = Math.hypot(x - s.x, y - s.y);
       if (hunting) {
         // Tu agujero negro traga lo que toca; no hay capturas ni choques.
-        if (d < holeR * c.huntSwallowFactor) { w.state[i] = DEAD; s.mass += w.mass[i]; }
+        if (d < holeR * c.huntSwallowFactor) { w.state[i] = DEAD; s.mass += massGain(w, i); }
         continue;
       }
       // Escalón del planeta: los más grandes que la estrella la dañan al tocarla (o es un golpe grave).
@@ -327,7 +327,7 @@ export function step(w: World, intent: Intent): void {
       if (canSteal && d < captureR && small && w.orbitingCount + w.gathered >= c.orbitCapacity) {
         // Órbita llena: la estrella lo absorbe (suma su masa y el cuerpo queda libre para la reserva de escombros).
         startAbsorb(w, i, x - s.x, y - s.y);
-        s.mass += w.mass[i];
+        s.mass += massGain(w, i);
         continue;
       }
       if (canSteal && d < captureR && small) {
@@ -338,7 +338,7 @@ export function step(w: World, intent: Intent): void {
         else w.orbitTarget[i] = clamp(d * 0.9, bandLo, bandHi);
         w.orbitAngle[i] = Math.atan2(y - s.y, x - s.x);
         w.orbitingCount++;
-        s.mass += w.mass[i];
+        s.mass += massGain(w, i);
         w.captured[w.capturedCount++] = i;
       }
     } else moveOrbiting(w, i, st === ABSORBING, size);
