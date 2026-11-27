@@ -226,7 +226,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   bhDiskStrip: 1.2,
   bhDiskDrain: 0.25,
   bhDiskDrag: 1.6,
-  rockHitSpeed: 5.2,
+  rockHitSpeed: 6,
   rockHitSize: 1.15,
   rockShatterChance: 0.45,
   rockRestitution: 0.18,

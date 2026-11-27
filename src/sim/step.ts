@@ -138,9 +138,10 @@ function flight(w: World, i: number, st: number): void {
 // dos cuerpos de la órbita (dos si es grande). Destello en la superficie, en el punto del golpe.
 function rockHitsStar(w: World, i: number, dx: number, dy: number): void {
   const c = w.config, s = w.star;
-  const kick = Math.min(6, (w.radius[i] ** 3) * 4 / Math.sqrt(Math.max(s.mass, 1)));
-  s.vx += (w.vx[i] - s.vx) * 0.04 + (-dx / (Math.hypot(dx, dy) || 1)) * kick;
-  s.vy += (w.vy[i] - s.vy) * 0.04 + (-dy / (Math.hypot(dx, dy) || 1)) * kick;
+  // Apenas un sacudón: una estrella pesa muchísimo más que una roca.
+  const kick = Math.min(1.2, (w.radius[i] ** 3) * 0.6 / Math.sqrt(Math.max(s.mass, 1)));
+  s.vx += (-dx / (Math.hypot(dx, dy) || 1)) * kick;
+  s.vy += (-dy / (Math.hypot(dx, dy) || 1)) * kick;
   w.state[i] = DEAD;
   s.mass += massGain(w, i);
   const slot = (w.impactCount % MAX_IMPACTS) * 4;
