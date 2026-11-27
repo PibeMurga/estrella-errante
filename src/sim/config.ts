@@ -83,6 +83,11 @@ export interface SimConfig {
   cometStealMax: number;
   cometPlanetChance: number;
   halfSplitSpeed: number;
+  bhDiskR: number;               // radio del disco de acreción, en radios del horizonte (lo que se ve)
+  bhSwallowR: number;            // te traga a esta distancia, en radios del horizonte (la esfera de fotones)
+  bhDiskStrip: number;           // fracción de tu órbita que te arranca por segundo en lo más hondo del disco
+  bhDiskDrain: number;           // fracción de tu masa que perdés por segundo en lo más hondo del disco
+  bhDiskDrag: number;            // frenado por el gas del disco (por segundo, en lo más hondo)
   slingBrake: number;            // al tirar con la honda, la estrella pierde esta fracción de su velocidad
   boltBrake: number;             // ídem al soltar un bólido (más pesado: frena más)
   fireRecover: number;           // segundos en que recupera la marcha después de disparar        // velocidad con que se separan los dos pedazos de un planeta partido     // probabilidad de que, además, se lleve el planeta más chico de tu órbita
@@ -203,6 +208,11 @@ export const DEFAULT_CONFIG: SimConfig = {
   cometStealMax: 5,
   cometPlanetChance: 0.5,
   halfSplitSpeed: 1.4,
+  bhDiskR: 4.5,
+  bhSwallowR: 1.5,
+  bhDiskStrip: 1.2,
+  bhDiskDrain: 0.25,
+  bhDiskDrag: 1.6,
   slingBrake: 0.2,
   boltBrake: 0.45,
   fireRecover: 0.7,

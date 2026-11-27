@@ -154,7 +154,9 @@ export function createHud(parent: HTMLElement): Hud {
       if (bh.active) {
         const d = Math.max(0, Math.hypot(bh.x - s.x, bh.y - s.y) - bh.radius);
         bhInfo.style.display = '';
-        bhDistEl.textContent = `A ${ua(d)} UA · ${d < lastBhDist - 0.05 ? 'SE ACERCA' : 'SE ALEJA'}`;   // UA: unidades astronómicas
+        // Dentro del disco: el aviso cambia y late (te está arrancando materia).
+        bhDistEl.textContent = w.inDisk > 0 ? 'DISCO DE ACRECIÓN · PERDÉS MATERIA' : `A ${ua(d)} UA · ${d < lastBhDist - 0.05 ? 'SE ACERCA' : 'SE ALEJA'}`;   // UA: unidades astronómicas
+        bhInfo.classList.toggle('disk', w.inDisk > 0);
         arrowDist.textContent = `AGUJERO NEGRO · ${ua(d)} UA`;
         lastBhDist = d;
       } else bhInfo.style.display = 'none';

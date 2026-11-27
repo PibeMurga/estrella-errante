@@ -22,6 +22,8 @@
 
 .hud .clock { position: absolute; left: 30px; top: 66px; opacity: .9; line-height: 1.6; }
 .hud .bhinfo { position: absolute; right: 60px; top: 40px; text-align: right; line-height: 1.6; color: var(--bh); text-shadow: 0 0 6px color-mix(in srgb, var(--bh) 65%, transparent); }
+.hud .bhinfo.disk { animation: bhdisk .5s ease-in-out infinite alternate; }
+@keyframes bhdisk { from { opacity: 1; } to { opacity: .45; } }
 .hud .bottom { position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%); display: flex; gap: 30px; align-items: center; }
 .hud .bottom .off { opacity: .35; }
 

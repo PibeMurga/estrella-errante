@@ -124,6 +124,38 @@ function flight(w: World, i: number, st: number): void {
   w.y[i] += w.vy[i] * DT;
 }
 
+// Disco de acreción del rival: meterse cuesta, aunque pases rápido. Cuanto más hondo, más: el gas te frena, la marea te
+// arranca cuerpos de la órbita (salen hacia el agujero, que se los come) y perdés masa.
+function crossDisk(w: World, dd: number): void {
+  const c = w.config, s = w.star, bh = w.bh;
+  const R = bh.radius * c.bhDiskR;
+  const depth = dd < R ? 1 - (dd - bh.radius * c.bhSwallowR) / (R - bh.radius * c.bhSwallowR) : 0;
+  if (depth > 0 && w.inDisk === 0) w.diskGrazes++;
+  w.inDisk = Math.max(0, Math.min(1, depth));
+  if (depth <= 0) { w.diskStripAcc = 0; return; }
+  const k = w.inDisk * w.inDisk + 0.25 * w.inDisk;   // suave en el borde, muy fuerte adentro
+  const drag = Math.max(0, 1 - c.bhDiskDrag * k * DT);
+  s.vx *= drag; s.vy *= drag;
+  s.mass = Math.max(c.starStartMass, s.mass * (1 - c.bhDiskDrain * k * DT));
+  w.diskStripAcc += c.bhDiskStrip * k * DT * w.orbitingCount;
+  while (w.diskStripAcc >= 1 && w.orbitingCount > 0) {
+    w.diskStripAcc -= 1;
+    // El cuerpo de la órbita más cercano al agujero sale despedido hacia él.
+    let best = -1, bestD = Infinity;
+    for (let i = 0; i < w.count; i++) {
+      if (w.state[i] !== ORBITING || isPlanetKind(w.kind[i]!)) continue;
+      const e = (w.x[i] - bh.x) ** 2 + (w.y[i] - bh.y) ** 2;
+      if (e < bestD) { bestD = e; best = i; }
+    }
+    if (best < 0) break;
+    const gx = bh.x - w.x[best], gy = bh.y - w.y[best], gd = Math.hypot(gx, gy) || 1;
+    w.state[best] = FREE; w.orbitingCount--;
+    w.vx[best] = s.vx + (gx / gd) * 12; w.vy[best] = s.vy + (gy / gd) * 12;
+    w.noCatch[best] = 3;
+    s.mass = Math.max(c.starStartMass, s.mass - massGain(w, best));
+  }
+}
+
 // Se acomoda en su órbita (o cae a la estrella si la está absorbiendo) a velocidad limitada:
 // se lo ve acercarse e imantarse, no saltar. La franja sigue el tamaño de la estrella.
 function moveOrbiting(w: World, i: number, absorbing: boolean, size: number, holeR = 0): void {
@@ -274,12 +306,13 @@ export function step(w: World, intent: Intent): void {
   if (bh.active) {
     const dd = Math.hypot(s.x - bh.x, s.y - bh.y);
     if (hunting) {
+      w.inDisk = 0;
       if (dd < holeR + bh.radius) { startMerge(w); w.tick++; return; }
-    } else if (dd < bh.radius + starSize(s.mass) * 0.5) {
+    } else if (dd < bh.radius * c.bhSwallowR + starSize(s.mass) * 0.5) {
       w.over = OVER_SWALLOWED;
       w.tick++;
       return;
-    }
+    } else crossDisk(w, dd);
   }
 
   setOrbitBand(w);
