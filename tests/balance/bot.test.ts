@@ -1,7 +1,8 @@
 import { it } from 'vitest';
 import { DEFAULT_CONFIG } from '../../src/sim/config';
 import { type Intent, step } from '../../src/sim/step';
-import { createWorld, FREE, KIND_ASTEROID, MAX_COMETS } from '../../src/sim/world';
+import { canCollapse } from '../../src/sim/phase';
+import { createWorld, FREE, KIND_ASTEROID, MAX_COMETS, OVER_WON, PHASE_HUNT } from '../../src/sim/world';
 import { STAGES } from '../../src/sim/stages';
 
 // Bot de balance: juega 5 partidas sin pantalla e informa cuánto dura, crece y pelea. Correr con: npm run balance
@@ -12,7 +13,12 @@ it('bot de balance', () => {
     let tgt = -1;
     const t0 = performance.now();
     let worst = 0;
-    for (let k = 0; k < 60 * 600 && w.over === 0; k++) {
+    for (let k = 0; k < 60 * 900 && w.over === 0; k++) {
+      if (w.phase === PHASE_HUNT) {
+        intent.targetX = w.bh.x; intent.targetY = w.bh.y; intent.fire = false; intent.collapse = false;
+        step(w, intent);
+        continue;
+      }
       const s = w.star, bh = w.bh;
       const dbh = Math.hypot(bh.x - s.x, bh.y - s.y);
       if (dbh < 130) { intent.targetX = s.x - (bh.x - s.x) * 3; intent.targetY = s.y - (bh.y - s.y) * 3; }
@@ -31,11 +37,12 @@ it('bot de balance', () => {
       for (let c = 0; c < MAX_COMETS; c++) if (w.comets.mode[c] === 1 && Math.hypot(w.comets.x[c]! - s.x, w.comets.y[c]! - s.y) < 70) {
         intent.targetX = w.comets.x[c]!; intent.targetY = w.comets.y[c]!; intent.fire = true;
       }
+      intent.collapse = canCollapse(w);
       const a = performance.now();
       step(w, intent);
       worst = Math.max(worst, performance.now() - a);
     }
     const ms = (performance.now() - t0) / (w.tick || 1);
-    console.log(`semilla ${seed}: ${(w.tick / 60).toFixed(0)} s, fin=${w.over}, masaMax=${w.maxMass.toFixed(0)}, etapa=${STAGES[w.stage]!.name}, eclipses=${w.eclipses}, cometas muertos=${w.cometKills}, robos=${w.cometSteals}, choques=${w.hits}, disparos=${w.shots}, órbita=${w.orbitingCount}, absorbidos=${w.absorbed}, bh r=${w.bh.radius.toFixed(1)}, paso medio=${ms.toFixed(3)} ms, peor=${worst.toFixed(2)} ms`);
+    console.log(`${w.over === OVER_WON ? 'GANÓ' : 'perdió'} semilla ${seed}: fase=${w.phase}, ${(w.tick / 60).toFixed(0)} s, fin=${w.over}, masaMax=${w.maxMass.toFixed(0)}, etapa=${STAGES[w.stage]!.name}, eclipses=${w.eclipses}, cometas muertos=${w.cometKills}, robos=${w.cometSteals}, choques=${w.hits}, disparos=${w.shots}, órbita=${w.orbitingCount}, absorbidos=${w.absorbed}, bh r=${w.bh.radius.toFixed(1)}, paso medio=${ms.toFixed(3)} ms, peor=${worst.toFixed(2)} ms`);
   }
 }, 600_000);

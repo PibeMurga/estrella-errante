@@ -142,7 +142,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   encounterGap: 1.12,
   crashSizeRatio: 1.35,
   crashChance: 0.8,
-  rivalMassScale: 50,
+  rivalMassScale: 55,
   collapseTime: 6,
   mergeTime: 5,
   huntTimeLimit: 60,
