@@ -301,8 +301,9 @@ export function createPlanetsLayer(world: World, segments: number, octaves: numb
     const spin = new Float32Array(n), seed = new Float32Array(n);
     for (let s = 0; s < n; s++) {
       seed[s] = rng.next();
-      // Cada planeta gira a su ritmo, a la vista; uno de cada seis, al revés (como Venus o Urano).
-      spin[s] = (0.3 + 0.6 * ((seed[s]! * 7.31) % 1)) * (((seed[s]! * 13.7) % 1) < 0.17 ? -1 : 1);
+      // Cada planeta gira a su ritmo: muchos lentos (algunos parecen casi quietos), pocos rápidos, sin exagerar.
+      // Uno de cada seis, al revés (como Venus o Urano).
+      spin[s] = (0.03 + 0.72 * Math.pow((seed[s]! * 7.31) % 1, 1.8)) * (((seed[s]! * 13.7) % 1) < 0.17 ? -1 : 1);
       seedCol.setRGB(seed[s]!, 0, 0);
       hi.setColorAt(s, seedCol); lo.setColorAt(s, seedCol); clouds?.setColorAt(s, seedCol); atmo?.setColorAt(s, seedCol);
     }

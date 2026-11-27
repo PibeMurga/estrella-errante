@@ -20,7 +20,8 @@ const SUN_VERT = /* glsl */ `varying vec3 vN; varying vec3 vO; varying vec3 vV;
 void main(){ vO = position; vec4 w = modelMatrix*vec4(position,1.); vN = normalize(mat3(modelMatrix)*normal); vV = normalize(cameraPosition - w.xyz); gl_Position = projectionMatrix*viewMatrix*w; }`;
 
 // Superficie del sol: granulación que hierve, manchas, fáculas y oscurecimiento hacia el borde.
-const HASH_GLSL = /* glsl */ `float h1(float n){ return fract(sin(n*1.7 + 3.1)*43758.5453); }
+// uSeed: distinta en cada partida, así la secuencia de erupciones nunca se repite.
+const HASH_GLSL = /* glsl */ `uniform float uSeed; float h1(float n){ return fract(sin(n*1.7 + 3.1)*43758.5453); }
 `;
 const SUN_FRAG = /* glsl */ HASH_GLSL + `uniform vec3 uCamDir; uniform float uTime; uniform float uIntensity; uniform vec3 uHot; uniform vec3 uMid; uniform vec3 uCool; varying vec3 vN; varying vec3 vO; varying vec3 vV;
 void main(){
@@ -47,7 +48,7 @@ void main(){
   // y deja una onda que se abre sobre el plasma. Pocas, cada una a su ritmo y en un lugar distinto cada vez.
   float flare = 0.;
   for (int i = 0; i < 3; i++) {
-    float fi = float(i), tt = t/(6. + fi*2.7) + fi*.37, id = floor(tt), ph = fract(tt);
+    float fi = float(i), tt = t/(6. + fi*2.7) + fi*.37 + fract(uSeed*.137 + fi*.61), id = floor(tt) + uSeed, ph = fract(tt);
     if (h1(id*2.3 + fi*5.9) < .45) continue;   // a veces no estalla: sin ritmo fijo
     float u1 = h1(id*12.9 + fi*7.1), u2 = h1(id*78.2 + fi*3.3)*2. - 1., sxy = sqrt(1. - u2*u2);
     // Siempre del lado que mira a la cámara (en el mundo, no en la superficie que gira): que se vean.
@@ -82,7 +83,7 @@ void main(){
   // Eyecciones del borde: cada una distinta. Según su tipo es un arco de plasma con los dos pies en el borde, un chorro
   // fino que se inclina, un abanico de filamentos o una nube de gas; cambian la altura, el grosor, la inclinación y el color.
   for (int i = 0; i < 2; i++) {
-    float fi = float(i), tt = uTime/(7.5 + fi*3.4) + fi*.53, id = floor(tt), ph = fract(tt);
+    float fi = float(i), tt = uTime/(7.5 + fi*3.4) + fi*.53 + fract(uSeed*.271 + fi*.43), id = floor(tt) + uSeed, ph = fract(tt);
     if (h1(id*6.7 + fi*1.3) < .4) continue;
     float ang = h1(id*41.3 + fi*9.7) * 6.2832;
     float sa = atan(sin(a - ang), cos(a - ang));
@@ -110,7 +111,8 @@ void main(){
     vec3 tcol = mix(uTint * vec3(1.15,.75,.45), uTint * vec3(1.3,1.1,.9), h1(id*9.3 + fi));   // más rojiza o más blanca
     prom += tcol * m * env * 2.;
   }
-  float breathe = .9 + .1*(fbm(vec3(cos(a)*1.5, sin(a)*1.5, uTime*.03), 3)*.5+.5);
+  // La corona respira y titila: zonas que se encienden y se apagan, nunca quieta.
+  float breathe = .78 + .32*(fbm(vec3(cos(a)*1.5 + uTime*.05, sin(a)*1.5, uTime*.22), 3)*.5+.5) + .05*sin(uTime*2.1 + a*3.);
   vec3 cor = uTint * exp(-h*2.2) * .28 * breathe;
   gl_FragColor = vec4((ring + prom + cor) * (1. - smoothstep(1.8, 3.3, r)), 1.);
 }`;
@@ -123,7 +125,7 @@ void main(){
   if (r > 1.) discard;
   vec3 col = vec3(0.);
   for (int i = 0; i < 2; i++) {
-    float fi = float(i), tt = uTime/(8.5 + fi*3.9) + fi*.71 + .3, id = floor(tt), ph = fract(tt);
+    float fi = float(i), tt = uTime/(8.5 + fi*3.9) + fi*.71 + .3 + fract(uSeed*.389 + fi*.29), id = floor(tt) + uSeed, ph = fract(tt);
     if (h1(id*3.9 + fi*8.1) < .4) continue;
     float ra = sqrt(h1(id*17.3 + fi)) * .75, aa = h1(id*29.1 + fi*2.) * 6.2832;
     vec2 c = vec2(cos(aa), sin(aa)) * ra;
@@ -168,10 +170,12 @@ export function createSunLayer(sunPos: Vector3): Layer {
   const pal = Float32Array.from(PALETTES[0]!);
   const hot = new Vector3(), mid = new Vector3(), cool = new Vector3(), tint = new Vector3();
   const camDir = new Vector3();
-  const sunMat = new ShaderMaterial({ uniforms: { uCamDir: { value: camDir }, uTime: { value: 0 }, uIntensity: { value: 1.45 }, uHot: { value: hot }, uMid: { value: mid }, uCool: { value: cool } }, vertexShader: SUN_VERT, fragmentShader: NOISE_GLSL + SUN_FRAG });
+  const seed = { value: Math.floor(Math.random() * 1000) };
+  let lastWorld: unknown = null;
+  const sunMat = new ShaderMaterial({ uniforms: { uSeed: seed, uCamDir: { value: camDir }, uTime: { value: 0 }, uIntensity: { value: 1.45 }, uHot: { value: hot }, uMid: { value: mid }, uCool: { value: cool } }, vertexShader: SUN_VERT, fragmentShader: NOISE_GLSL + SUN_FRAG });
   const sun = new Mesh(new SphereGeometry(1, 128, 64), sunMat);
   const haloMat = new ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uTint: { value: tint } }, vertexShader: HALO_VERT, fragmentShader: NOISE_GLSL + HALO_FRAG,
+    uniforms: { uSeed: seed, uTime: { value: 0 }, uTint: { value: tint } }, vertexShader: HALO_VERT, fragmentShader: NOISE_GLSL + HALO_FRAG,
     depthWrite: false, transparent: true, blending: AdditiveBlending,
   });
   const halo = new Mesh(new PlaneGeometry(7, 7), haloMat);
@@ -181,7 +185,7 @@ export function createSunLayer(sunPos: Vector3): Layer {
   });
   const shell = new Mesh(new PlaneGeometry(12, 12), shellMat);
   const frontMat = new ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uTint: { value: tint } }, vertexShader: HALO_VERT, fragmentShader: NOISE_GLSL + FRONT_FRAG,
+    uniforms: { uSeed: seed, uTime: { value: 0 }, uTint: { value: tint } }, vertexShader: HALO_VERT, fragmentShader: NOISE_GLSL + FRONT_FRAG,
     depthWrite: false, depthTest: false, transparent: true, blending: AdditiveBlending,
   });
   const front = new Mesh(new PlaneGeometry(2.2, 2.2), frontMat);
@@ -198,6 +202,7 @@ export function createSunLayer(sunPos: Vector3): Layer {
     update(ctx) {
       toWorld(ctx.starX, ctx.starY, sunPos);
       const w = ctx.world;
+      if (w !== lastWorld) { lastWorld = w; seed.value = Math.floor(Math.random() * 1000); }   // partida nueva: otra secuencia
       // Tragada por el agujero negro, o ya convertida en agujero negro: no hay estrella.
       const swallowed = w.over === OVER_SWALLOWED;
       const gone = w.phase === PHASE_HUNT || w.phase === PHASE_MERGE;

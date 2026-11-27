@@ -1,7 +1,7 @@
 import { returnGathered } from './launch';
 import { STAGES, stageFor } from './stages';
 import { breakPlanet, spawnDebris } from './tidal';
-import { BOLT, FREE, KIND_GAS, KIND_ROCKY, MAX_IMPACTS, OVER_DIMMED, PROJECTILE, RETURNING, starSize, type World } from './world';
+import { BOLT, DEAD, FREE, KIND_GAS, massGain, KIND_ROCKY, MAX_IMPACTS, OVER_DIMMED, PROJECTILE, RETURNING, starSize, type World } from './world';
 
 // Escalones de los planetas según su tamaño comparado con el de tu estrella (E):
 // hasta la mitad entran solos; hasta E hay que partirlos; hasta 1,5·E dañan; más grandes, golpe grave.
@@ -62,6 +62,30 @@ export function hitPlanet(w: World, p: number, dmg: number): boolean {
   return true;
 }
 
+// Un asteroide lanzado choca contra un planeta como una piedra pesada, no como una pelota: a veces se deshace en esquirlas
+// que quedan flotando junto al golpe; si no, pierde casi toda la velocidad contra la superficie, se desvía rozándola y
+// queda suelto. En los dos casos se pierde (y la estrella, su masa, si venía de la honda: la del bólido ya se descontó).
+function crashRock(w: World, i: number, p: number, dx: number, dy: number, sling: boolean): void {
+  const c = w.config, r = w.rng;
+  if (sling) w.star.mass = Math.max(c.starStartMass, w.star.mass - massGain(w, i));
+  const d = Math.hypot(dx, dy) || 1, nx = dx / d, ny = dy / d;
+  const rvx = w.vx[i] - w.vx[p], rvy = w.vy[i] - w.vy[p];
+  if (r.next() < c.rockShatterChance) {
+    w.state[i] = DEAD;
+    spawnDebris(w, w.x[i], w.y[i], w.vx[p] + nx * 1.5, w.vy[p] + ny * 1.5, w.radius[i] * 1.5, nx, ny, 3, 0.12, Math.max(0.15, w.radius[i] * 0.45));
+    return;
+  }
+  // Rebote pesado: casi sin rebote en la normal y con mucho roce en la tangente.
+  const vn = rvx * nx + rvy * ny, tx = -ny, ty = nx, vt = rvx * tx + rvy * ty;
+  const outN = vn < 0 ? -vn * c.rockRestitution : vn, outT = vt * c.rockFriction;
+  w.vx[i] = w.vx[p] + nx * outN + tx * outT; w.vy[i] = w.vy[p] + ny * outN + ty * outT;
+  // Que quede apoyado fuera del planeta, no adentro.
+  const R = w.radius[p] + w.radius[i] + 0.05;
+  w.x[i] = w.x[p] + nx * R; w.y[i] = w.y[p] + ny * R;
+  w.state[i] = FREE;
+  w.noCatch[i] = c.boltNoCatch;
+}
+
 // Honda y bólido contra planetas sueltos: la honda rebota (vuelve) y el bólido queda suelto donde pegó.
 export function stepPlanetHits(w: World): void {
   const c = w.config, P = w.planets;
@@ -77,8 +101,7 @@ export function stepPlanetHits(w: World): void {
       // El golpe queda marcado en el terreno: el render dibuja una pequeña explosión ahí.
       const slot = (w.impactCount % MAX_IMPACTS) * 4;
       w.impacts[slot] = p; w.impacts[slot + 1] = Math.atan2(dy, dx); w.impacts[slot + 2] = st === BOLT ? 1 : 0.45; w.impactCount++;
-      if (st === PROJECTILE) w.state[i] = RETURNING;
-      else { w.state[i] = FREE; w.vx[i] *= 0.2; w.vy[i] *= 0.2; w.noCatch[i] = c.boltNoCatch; }
+      crashRock(w, i, p, dx, dy, st === PROJECTILE);
       hitPlanet(w, p, st === BOLT ? c.boltPlanetDmg * (w.ability >= 3 ? 1.5 : 1) : 1);   // un bólido entero parte uno mediano
       break;
     }

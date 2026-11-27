@@ -8,14 +8,28 @@ import { NOISE_GLSL } from '../shaders/noise';
 // la del vuelo se estira como una estela. Láminas aditivas, sin tocar la capa de asteroides.
 
 const VERT = /* glsl */ `varying vec2 vUv; void main(){ vUv = uv*2. - 1.; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }`;
-const FRAG = /* glsl */ `uniform float uTime; uniform float uAmount; varying vec2 vUv;
+// El polvo se revuelve (ruido deformado que gira y hierve), el núcleo titila con chispas y, en vuelo, la nube deja una
+// estela que corre hacia atrás: nada queda quieto.
+const FRAG = /* glsl */ `uniform float uTime; uniform float uAmount; uniform float uFly; varying vec2 vUv;
 void main(){
-  float r = length(vUv);
-  float n = fbm(vec3(vUv*3.2, uTime*.6), 4)*.5+.5;
+  vec2 v = vUv;
+  float r = length(v);
+  float t = uTime;
+  // Remolino: el polvo gira alrededor del centro y se deforma.
+  float sw = 1.3*exp(-r*2.);
+  vec2 q = vec2(v.x*cos(t*sw) - v.y*sin(t*sw), v.x*sin(t*sw) + v.y*cos(t*sw));
+  vec3 P = vec3(q*3.2 + vec2(t*.9*uFly, 0.), t*1.1);
+  P.xy += .45*vec2(snoise(P*1.3 + 4.), snoise(P*1.3 + 9.));
+  float n = fbm(P, 4)*.5+.5;
   float edge = 1. - smoothstep(.55, 1., r);       // se apaga antes del borde de la lámina: nada de cantos
-  float dust = exp(-r*r*7.) * (.45 + .8*n);
-  float core = exp(-r*r*40.) * .35;
-  vec3 col = vec3(1., .74, .46) * dust * .28 + vec3(1., .86, .66) * core;
+  // En vuelo, la nube se corre hacia atrás como una estela (el eje x local apunta hacia donde va).
+  vec2 tv = v + vec2(.35*uFly, 0.);
+  float tail = uFly * exp(-tv.y*tv.y*30.) * smoothstep(.2, -.8, v.x) * (.4 + .9*(fbm(vec3(v.x*6. + t*4., v.y*6., t), 3)*.5+.5));
+  float dust = exp(-r*r*7.) * (.35 + 1.*n) + tail*.6;
+  float flick = .75 + .25*sin(t*23. + n*6.) * sin(t*7.3);
+  float sparks = smoothstep(.82, .95, snoise(vec3(v*14., t*3.))) * exp(-r*r*10.) * .8;
+  float core = exp(-r*r*40.) * .35 * flick;
+  vec3 col = vec3(1., .72, .44) * dust * .3 + vec3(1., .86, .66) * (core + sparks);
   gl_FragColor = vec4(col * uAmount * edge, 1.);
 }`;
 
@@ -40,7 +54,7 @@ export function createBoltLayer(): Layer {
   const geo = new PlaneGeometry(2, 2);
   const make = (): { mesh: Mesh; mat: ShaderMaterial; amount: number; c: BoltCentroid } => {
     const mat = new ShaderMaterial({
-      uniforms: { uTime: { value: 0 }, uAmount: { value: 0 } }, vertexShader: VERT, fragmentShader: NOISE_GLSL + FRAG,
+      uniforms: { uTime: { value: 0 }, uAmount: { value: 0 }, uFly: { value: 0 } }, vertexShader: VERT, fragmentShader: NOISE_GLSL + FRAG,
       transparent: true, depthWrite: false, blending: AdditiveBlending,
     });
     const mesh = new Mesh(geo, mat);
@@ -69,6 +83,7 @@ export function createBoltLayer(): Layer {
         if (flying) cl.mesh.rotateZ(Math.atan2(cl.c.vy, cl.c.vx));
         cl.mat.uniforms['uTime']!.value = ctx.time;
         cl.mat.uniforms['uAmount']!.value = cl.amount;
+        cl.mat.uniforms['uFly']!.value = flying ? 1 : 0;
       }
     },
   };

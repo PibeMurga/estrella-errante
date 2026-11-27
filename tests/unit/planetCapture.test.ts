@@ -3,7 +3,7 @@ import { DEFAULT_CONFIG } from '../../src/sim/config';
 import { hitPlanet, planetTier, TIER_BREAK, TIER_CAPTURE, TIER_GRAVE, TIER_HURT } from '../../src/sim/planetCapture';
 import { STAGES } from '../../src/sim/stages';
 import { type Intent, step } from '../../src/sim/step';
-import { addBody, addSatellite, BOLT, massGain, createWorld, FREE, KIND_GAS, PROJECTILE, RETURNING, KIND_ASTEROID, KIND_MOON, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_NONE, starSize, type World } from '../../src/sim/world';
+import { addBody, addSatellite, BOLT, DEAD, massGain, createWorld, FREE, KIND_GAS, PROJECTILE, RETURNING, KIND_ASTEROID, KIND_MOON, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_NONE, starSize, type World } from '../../src/sim/world';
 
 const cfg = { ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, blackHole: false, cometFirst: 1e9 };
 const idle: Intent = { targetX: 0, targetY: 0, hasTarget: false };
@@ -111,7 +111,26 @@ describe('partir planetas a golpes', () => {
     expect(w.radius[p]).toBeCloseTo(E * 0.8, 6);        // conserva su tamaño y su aspecto (pedido de Lucas)
     expect(w.broken[p]).toBeGreaterThan(0);             // queda marcado como partido: entra a tu órbita
   });
-  it('la honda golpea y rebota; el bólido golpea y queda suelto', () => {
+  it('un asteroide lanzado choca como una piedra pesada: se deshace o queda suelto, casi sin rebote', () => {
+    const go = (shatter: number) => {
+      const w = createWorld({ ...cfg, rockShatterChance: shatter }, 9, 80);
+      w.star.mass = 100; step(w, idle);
+      const E = starSize(w.star.mass);
+      const p = addBody(w, { x: 60, y: 0, vx: 0, vy: 0, radius: E * 0.8, kind: KIND_ROCKY });
+      const a = addBody(w, { x: 60 - E * 0.8 - 0.4, y: 0, vx: 40, vy: 0, radius: 0.5, kind: KIND_ASTEROID });
+      w.state[a] = PROJECTILE; w.life[a] = 1;
+      const m0 = w.star.mass;
+      step(w, idle);
+      return { w, a, m0 };
+    };
+    const b = go(0);
+    expect(b.w.state[b.a]).toBe(FREE);
+    expect(Math.hypot(b.w.vx[b.a], b.w.vy[b.a])).toBeLessThan(40 * 0.25);   // pesado: casi sin rebote
+    expect(b.w.star.mass).toBeLessThan(b.m0);                                // la honda lo pierde
+    const s = go(1);
+    expect(s.w.state[s.a]).toBe(DEAD);                                       // se deshizo en esquirlas
+  });
+  it('la honda y el bólido dañan al planeta', () => {
     const w = guarded(100);
     const E = starSize(w.star.mass);
     const p = addBody(w, { x: 40, y: 0, vx: 0, vy: 0, radius: E * 0.8, kind: KIND_ROCKY });
@@ -120,8 +139,6 @@ describe('partir planetas a golpes', () => {
     const b = addBody(w, { x: 40, y: E * 0.8, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID });
     w.state[b] = BOLT; w.life[b] = 1;
     step(w, idle);
-    expect(w.state[a]).toBe(RETURNING);
-    expect(w.state[b]).toBe(FREE);
     expect(w.planetDmg[p]).toBe(1 + cfg.boltPlanetDmg);   // honda 1, bólido boltPlanetDmg por cuerpo
   });
 });
