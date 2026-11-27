@@ -16,8 +16,8 @@
 .hud .corner.br { right: 20px; bottom: 20px; border-left: none; border-top: none; }
 
 .hud .stage { position: absolute; left: 50%; top: 26px; transform: translateX(-50%); text-align: center; font-size: 13px; letter-spacing: 3px; }
-.hud .seg { display: flex; gap: 2px; width: 340px; margin-top: 6px; }
-.hud .seg i { flex: 1; height: 9px; background: var(--ph); box-shadow: 0 0 5px #7af5c9aa; transition: background .3s; }
+.hud .seg { display: flex; flex-direction: column-reverse; gap: 2px; width: 10px; height: 220px; }
+.hud .seg i { flex: 1; width: 10px; background: var(--ph); box-shadow: 0 0 5px #7af5c9aa; transition: background .3s; }
 .hud .seg i.o { background: #7af5c914; box-shadow: none; }
 
 .hud .clock { position: absolute; left: 30px; top: 66px; opacity: .9; line-height: 1.6; }
@@ -57,9 +57,13 @@
 
 /* En la caza, las alertas del agujero negro rival pasan al fósforo: ahora el que persigue sos vos. */
 .hud.hunting { --bh: var(--ph); }
-.hud .res { display: inline-flex; align-items: center; gap: 8px; }
-.hud .res .rbar { display: inline-block; width: 90px; height: 6px; border: 1px solid #7af5c966; position: relative; }
-.hud .res .rfill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: #7af5c9; box-shadow: 0 0 6px #7af5c9aa; transition: width .15s linear; }
-.hud .res.low { color: #ff5a46; }
-.hud .res.low .rbar { border-color: #ff5a4699; }
-.hud .res.low .rfill { background: #ff5a46; box-shadow: 0 0 6px #ff5a46aa; }
+.hud .minimap { position: absolute; right: 30px; bottom: 34px; width: 170px; height: 170px; border-radius: 50%; opacity: .92; }
+/* Barras verticales a la izquierda: avance de etapa (se llena de abajo hacia arriba) y resistencia. */
+.hud .vbars { position: absolute; left: 34px; top: 50%; transform: translateY(-50%); display: flex; gap: 18px; align-items: flex-end; }
+.hud .vb { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 10px; letter-spacing: 2px; opacity: .9; }
+.hud .vb span { writing-mode: horizontal-tb; }
+/* Resistencia: degradé fijo de rojo (abajo) a celeste y blanco (arriba); una tapa oscura esconde lo que falta. */
+.hud .vb.res .rbar { position: relative; display: block; width: 10px; height: 220px; border: 1px solid #7af5c955;
+  background: linear-gradient(to top, #ff3a2a 0%, #ff7a3a 18%, #7af5c9 55%, #bff7ff 82%, #ffffff 100%); box-shadow: 0 0 8px #7af5c955; }
+.hud .vb.res .rcover { position: absolute; left: 0; right: 0; top: 0; height: 0; background: #020806; transition: height .15s linear; }
+.hud .vb.res.low span { color: #ff5a46; }

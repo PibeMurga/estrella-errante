@@ -1,6 +1,7 @@
 import { ABILITY_NAMES, planetsAlive } from '../sim/abilities';
 import { playerName } from './playerName';
 import { formatLike, formatSolar } from './solarMass';
+import { createMinimap } from './minimap';
 import { rivalMass } from '../sim/phase';
 import { MAX_COMETS, PHASE_COLLAPSE, PHASE_HUNT, PHASE_IGNITION, PHASE_MERGE, PHASE_PLAY, type World } from '../sim/world';
 import { STAGE_HYPER, STAGES, stageFor, stageProgress } from '../sim/stages';
@@ -31,11 +32,15 @@ export function createHud(parent: HTMLElement): Hud {
   root.className = 'hud';
   root.innerHTML = `
     <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
-    <div class="stage"><span class="name"></span> · <span class="pct"></span><div class="seg">${'<i class="o"></i>'.repeat(SEGMENTS)}</div></div>
+    <div class="stage"><span class="name"></span> · <span class="pct"></span></div>
+    <div class="vbars">
+      <div class="vb"><div class="seg">${'<i class="o"></i>'.repeat(SEGMENTS)}</div><span>ETAPA</span></div>
+      <div class="vb res"><i class="rbar"><i class="rcover"></i></i><span>RESIST.</span></div>
+    </div>
     <div class="race"><span class="me"><span class="pname">TU ESTRELLA</span> <b class="mv">0000</b></span><div class="bar"><i class="mb"></i><i class="rb"></i></div><span class="rv"><b class="rvv">0000</b> RIVAL</span></div>
     <div class="note am"></div>
     <div class="banner"><b>SOS UN AGUJERO NEGRO</b><span>ATRAPÁ AL RIVAL ANTES DE QUE ESCAPE</span></div>
-    <div class="clock"><span class="time">00:00</span><br><span class="dim mass">MASA 0 M☉</span><br><span class="dim res">RESISTENCIA <i class="rbar"><i class="rfill"></i></i></span></div>
+    <div class="clock"><span class="time">00:00</span><br><span class="dim mass">MASA 0 M☉</span></div>
     <div class="bhinfo">AGUJERO NEGRO<br><span class="bhdist"></span></div>
     <div class="bottom"><span class="sling">HONDA ●</span><span class="worlds">EN ÓRBITA 000</span><span class="sys">PLANETAS 00/00</span></div>
     <div class="log">${'<div></div>'.repeat(LOG_LINES)}</div>
@@ -47,7 +52,8 @@ export function createHud(parent: HTMLElement): Hud {
   const nameEl = q<HTMLElement>('.stage .name'), pctEl = q<HTMLElement>('.stage .pct');
   const segs = Array.from(root.querySelectorAll<HTMLElement>('.seg i'));
   const timeEl = q<HTMLElement>('.time'), massEl = q<HTMLElement>('.mass');
-  const resEl = q<HTMLElement>('.res'), resFill = q<HTMLElement>('.rfill');
+  const resEl = q<HTMLElement>('.vb.res'), resCover = q<HTMLElement>('.rcover');
+  const minimap = createMinimap(root);
   let lastRes = -1, lastFrac = 0;
   const bhDistEl = q<HTMLElement>('.bhdist'), bhInfo = q<HTMLElement>('.bhinfo');
   const slingEl = q<HTMLElement>('.sling'), worldsEl = q<HTMLElement>('.worlds');
@@ -139,9 +145,10 @@ export function createHud(parent: HTMLElement): Hud {
       const secs = w.tick / 60;
       timeEl.textContent = `${pad(secs / 60, 2)}:${pad(secs % 60, 2)}`;
       massEl.textContent = `MASA ${formatSolar(s.mass)}`;
+      minimap.draw(w);
       // Resistencia: baja rápido con los golpes, se recarga despacio; roja cuando queda poca.
       const res = Math.round(w.integrity * 100);
-      if (res !== lastRes) { resFill.style.width = `${res}%`; resEl.classList.toggle('low', res < 30); lastRes = res; }
+      if (res !== lastRes) { resCover.style.height = `${100 - res}%`; resEl.classList.toggle('low', res < 30); lastRes = res; }
       if (w.fractures > lastFrac) { lastFrac = w.fractures; log('TU CUERPO SE FRACTURÓ · PERDISTE MASA Y ÓRBITA'); }
 
       // La carrera: tu masa contra la del rival (en la caza, tu ventaja).
