@@ -72,8 +72,10 @@ if (!view.ok) {
     const elapsed = (now - last) / 1000;
     last = now;
     const steps = lab.paused ? 0 : stepper.advance(elapsed);
-    const intent = input.poll(world.star.x, world.star.y);
-    for (let i = 0; i < steps; i++) { step(world, intent); intent.fire = false; }
+    if (steps > 0) {
+      const intent = input.poll(world.star.x, world.star.y);
+      for (let i = 0; i < steps; i++) { step(world, intent); intent.fire = false; intent.collapse = false; }
+    }
     view.update(world, lab.paused ? 1 : stepper.alpha, now / 1000);
     view.render();
     stats.update();

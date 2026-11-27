@@ -36,8 +36,12 @@ if (!view.ok) {
     const elapsed = (now - last) / 1000;
     last = now;
     const steps = stepper.advance(elapsed);
-    const intent = input.poll(world.star.x, world.star.y);
-    for (let i = 0; i < steps; i++) { step(world, intent); intent.fire = false; intent.collapse = false; }
+    // El control se lee sólo en los cuadros que avanzan la simulación: así un clic muy corto no se pierde
+    // en un cuadro sin pasos (a más de 60 cuadros por segundo los hay).
+    if (steps > 0) {
+      const intent = input.poll(world.star.x, world.star.y);
+      for (let i = 0; i < steps; i++) { step(world, intent); intent.fire = false; intent.collapse = false; }
+    }
     view.update(world, stepper.alpha, now / 1000);
     view.render();
     hud.setVisible(world.over === 0 && world.phase !== PHASE_COLLAPSE && world.phase !== PHASE_MERGE);

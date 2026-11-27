@@ -63,7 +63,7 @@ export function createGameOver(parent: HTMLElement, onRestart: () => void): Game
         <div><span>TIEMPO</span><b>${pad(secs / 60, 2)}:${pad(secs % 60, 2)}</b></div>
         <div><span>MASA MÁXIMA</span><b>${pad(w.maxMass, 4)}</b></div>
         <div><span>ETAPA</span><b>${STAGES[w.stage]!.name}</b></div>
-        <div><span>BÓLIDOS</span><b>0</b></div>
+        <div><span>BÓLIDOS</span><b>${w.bolts}</b></div>
         <div><span>COMETAS DESTRUIDOS</span><b>${w.cometKills}</b></div>`;
       root.classList.add('on');
     },

@@ -57,7 +57,7 @@ export function createHud(parent: HTMLElement): Hud {
   let shownMode = -1, lastTx = NaN, lastTy = NaN, lastHalf = NaN, lastAng = NaN, visible = true;
   let acc = 1, lastSeg = -1, lastBhDist = Infinity, lastOrbit = 0;
   let lastFlip = false;
-  let seen = { stageUps: 0, steals: 0, kills: 0, hits: 0, comets: 0, tidal: 0, crashes: 0, phase: 0 };
+  let seen = { stageUps: 0, bolts: 0, bh: 0, steals: 0, kills: 0, hits: 0, comets: 0, tidal: 0, crashes: 0, phase: 0 };
 
   const log = (text: string): void => {
     logText.unshift(text); logAge.unshift(0);
@@ -69,7 +69,7 @@ export function createHud(parent: HTMLElement): Hud {
   const hud: Hud = {
     root,
     reset(w) {
-      seen = { stageUps: w.stageUps, steals: w.cometSteals, kills: w.cometKills, hits: w.hits, comets: activeComets(w), tidal: w.tidalBreaks, crashes: w.planetCrashes, phase: w.phase };
+      seen = { stageUps: w.stageUps, bolts: w.bolts, bh: w.boltHitsBh, steals: w.cometSteals, kills: w.cometKills, hits: w.hits, comets: activeComets(w), tidal: w.tidalBreaks, crashes: w.planetCrashes, phase: w.phase };
       logText.length = 0; logAge.length = 0;
       lastSeg = -1; acc = 1; lastBhDist = Infinity; lastOrbit = w.orbitingCount;
     },
@@ -149,7 +149,7 @@ export function createHud(parent: HTMLElement): Hud {
         lastBhDist = d;
       } else bhInfo.style.display = 'none';
 
-      slingEl.textContent = w.slingCd > 0 ? 'HONDA ○' : 'HONDA ●';
+      slingEl.textContent = w.charge >= w.config.tapTime ? `BÓLIDO ×${w.gathered}` : w.slingCd > 0 ? 'HONDA ○' : 'HONDA ●';
       slingEl.className = w.orbitingCount > 0 ? 'sling' : 'sling off';
       worldsEl.textContent = `EN ÓRBITA ${pad(w.orbitingCount, 3)}`;
 
@@ -157,6 +157,8 @@ export function createHud(parent: HTMLElement): Hud {
       if (w.stageUps > seen.stageUps) log(`ETAPA: ${STAGES[w.stage]!.name}`);
       if (w.cometSteals > seen.steals) log('UN COMETA SE LLEVÓ UN CUERPO DE TU ÓRBITA');
       if (w.cometKills > seen.kills) log('COMETA DESTRUIDO');
+      if (w.bolts > seen.bolts) log(`BÓLIDO: SALIERON ${w.lastBoltSize} ASTEROIDES DE TU ÓRBITA`);
+      if (w.boltHitsBh > seen.bh) log('EL BÓLIDO FRENÓ AL AGUJERO NEGRO, PERO LO ALIMENTÓ');
       if (w.hits > seen.hits) log(`CHOQUE CON UN PLANETA: PERDISTE ${Math.max(1, lastOrbit - w.orbitingCount)} CUERPOS DE TU ÓRBITA`);
       if (w.tidalBreaks > seen.tidal) log('MAREA: UN PLANETA SE PARTIÓ');
       if (w.planetCrashes > seen.crashes) log('CHOQUE DE PLANETAS');
@@ -168,6 +170,7 @@ export function createHud(parent: HTMLElement): Hud {
         if (w.phase === PHASE_MERGE) log('FUSIÓN');
         seen.phase = w.phase;
       }
+      seen.bolts = w.bolts; seen.bh = w.boltHitsBh;
       seen.stageUps = w.stageUps; seen.steals = w.cometSteals;
       lastOrbit = w.orbitingCount;
       seen.kills = w.cometKills; seen.hits = w.hits; seen.tidal = w.tidalBreaks; seen.crashes = w.planetCrashes; seen.comets = ac;

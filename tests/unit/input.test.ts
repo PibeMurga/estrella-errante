@@ -90,30 +90,35 @@ describe('InputController', () => {
     expect(input.poll(7, 1)).toMatchObject({ targetX: 7, targetY: 1 });
   });
 
-  it('el clic dispara la honda una sola vez hasta que se use', () => {
+  it('el clic es el botón de lanzar: cuenta aunque se suelte antes del poll, y mantenido sigue apretado', () => {
     vi.stubGlobal('navigator', { getGamepads: () => [] });
     const { el, listeners } = fakeElement();
     const input = new InputController(el, toWorld);
     listeners['pointermove']!({ clientX: 10, clientY: 20 });
-    expect(input.poll(0, 0).fire).toBeFalsy();
-    (listeners['pointerdown'] as unknown as (e: { clientX: number; clientY: number; button: number }) => void)({ clientX: 10, clientY: 20, button: 0 });
-    const r = input.poll(0, 0);
-    expect(r.fire).toBe(true);
-    r.fire = false;   // el bucle lo apaga después de usarlo en un paso
-    expect(input.poll(0, 0).fire).toBe(false);
+    expect(input.poll(0, 0).hold).toBe(false);
+    const down = listeners['pointerdown'] as unknown as (e: { clientX: number; clientY: number; button: number; pointerId: number }) => void;
+    const up = listeners['pointerup'] as unknown as (e: { button: number; type: string }) => void;
+    down({ clientX: 10, clientY: 20, button: 0, pointerId: 1 }); up({ button: 0, type: 'pointerup' });
+    expect(input.poll(0, 0).hold).toBe(true);    // clic más corto que un cuadro: igual cuenta una vez (toque)
+    expect(input.poll(0, 0).hold).toBe(false);
+    down({ clientX: 10, clientY: 20, button: 0, pointerId: 1 });
+    expect(input.poll(0, 0).hold).toBe(true);
+    expect(input.poll(0, 0).hold).toBe(true);    // mantenido: carga el bólido
+    up({ button: 0, type: 'pointerup' });
+    expect(input.poll(0, 0).hold).toBe(false);
   });
 
-  it('el gatillo derecho del joystick dispara al apretarlo, no mientras se mantiene', () => {
+  it('el gatillo derecho del joystick es el botón de lanzar mientras se mantiene', () => {
     const pad = { axes: [1, 0], buttons: [] as { pressed: boolean }[] };
     for (let k = 0; k < 8; k++) pad.buttons.push({ pressed: false });
     vi.stubGlobal('navigator', { getGamepads: () => [pad] });
     const { el } = fakeElement();
     const input = new InputController(el, toWorld);
     pad.buttons[7]!.pressed = true;
-    const r = input.poll(0, 0);
-    expect(r.fire).toBe(true);
-    r.fire = false;
-    expect(input.poll(0, 0).fire).toBe(false);
+    expect(input.poll(0, 0).hold).toBe(true);
+    expect(input.poll(0, 0).hold).toBe(true);
+    pad.buttons[7]!.pressed = false;
+    expect(input.poll(0, 0).hold).toBe(false);
   });
 
   it('el stick derecho del joystick da una mira propia para la honda', () => {
