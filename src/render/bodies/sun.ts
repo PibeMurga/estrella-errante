@@ -20,7 +20,9 @@ const SUN_VERT = /* glsl */ `varying vec3 vN; varying vec3 vO; varying vec3 vV;
 void main(){ vO = position; vec4 w = modelMatrix*vec4(position,1.); vN = normalize(mat3(modelMatrix)*normal); vV = normalize(cameraPosition - w.xyz); gl_Position = projectionMatrix*viewMatrix*w; }`;
 
 // Superficie del sol: granulación que hierve, manchas, fáculas y oscurecimiento hacia el borde.
-const SUN_FRAG = /* glsl */ `uniform float uTime; uniform float uIntensity; uniform vec3 uHot; uniform vec3 uMid; uniform vec3 uCool; varying vec3 vN; varying vec3 vO; varying vec3 vV;
+const HASH_GLSL = /* glsl */ `float h1(float n){ return fract(sin(n*1.7 + 3.1)*43758.5453); }
+`;
+const SUN_FRAG = /* glsl */ HASH_GLSL + `uniform float uTime; uniform float uIntensity; uniform vec3 uHot; uniform vec3 uMid; uniform vec3 uCool; varying vec3 vN; varying vec3 vO; varying vec3 vV;
 void main(){
   vec3 p = normalize(vO); float t = uTime;
   float mu = clamp(dot(normalize(vN), normalize(vV)), 0., 1.);
@@ -41,6 +43,23 @@ void main(){
   col *= .82 + .3*sg;
   col = mix(col, cool*.55, pen*.55); col = mix(col, vec3(.12,.03,.01), spot*.85);
   col += hot*fac*.35;
+  // Fulguraciones: cada tanto un punto de la superficie estalla (destello que sube rápido y se apaga más lento)
+  // y deja una onda que se abre sobre el plasma. Pocas, cada una a su ritmo y en un lugar distinto cada vez.
+  float flare = 0.;
+  for (int i = 0; i < 3; i++) {
+    float fi = float(i), tt = t/(6. + fi*2.7) + fi*.37, id = floor(tt), ph = fract(tt);
+    if (h1(id*2.3 + fi*5.9) < .45) continue;   // a veces no estalla: sin ritmo fijo
+    float u1 = h1(id*12.9 + fi*7.1), u2 = h1(id*78.2 + fi*3.3)*2. - 1., sxy = sqrt(1. - u2*u2);
+    vec3 c = vec3(cos(u1*6.2832)*sxy, u2, sin(u1*6.2832)*sxy);
+    float dd = distance(p, c);
+    if (dd > .45) continue;
+    float env = smoothstep(0., .05, ph) * exp(-ph*6.);
+    float tur = snoise(p*40. + id) * .5 + .5;
+    float core = exp(-dd*dd/(.0012 + .01*ph)) * (1.6 + tur);
+    float wave = exp(-pow((dd - (.02 + .3*ph))/.025, 2.)) * .6 * tur;
+    flare += env * (core + wave) * (.6 + .8*h1(id*3.7 + fi));
+  }
+  col += mix(hot, vec3(1., .96, .88), .55) * flare * 1.6;
   float limb = pow(mu, .55);
   col = mix(cool*.7, col, smoothstep(0., .55, mu)) * (.28 + .72*limb);
   gl_FragColor = vec4(col * uIntensity, 1.);
@@ -49,7 +68,7 @@ void main(){
 const HALO_VERT = /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }`;
 
 // Cromosfera, protuberancias y corona cálida en una lámina que siempre mira a la cámara.
-const HALO_FRAG = /* glsl */ `uniform float uTime; uniform vec3 uTint; varying vec2 vUv;
+const HALO_FRAG = /* glsl */ HASH_GLSL + `uniform float uTime; uniform vec3 uTint; varying vec2 vUv;
 void main(){
   vec2 d = (vUv*2.-1.)*3.5; float r = length(d); float a = atan(d.y, d.x);
   if (r < .985) discard;
@@ -59,6 +78,21 @@ void main(){
   float loops = smoothstep(.6, .8, flow) * exp(-h*9.) * smoothstep(0., .03, h);
   float spikes = smoothstep(.55, .9, fbm(vec3(cos(a)*7., sin(a)*7., uTime*.05), 4)*.5+.5);
   vec3 prom = uTint * vec3(1.,.7,.55) * loops * (1.2 + spikes) * 1.4;
+  // Eyecciones: un chorro de plasma sale del borde, sube retorciéndose, suelta una gota en la punta y se deshace.
+  for (int i = 0; i < 2; i++) {
+    float fi = float(i), tt = uTime/(7.5 + fi*3.4) + fi*.53, id = floor(tt), ph = fract(tt);
+    if (h1(id*6.7 + fi*1.3) < .4) continue;
+    float ang = h1(id*41.3 + fi*9.7) * 6.2832;
+    float da = abs(atan(sin(a - ang), cos(a - ang)));
+    if (da > .6) continue;
+    float top = (.12 + .55*h1(id*5.1 + fi)) * pow(ph, .55);   // hasta dónde llegó
+    float wid = .05 + .07*h;
+    float n = fbm(vec3(d*3.5, id + uTime*.6), 3)*.5+.5;
+    float jet = exp(-pow(da/wid, 2.)) * (1. - smoothstep(top*.55, top, h)) * smoothstep(0., .02, h);
+    float blob = exp(-(pow(h - top, 2.) + pow(da*r, 2.))/(.0025 + .004*ph));
+    float env = smoothstep(0., .08, ph) * (1. - smoothstep(.55, 1., ph));
+    prom += uTint * vec3(1.15,.8,.5) * (jet*(.5 + .9*n) + blob*1.3) * env * 2.2;
+  }
   float breathe = .9 + .1*(fbm(vec3(cos(a)*1.5, sin(a)*1.5, uTime*.03), 3)*.5+.5);
   vec3 cor = uTint * exp(-h*2.2) * .28 * breathe;
   gl_FragColor = vec4((ring + prom + cor) * (1. - smoothstep(1.8, 3.3, r)), 1.);
