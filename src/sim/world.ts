@@ -316,9 +316,12 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
   const nStars = Math.min(MAX_MAP_STARS, config.mapStars);
   const starList: number[] = [];
   for (let k = 0; k < nStars; k++) {
-    let px = 0, py = 0;
-    do { px = rng.range(-hw * 0.92, hw * 0.92); py = rng.range(-hh * 0.9, hh * 0.9); } while (Math.hypot(px, py) < 180);
-    const R = 3.5 + 11 * Math.pow(rng.next(), 1.6);
+    // Bien separadas entre sí (nada de racimos de estrellas) y más grandes que casi todos los planetas.
+    let px = 0, py = 0, tries = 0;
+    const far = (): boolean => { for (const o of starList) if (Math.hypot(w.x[o] - px, w.y[o] - py) < 350) return false; return true; };
+    do { px = rng.range(-hw * 0.92, hw * 0.92); py = rng.range(-hh * 0.9, hh * 0.9); tries++; } while ((Math.hypot(px, py) < 200 || !far()) && tries < 200);
+    if (tries >= 200) break;
+    const R = 9 + 13 * Math.pow(rng.next(), 1.4);
     const ang = rng.range(0, Math.PI * 2), sp = rng.range(0.2, 0.8);
     const st = addBody(w, { x: px, y: py, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, radius: R, kind: KIND_STAR });
     if (st < 0) break;
@@ -330,7 +333,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       let orbit = R * 3.2;
       for (let m = 0; m < np; m++) {
         orbit += rng.range(R * 1.4, R * 2.6);
-        const pr = rng.range(1.8, 6);
+        const pr = rng.range(2, Math.min(8, R * 0.45));   // sus planetas, más chicos que ella
         const pi = addSatellite(w, st, orbit, rng.range(0, Math.PI * 2), pr, KIND_ROCKY + Math.floor(rng.next() * 3), (rng.next() < 0.85 ? 1 : -1) * 1.1 / Math.pow(orbit / R, 1.5));
         void pi;
       }

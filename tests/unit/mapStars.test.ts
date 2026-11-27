@@ -25,7 +25,7 @@ describe('estrellas del mapa', () => {
     w.vx[st] = w.vy[st] = 0;
     step(w, idle);
     expect(w.star.vx).toBeGreaterThan(0);   // hacia la estrella
-    w.star.mass = 400; w.star.x = w.x[st] - 2; w.star.y = w.y[st];
+    w.star.mass = 3000; w.star.x = w.x[st] - 2; w.star.y = w.y[st];
     const m0 = w.star.mass;
     step(w, idle);
     expect(w.state[st]).toBe(DEAD);

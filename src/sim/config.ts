@@ -309,4 +309,4 @@ export const DEFAULT_CONFIG: SimConfig = {
 
 // La partida de verdad: arranca como planeta gaseoso y se enciende con la ignición. (La base arranca como estrella, para
 // las pruebas y los bancos que miden otras cosas.)
-export const GAME_CONFIG: SimConfig = { ...DEFAULT_CONFIG, planetStart: true, mapStars: 5 };
+export const GAME_CONFIG: SimConfig = { ...DEFAULT_CONFIG, planetStart: true, mapStars: 3 };

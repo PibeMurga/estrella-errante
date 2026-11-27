@@ -45,7 +45,7 @@ export function createMapStarsLayer(world: World): Layer {
   const time = { value: 0 };
   for (let k = 0; k < idx.length; k++) {
     const i = idx[k]!, R = world.radius[i];
-    const t = Math.min(4, Math.max(0, Math.floor(((R - 3.5) / 11) * 5)));
+    const t = Math.min(4, Math.max(0, Math.floor(((R - 9) / 13) * 5)));
     const mat = new ShaderMaterial({ uniforms: { uTime: time, uHot: { value: HOT[t]!.clone() }, uCool: { value: COOL[t]!.clone() }, uSeed: { value: k * 3.7 } }, vertexShader: VERT, fragmentShader: NOISE_GLSL + FRAG });
     const hmat = new ShaderMaterial({ uniforms: { uTime: time, uTint: { value: HOT[t]!.clone() }, uSeed: { value: k * 1.9 } }, vertexShader: HALO_VERT, fragmentShader: NOISE_GLSL + HALO_FRAG, transparent: true, depthWrite: false, blending: AdditiveBlending });
     const sphere = new Mesh(geo, mat), halo = new Mesh(haloGeo, hmat);

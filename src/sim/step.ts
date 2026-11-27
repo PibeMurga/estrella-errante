@@ -217,7 +217,7 @@ function mapStarsAct(w: World): void {
     const st = M[q]!;
     if (w.state[st] === DEAD) continue;
     const R = w.radius[st], gx = w.x[st] - s.x, gy = w.y[st] - s.y, g2 = gx * gx + gy * gy, g = Math.sqrt(g2) || 1;
-    const reach = R * 14 + me;
+    const reach = R * 8 + me;   // con estrellas grandes, un alcance moderado (si no, tiran desde media pantalla)
     if (g < reach) {
       const a = Math.min(14, c.starGravity * R * R * R / Math.max(g2, (R + me) * (R + me))) * (1 - g / reach) * (w.coasting ? c.coastPullMul : 1);
       s.vx += (gx / g) * a * DT; s.vy += (gy / g) * a * DT;
