@@ -97,7 +97,8 @@ export interface SimConfig {
   planetGravity: number;
   lethalRatio: number;           // chocar contra algo más grande que esto por tu tamaño te hace pedazos
   starGravity: number;
-  starCouple: number;            // qué tan fuerte te acopla una estrella a su órbita (por segundo, de cerca)           // cuánto te tira una estrella del mapa: a = esto × radio³ / distancia²
+  starCouple: number;
+  coastPullMul: number;          // al soltar el clic izquierdo, las fuerzas de alrededor te tiran esto más            // qué tan fuerte te acopla una estrella a su órbita (por segundo, de cerca)           // cuánto te tira una estrella del mapa: a = esto × radio³ / distancia²
   planetStrip: number;           // cuerpos por segundo que te roba un planeta grande de cerca (escala con √ de tu órbita)         // cuánto te tira un planeta suelto: a = esto × radio³ / distancia²       // cuánto más rápido gira tu sistema siendo hipergigante (0,8 = 80 % más)
   integrityRegen: number;        // resistencia que recuperás por segundo
   integrityAfterFracture: number; // con cuánta resistencia quedás después de fracturarte
@@ -257,6 +258,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   lethalRatio: 2.5,
   starGravity: 4,
   starCouple: 1.6,
+  coastPullMul: 3,
   planetStrip: 1.4,
   integrityRegen: 0.045,
   integrityAfterFracture: 0.35,

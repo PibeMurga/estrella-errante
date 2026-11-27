@@ -192,32 +192,41 @@ function solidBigPlanets(w: World): void {
 // Las estrellas del mapa: te tiran con su gravedad (mucho más que un planeta), de cerca te arrancan cuerpos de la
 // órbita, y si la tocás: siendo más chico que ella, te quema (perdés masa y resistencia y te empuja hacia afuera);
 // siendo una estrella claramente más grande, la absorbés (suma mucha masa) y sus planetas quedan sueltos.
+// Imán de órbita: cerca de un cuerpo más grande que vos, tu movimiento se va volviendo una órbita a su alrededor (se
+// frena lo que va hacia él o se aleja, y se suma la velocidad de giro). Fuerza `strength`, alcance `zoneK` radios.
+function couple(w: World, cx: number, cy: number, cvx: number, cvy: number, R: number, strength: number, zoneK: number): void {
+  const s = w.star, me = starSize(s.mass), gx = cx - s.x, gy = cy - s.y, g = Math.hypot(gx, gy) || 1;
+  const zone = R * zoneK + me;
+  if (g >= zone) return;
+  const close = 1 - Math.max(0, g - R - me) / (zone - R - me);
+  const k = Math.min(1, strength * Math.min(2.5, R / me - 0.4) * close * close * DT);
+  if (k <= 0) return;
+  const ux = gx / g, uy = gy / g, tx = -uy, ty = ux;
+  const rvx = s.vx - cvx, rvy = s.vy - cvy;
+  const vr = rvx * ux + rvy * uy, vtNow = rvx * tx + rvy * ty;
+  const vOrb = Math.min(22, Math.sqrt(w.config.starGravity * R * R * R / Math.max(g, R + me)));
+  const vtWant = (vtNow >= 0 ? 1 : -1) * vOrb;
+  const nvr = vr * (1 - k), nvt = vtNow + (vtWant - vtNow) * k;
+  s.vx = cvx + ux * nvr + tx * nvt; s.vy = cvy + uy * nvr + ty * nvt;
+}
+
 function mapStarsAct(w: World): void {
   const c = w.config, s = w.star, me = starSize(s.mass), M = w.mapStars;
+  w.starPullNow = 0;
   for (let q = 0; q < M.length; q++) {
     const st = M[q]!;
     if (w.state[st] === DEAD) continue;
     const R = w.radius[st], gx = w.x[st] - s.x, gy = w.y[st] - s.y, g2 = gx * gx + gy * gy, g = Math.sqrt(g2) || 1;
     const reach = R * 14 + me;
     if (g < reach) {
-      const a = Math.min(14, c.starGravity * R * R * R / Math.max(g2, (R + me) * (R + me))) * (1 - g / reach);
+      const a = Math.min(14, c.starGravity * R * R * R / Math.max(g2, (R + me) * (R + me))) * (1 - g / reach) * (w.coasting ? c.coastPullMul : 1);
       s.vx += (gx / g) * a * DT; s.vy += (gy / g) * a * DT;
+      w.starPullNow = Math.max(w.starPullNow, a);
     }
     // Te acopla a su órbita: cerca de una estrella más grande que vos, tu movimiento se va volviendo una órbita a su
     // alrededor (se frena lo que va hacia ella o se aleja, y se suma la velocidad de giro). Si la diferencia no es
     // enorme, acelerando te escapás.
-    const zone = R * 6 + me;
-    if (g < zone && R > me * 0.9) {
-      const close = 1 - (g - R - me) / (zone - R - me);
-      const k = Math.min(1, c.starCouple * Math.min(2.5, R / me - 0.4) * close * close * DT);
-      const ux = gx / g, uy = gy / g, tx = -uy, ty = ux;
-      const rvx = s.vx - w.vx[st], rvy = s.vy - w.vy[st];
-      const vr = rvx * ux + rvy * uy, vtNow = rvx * tx + rvy * ty;
-      const vOrb = Math.min(22, Math.sqrt(c.starGravity * R * R * R / Math.max(g, R + me)));
-      const vtWant = (vtNow >= 0 ? 1 : -1) * vOrb;
-      const nvr = vr * (1 - k), nvt = vtNow + (vtWant - vtNow) * k;
-      s.vx = w.vx[st] + ux * nvr + tx * nvt; s.vy = w.vy[st] + uy * nvr + ty * nvt;
-    }
+    if (R > me * 0.9) couple(w, w.x[st], w.y[st], w.vx[st], w.vy[st], R, c.starCouple * (w.coasting ? 2.2 : 0.6), 6);
     const touch = R + me;
     if (g < touch) {
       if (w.ignited && me > R * 1.15) {
@@ -482,7 +491,10 @@ export function step(w: World, intent: Intent): void {
   const acc = hunting ? c.starAccel : c.starAccel / (1 + c.starMassInertia * s.mass);   // siendo agujero negro ya no cargás con la inercia de la estrella
   let desX = 0;
   let desY = 0;
-  let maxDv = acc * c.starBrake * DT;
+  // Sin el clic izquierdo, vas suelto: casi no frenás y te llevan las fuerzas de lo que tenés cerca (mucho más fuerte).
+  const coasting = !hunting && !intent.hasTarget;
+  w.coasting = coasting;
+  let maxDv = acc * c.starBrake * DT * (coasting ? 0.15 : 1);
   if (intent.hasTarget && Number.isFinite(intent.targetX) && Number.isFinite(intent.targetY)) {
     const dx = intent.targetX - s.x;
     const dy = intent.targetY - s.y;
@@ -507,6 +519,7 @@ export function step(w: World, intent: Intent): void {
   if (!hunting) mapStarsAct(w);
   if (w.over !== OVER_NONE) { w.tick++; return; }
   // Los planetas sueltos también te tiran, según su tamaño (los inmensos se sienten; los chicos, casi nada).
+  let strongest = -1, strongestA = 0;
   if (!hunting) {
     const P = w.planets, me = starSize(s.mass);
     for (let q = 0; q < P.length; q++) {
@@ -514,8 +527,10 @@ export function step(w: World, intent: Intent): void {
       if (w.state[p] !== FREE) continue;
       const r = w.radius[p], gx = w.x[p] - s.x, gy = w.y[p] - s.y, g2 = gx * gx + gy * gy, reach = r * 7 + me;
       if (g2 > reach * reach || g2 < 1e-6) continue;
-      const g = Math.sqrt(g2), a = Math.min(6, c.planetGravity * r * r * r / Math.max(g2, (r + me) * (r + me))) * (1 - g / reach);
+      const g = Math.sqrt(g2), a = Math.min(6, c.planetGravity * r * r * r / Math.max(g2, (r + me) * (r + me))) * (1 - g / reach) * (coasting ? c.coastPullMul : 1);
       s.vx += (gx / g) * a * DT; s.vy += (gy / g) * a * DT;
+      // El que más tira (y es más grande que vos) te acopla a su órbita si vas suelto.
+      if (r > me * 1.1 && a > strongestA) { strongestA = a; strongest = p; }
       // Un planeta bastante más grande que vos, de cerca, te roba de a poco lo que tenés en órbita (más suave que el
       // agujero negro): conviene alejarse.
       const strip = r > me * 1.3 ? Math.max(0, 1 - (g - r - me) / (r * 1.6)) : 0;
@@ -540,7 +555,8 @@ export function step(w: World, intent: Intent): void {
       }
     }
   }
-  s.vx += bhPullX; s.vy += bhPullY;
+  if (coasting && strongest >= 0 && strongestA > w.starPullNow) couple(w, w.x[strongest], w.y[strongest], w.vx[strongest], w.vy[strongest], w.radius[strongest], c.starCouple * 1.6, 5);
+  s.vx += bhPullX * (coasting ? 1.6 : 1); s.vy += bhPullY * (coasting ? 1.6 : 1);
   if (sp > c.starMaxSpeed) { s.vx *= c.starMaxSpeed / sp; s.vy *= c.starMaxSpeed / sp; }
   s.x += s.vx * DT;
   s.y += s.vy * DT;

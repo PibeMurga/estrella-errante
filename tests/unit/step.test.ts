@@ -52,12 +52,12 @@ describe('estrella', () => {
   });
 
   it('al soltar sigue de largo y frena de a poco', () => {
-    const w = emptyWorld();
+    const w = emptyWorld(10, { blackHole: false });   // sin nada que la arrastre
     for (let i = 0; i < 120; i++) step(w, { targetX: 150, targetY: 0, hasTarget: true });
     const x0 = w.star.x;
     step(w, NO_INPUT);
     expect(w.star.x).toBeGreaterThan(x0);
-    for (let i = 0; i < 60 * 10; i++) step(w, NO_INPUT);
+    for (let i = 0; i < 60 * 40; i++) step(w, NO_INPUT);   // suelto: frena muy de a poco (te llevan las fuerzas de alrededor)
     expect(Math.hypot(w.star.vx, w.star.vy)).toBeLessThan(0.01);
   });
 
