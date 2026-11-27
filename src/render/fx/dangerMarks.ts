@@ -4,14 +4,15 @@ import { FREE, PHASE_PLAY, starSize, type World } from '../../sim/world';
 import type { Layer } from '../layer';
 
 // Marcas de peligro minimalistas: un arco fino alrededor de los planetas cercanos que podrías chocar.
-// Trazos verde fósforo: se puede partir. Ámbar: daña. Rojo: golpe grave. Lo que entra solo no lleva marca.
+// Trazos verde fósforo: se puede partir. Rojo: daña. Rojo doble que late: golpe grave. Lo que entra solo no lleva marca.
 // Sólo aparecen cerca (borde a borde, a menos de RANGE) y se encienden y apagan de a poco.
 
 const VERT = /* glsl */ `varying vec2 vUv; void main(){ vUv = uv*2. - 1.; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }`;
-const FRAG = /* glsl */ `uniform vec3 uColor; uniform float uDash; uniform float uAlpha; varying vec2 vUv;
+const FRAG = /* glsl */ `uniform vec3 uColor; uniform float uDash; uniform float uAlpha; uniform float uGrave; uniform float uTime; varying vec2 vUv;
 void main(){
   float r = length(vUv);
   float ring = exp(-pow((r - .86) / .02, 2.));
+  if (uGrave > .5) ring = (ring + exp(-pow((r - .76) / .018, 2.))) * (.65 + .35 * sin(uTime * 6.));   // grave: aro doble que late
   float a = atan(vUv.y, vUv.x);
   float dash = uDash > .5 ? step(.5, fract(a * 6. / 3.14159)) : 1.;
   gl_FragColor = vec4(uColor * ring * dash * uAlpha, 1.);
@@ -19,7 +20,7 @@ void main(){
 
 const MAX = 12;
 const RANGE = 35;
-const COLORS = [new Vector3(0.48, 0.96, 0.79), new Vector3(1, 0.69, 0), new Vector3(1, 0.23, 0.18)];   // partir, daña, grave
+const COLORS = [new Vector3(0.48, 0.96, 0.79), new Vector3(1, 0.23, 0.18), new Vector3(1, 0.23, 0.18)];   // partir (verde), daña (rojo), grave (rojo doble)
 
 export interface DangerMarksLayer extends Layer { readonly shown: number }
 
@@ -29,7 +30,7 @@ export function createDangerMarksLayer(world: World): DangerMarksLayer {
   const meshes: Mesh[] = [], mats: ShaderMaterial[] = [];
   for (let k = 0; k < MAX; k++) {
     const mat = new ShaderMaterial({
-      uniforms: { uColor: { value: new Vector3() }, uDash: { value: 0 }, uAlpha: { value: 0 } }, vertexShader: VERT, fragmentShader: FRAG,
+      uniforms: { uColor: { value: new Vector3() }, uDash: { value: 0 }, uAlpha: { value: 0 }, uGrave: { value: 0 }, uTime: { value: 0 } }, vertexShader: VERT, fragmentShader: FRAG,
       transparent: true, depthWrite: false, blending: AdditiveBlending,
     });
     const m = new Mesh(geo, mat);
@@ -67,6 +68,8 @@ export function createDangerMarksLayer(world: World): DangerMarksLayer {
         const t = tierOf[p]!;
         (mat.uniforms['uColor']!.value as Vector3).copy(COLORS[t === TIER_GRAVE ? 2 : t === TIER_HURT ? 1 : 0]!);
         mat.uniforms['uDash']!.value = t === TIER_BREAK ? 1 : 0;
+        mat.uniforms['uGrave']!.value = t === TIER_GRAVE ? 1 : 0;
+        mat.uniforms['uTime']!.value = ctx.time;
         mat.uniforms['uAlpha']!.value = alpha[p]!;
         used++;
         if (want === 1) shown++;
