@@ -80,7 +80,7 @@ describe('escalones de los planetas', () => {
 });
 
 describe('partir planetas a golpes', () => {
-  it('un planeta mediano aguanta golpes según su tamaño y al partirse queda un pedazo que entra solo', () => {
+  it('un planeta mediano aguanta golpes según su tamaño y al partirse sigue siendo el mismo planeta, partido', () => {
     const w = guarded(100);
     const E = starSize(w.star.mass);
     const p = addBody(w, { x: 40, y: 0, vx: 0, vy: 0, radius: E * 0.8, kind: KIND_ROCKY });
@@ -89,7 +89,9 @@ describe('partir planetas a golpes', () => {
     expect(hitPlanet(w, p, 1)).toBe(true);
     expect(w.planetBreaks).toBe(1);
     expect(w.broken[p]).toBeGreaterThan(0);
-    expect(planetTier(w.radius[p], w.star.mass)).toBe(TIER_CAPTURE);
+    // Es el mismo planeta, colapsado y partido: casi del mismo tamaño (no un pedacito).
+    expect(w.radius[p]).toBeGreaterThan(E * 0.8 * 0.8);
+    expect(hitPlanet(w, p, 1000)).toBe(false);   // ya partido: no se vuelve a partir
   });
   it('a los que dañan no se los puede partir', () => {
     const w = guarded(100);
@@ -134,5 +136,19 @@ describe('cuánto suma un planeta', () => {
     let others = 0;   // lo que entró en el mismo paso, además del planeta
     for (let c = 0; c < w.capturedCount; c++) { const i = w.captured[c]!; if (i !== p) others += massGain(w, i); }
     expect(w.star.mass - m0 - others).toBeCloseTo(w.mass[p] * cfg.planetMassGain, 6);
+  });
+});
+
+describe('el planeta que partís es tuyo', () => {
+  it('partido, entra a tu órbita aunque sea grande, y conserva su tamaño', () => {
+    const w = guarded(100);
+    const E = starSize(w.star.mass);
+    for (let i = 0; i < 30; i++) { const d = addBody(w, { x: 0, y: 0, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID }); w.state[d] = 3; }
+    const p = addBody(w, { x: 30, y: 0, vx: 0, vy: 0, radius: E * 0.9, kind: KIND_ROCKY });
+    hitPlanet(w, p, 1000);
+    const r = w.radius[p];
+    run(w, 2);
+    expect(w.state[p]).toBe(ORBITING);
+    expect(w.radius[p]).toBe(r);
   });
 });

@@ -4,7 +4,7 @@ import { stepEncounters, stepStarFlybys } from './encounters';
 import { DT, type SimConfig } from './config';
 import { stageFor } from './stages';
 import { stepAbilities } from './abilities';
-import { graveHit, isPlanetKind, stepPlanetHits, planetTier, TIER_CAPTURE, TIER_GRAVE, TIER_HURT } from './planetCapture';
+import { graveHit, isPlanetKind, joinsOrbit, stepPlanetHits, planetTier, TIER_GRAVE, TIER_HURT } from './planetCapture';
 import { returnGathered, sling, slingAngle, stepBolts, stepLaunch } from './launch';
 import { canCollapse, playerHoleRadius, startCollapse, startHunt, startMerge, stepMerge } from './phase';
 import { ABSORBING, BOLT, CARRIED, captureRadiusFor, DEAD, massGain, FREE, GATHERING, KIND_GAS, KIND_ICE, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_DIMMED, OVER_ESCAPED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
@@ -338,11 +338,12 @@ export function step(w: World, intent: Intent): void {
       if (w.noCatch[i]! > 0) { w.noCatch[i] = w.noCatch[i]! - DT; continue; }
       // Para robarle algo a un planeta, la estrella tiene que ser claramente más grande que él.
       const canSteal = st === FREE || starSize(s.mass) >= w.radius[w.parent[i]!] * c.stealSizeRatio;
-      const small = w.radius[i] <= c.maxCaptureSize || tier === TIER_CAPTURE;   // los planetas chicos entran solos
+      const joins = tier >= 0 && joinsOrbit(w, i);   // planetas chicos, o medianos ya partidos: entran solos
+      const small = w.radius[i] <= c.maxCaptureSize || joins;
       // A un planeta se lo atrapa ya desde el borde de su franja: se lo ve acercarse y caer en órbita.
-      const reach = tier === TIER_CAPTURE ? Math.max(captureR, bandHi + c.planetOrbitGap + c.planetOrbitSpan) : captureR;
+      const reach = joins ? Math.max(captureR, bandHi + c.planetOrbitGap + c.planetOrbitSpan) : captureR;
       // Los planetas tienen su propia órbita: no cuentan para el tope (nunca se absorben).
-      if (canSteal && d < reach && small && tier !== TIER_CAPTURE && w.orbitingCount + w.gathered >= c.orbitCapacity) {
+      if (canSteal && d < reach && small && !joins && w.orbitingCount + w.gathered >= c.orbitCapacity) {
         // Órbita llena: la estrella lo absorbe (suma su masa y el cuerpo queda libre para la reserva de escombros).
         startAbsorb(w, i, x - s.x, y - s.y);
         s.mass += massGain(w, i);
@@ -352,7 +353,7 @@ export function step(w: World, intent: Intent): void {
         w.state[i] = ORBITING;
         w.parent[i] = -1;
         w.orbitR[i] = d;
-        if (tier === TIER_CAPTURE) { w.orbitTarget[i] = Math.min(d, bandHi + c.planetOrbitGap + ((i * 0.618034) % 1) * c.planetOrbitSpan); w.planetCaptures++; }
+        if (joins) { w.orbitTarget[i] = Math.min(d, bandHi + c.planetOrbitGap + ((i * 0.618034) % 1) * c.planetOrbitSpan); w.planetCaptures++; }
         else w.orbitTarget[i] = clamp(d * 0.9, bandLo, bandHi);
         w.orbitAngle[i] = Math.atan2(y - s.y, x - s.x);
         w.orbitingCount++;

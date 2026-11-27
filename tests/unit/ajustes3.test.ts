@@ -66,7 +66,7 @@ describe('ajustes de la Entrega 3', () => {
     let frags = 0;
     for (let i = 0; i < w.count; i++) if (w.state[i] === FREE && w.kind[i] === KIND_ASTEROID && w.radius[i]! > 1.1 && w.radius[i]! <= cfg.maxCaptureSize) frags++;
     expect(frags).toBe(cfg.breakFragments);
-    expect(planetTier(w.radius[p]!, w.star.mass)).toBe(TIER_CAPTURE);
+    expect(w.broken[p]!).toBeGreaterThan(0);
   });
   it('un asteroide capturado suma bodyMassGain de su masa', () => {
     const w = guarded(100, 0);

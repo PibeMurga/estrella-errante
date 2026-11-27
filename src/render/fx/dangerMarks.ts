@@ -55,7 +55,7 @@ export function createDangerMarksLayer(world: World): DangerMarksLayer {
         let want = 0;
         if (w.state[p] === FREE && w.parent[p] === -1 && w.over === 0 && w.phase === PHASE_PLAY) {   // sólo en la partida normal
           const t = planetTier(r, w.star.mass);
-          if (t >= TIER_BREAK && Math.hypot(x - sx, y - sy) - E - r < RANGE) { want = 1; tierOf[p] = t; }
+          if (t >= TIER_BREAK && !(t === TIER_BREAK && w.broken[p]! > 0) && Math.hypot(x - sx, y - sy) - E - r < RANGE) { want = 1; tierOf[p] = t; }
         }
         alpha[p] = alpha[p]! + (want - alpha[p]!) * k;
         if (alpha[p]! <= 0.01 || used >= MAX) continue;

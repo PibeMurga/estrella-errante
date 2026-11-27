@@ -9,6 +9,12 @@ export const TIER_CAPTURE = 0, TIER_BREAK = 1, TIER_HURT = 2, TIER_GRAVE = 3;
 
 export const isPlanetKind = (k: number): boolean => k >= KIND_ROCKY && k <= KIND_GAS;
 
+// ¿Entra solo a tu órbita? Los chicos, y también los medianos que ya están partidos (el planeta que partís es tuyo).
+export function joinsOrbit(w: World, i: number): boolean {
+  const t = planetTier(w.radius[i], w.star.mass);
+  return t === TIER_CAPTURE || (t === TIER_BREAK && w.broken[i]! > 0);
+}
+
 export function planetTier(radius: number, starMass: number): number {
   const E = starSize(starMass);
   if (radius <= 0.5 * E) return TIER_CAPTURE;
@@ -35,10 +41,10 @@ export function graveHit(w: World, p: number): void {
 
 // Golpe a un planeta: sólo los que se pueden partir acumulan daño. Al llegar a su aguante se parte:
 // los rocosos y helados, en dos pedazos (el dibujo de planeta partido); los gaseosos pierden su envoltura.
-// Lo que queda mide la mitad: entra solo a tu órbita. Devuelve true si lo partió.
+// Partido, entra solo a tu órbita. Devuelve true si lo partió.
 export function hitPlanet(w: World, p: number, dmg: number): boolean {
   const c = w.config;
-  if (w.state[p] !== FREE || planetTier(w.radius[p], w.star.mass) !== TIER_BREAK) return false;
+  if (w.state[p] !== FREE || w.broken[p]! > 0 || planetTier(w.radius[p], w.star.mass) !== TIER_BREAK) return false;   // ya partido: no se vuelve a partir
   w.planetDmg[p] = w.planetDmg[p]! + dmg;
   if (w.planetDmg[p]! < Math.ceil(c.planetHpPerRadius * w.radius[p])) return false;
   const R = w.radius[p];
@@ -48,8 +54,9 @@ export function hitPlanet(w: World, p: number, dmg: number): boolean {
   else breakPlanet(w, p, ax, ay, false);
   // Además de los escombros, fragmentos rocosos más grandes que un asteroide, que se pueden sumar a tu órbita.
   spawnDebris(w, w.x[p], w.y[p], w.vx[p], w.vy[p], R * 0.7, -ay, ax, c.breakFragments, 1.15, c.maxCaptureSize);
-  w.radius[p] = R * c.planetBreakKeep;
-  w.mass[p] = w.radius[p] ** 3;
+  // Un rocoso o helado sigue siendo el mismo planeta, colapsado y en dos mitades (breakPlanet ya le deja casi todo su tamaño).
+  // Un gaseoso no tiene corteza que partir: pierde su envoltura y se achica.
+  if (w.kind[p] === KIND_GAS) { w.radius[p] = R * c.planetBreakKeep; w.mass[p] = w.radius[p] ** 3; }
   w.planetDmg[p] = 0;
   w.planetBreaks++;
   return true;
