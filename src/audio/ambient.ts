@@ -46,7 +46,10 @@ export function createAmbient(): Ambient {
 
     // Zumbido grave: sierras desafinadas apenas en La1, Mi2 y La2, por un filtro que respira muy lento.
     droneFilter = a.createBiquadFilter(); droneFilter.type = 'lowpass'; droneFilter.frequency.value = 260; droneFilter.Q.value = 6;
-    const droneGain = a.createGain(); droneGain.gain.value = 0.22;
+    // Los graves van y vienen (no un zumbido continuo que cansa): una compuerta muy lenta los abre y los cierra.
+    const droneGain = a.createGain(); droneGain.gain.value = 0.1;
+    const gate = a.createOscillator(), gateG = a.createGain(); gate.frequency.value = 0.023; gateG.gain.value = 0.1;
+    gate.connect(gateG); gateG.connect(droneGain.gain); gate.start();
     droneFilter.connect(droneGain); droneGain.connect(master);
     for (const [n, det] of [[33, -7], [33, 6], [40, 3], [45, -4]] as const) {
       const o = a.createOscillator(); o.type = 'sawtooth'; o.frequency.value = NOTE(n); o.detune.value = det;
@@ -58,9 +61,9 @@ export function createAmbient(): Ambient {
 
     // Sub-bajo que respira (Mi1).
     const sub = a.createOscillator(), subGain = a.createGain();
-    sub.type = 'sine'; sub.frequency.value = NOTE(28); subGain.gain.value = 0.28;
+    sub.type = 'sine'; sub.frequency.value = NOTE(28); subGain.gain.value = 0.08;
     const breath = a.createOscillator(), breathGain = a.createGain();
-    breath.frequency.value = 0.07; breathGain.gain.value = 0.16;
+    breath.frequency.value = 0.041; breathGain.gain.value = 0.08;   // respira y se apaga del todo por momentos
     breath.connect(breathGain); breathGain.connect(subGain.gain); breath.start();
     sub.connect(subGain); subGain.connect(master); sub.start();
 
@@ -70,7 +73,16 @@ export function createAmbient(): Ambient {
     const rot = a.createStereoPanner();
     const rotL = a.createOscillator(), rotG = a.createGain(); rotL.frequency.value = 0.05; rotG.gain.value = 0.7;
     rotL.connect(rotG); rotG.connect(rot.pan); rotL.start();
-    padFilter.connect(padGain); padGain.connect(rot); rot.connect(master); rot.connect(delayIn);
+    // Fase psicodélica: cuatro filtros pasa-todo que se barren lento, mezclados con la señal limpia.
+    let node: AudioNode = padGain;
+    const phLfo = a.createOscillator(), phDepth = a.createGain(); phLfo.frequency.value = 0.13; phDepth.gain.value = 700;
+    phLfo.connect(phDepth); phLfo.start();
+    for (let n = 0; n < 4; n++) {
+      const ap = a.createBiquadFilter(); ap.type = 'allpass'; ap.frequency.value = 500 + n * 380; ap.Q.value = 0.7;
+      phDepth.connect(ap.frequency); node.connect(ap); node = ap;
+    }
+    const wet = a.createGain(); wet.gain.value = 0.8;
+    padFilter.connect(padGain); padGain.connect(rot); node.connect(wet); wet.connect(rot); rot.connect(master); rot.connect(delayIn);
     for (let v = 0; v < 4; v++) {
       const o = a.createOscillator(); o.type = v % 2 ? 'sine' : 'triangle';
       o.frequency.value = NOTE(CHORDS[0]![v]!); o.detune.value = (v - 1.5) * 4;
@@ -80,10 +92,10 @@ export function createAmbient(): Ambient {
     sweep.frequency.value = 0.019; sweepG.gain.value = 600;
     sweep.connect(sweepG); sweepG.connect(padFilter.frequency); sweep.start();
 
-    timer = window.setInterval(tick, 500);
+    timer = window.setInterval(tick, 60);
   };
 
-  let nextChord = 0, nextStar = 0;
+  let nextChord = 0, nextStar = 0, nextArp = 0, arpIx = 0;
   const tick = (): void => {
     const a = ctx; if (!a) return;
     const t = a.currentTime;
@@ -91,7 +103,20 @@ export function createAmbient(): Ambient {
       chordIx = (chordIx + 1) % CHORDS.length;
       const ch = CHORDS[chordIx]!;
       for (let v = 0; v < pads.length; v++) pads[v]!.frequency.setTargetAtTime(NOTE(ch[v]!), t, 2.2);   // se desliza
-      nextChord = t + 16;
+      nextChord = t + 16 - 6 * growth;   // al crecer, los acordes cambian más seguido
+    }
+    // Arpegio: notas del acorde, más rápido y más denso a medida que crecés (al principio, casi nada).
+    if (t >= nextArp && growth > 0.08) {
+      const ch = CHORDS[chordIx]!, n = ch[arpIx % ch.length]! + 12 * (1 + (arpIx % 8 >= 4 ? 1 : 0));
+      arpIx++;
+      const o = a.createOscillator(), g = a.createGain(), f = a.createBiquadFilter();
+      o.type = 'triangle'; o.frequency.value = NOTE(n);
+      f.type = 'lowpass'; f.frequency.value = 900 + 2200 * growth;
+      g.gain.value = 0; g.gain.setTargetAtTime(0.025 + 0.03 * growth, t, 0.01); g.gain.setTargetAtTime(0, t + 0.12, 0.25);
+      o.connect(f); f.connect(g); g.connect(master); g.connect(delayIn);
+      o.start(t); o.stop(t + 1.5);
+      const step = 0.62 - 0.42 * growth;
+      nextArp = t + step * (Math.random() < 0.18 ? 2 : 1);
     }
     if (t >= nextStar) {
       // Una estrella: nota aguda suave con ataque lento y cola larga, que se va por el eco.
