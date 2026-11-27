@@ -109,7 +109,7 @@ export function stepEncounters(w: World): void {
     if (w.state[i] !== FREE) continue;
     for (let b = a + 1; b < n; b++) {
       const j = list[b]!;
-      if (w.state[j] !== FREE) continue;
+      if (w.state[j] !== FREE || w.twin[i] === j) continue;   // las dos mitades de un mismo planeta no chocan entre sí
       const ri = w.radius[i]!, rj = w.radius[j]!;
       // El grande es el de mayor radio (a igual radio, el de menor índice).
       const big = ri >= rj ? i : j, small = big === i ? j : i;
@@ -150,7 +150,7 @@ export function stepOwnPlanetRams(w: World): void {
     const o = ownPlanet(a);
     for (let b = 0; b < nf; b++) {
       const f = FREE_NEAR[b]!;
-      if (w.state[f] !== FREE) continue;
+      if (w.state[f] !== FREE || w.twin[o] === f) continue;
       const dx = w.x[f]! - w.x[o]!, dy = w.y[f]! - w.y[o]!, D = w.radius[f]! + w.radius[o]!, d2 = dx * dx + dy * dy;
       if (d2 >= D * D) continue;
       const d = Math.sqrt(d2) || 1, nx = dx / d, ny = dy / d;

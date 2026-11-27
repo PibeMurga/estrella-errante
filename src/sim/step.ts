@@ -376,6 +376,7 @@ function separateOwnPlanets(w: World): void {
     const i = OWN_LIST()[a]!;
     for (let b = a + 1; b < n; b++) {
       const j = OWN_LIST()[b]!;
+      if (w.twin[i] === j) continue;   // las dos mitades de un mismo planeta van juntas
       const dx = w.x[i] - w.x[j], dy = w.y[i] - w.y[j], rr = (w.radius[i] + w.radius[j]) * 1.15;
       if (dx * dx + dy * dy >= rr * rr) continue;
       let da = Math.atan2(Math.sin(w.orbitAngle[i] - w.orbitAngle[j]), Math.cos(w.orbitAngle[i] - w.orbitAngle[j]));

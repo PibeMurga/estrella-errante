@@ -55,3 +55,15 @@ describe('tus planetas en órbita', () => {
     expect(Math.hypot(w.x[a] - w.x[b], w.y[a] - w.y[b])).toBeGreaterThanOrEqual((w.radius[a] + w.radius[b]) * 0.98);
   });
 });
+
+describe('las dos mitades de un planeta partido', () => {
+  it('no chocan entre sí: se separan despacio, sin golpes ni marcas', () => {
+    const w = createWorld(cfg, 3, 200);
+    const p = addBody(w, { x: 300, y: 200, vx: 0, vy: 0, radius: 6, kind: KIND_ROCKY });
+    breakPlanet(w, p, 1, 0, false);
+    const imp0 = w.impactCount, hits0 = w.contactHits;
+    for (let k = 0; k < 180; k++) step(w, idle);
+    expect(w.contactHits).toBe(hits0);
+    expect(w.impactCount).toBe(imp0);
+  });
+});
