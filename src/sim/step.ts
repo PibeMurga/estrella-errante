@@ -340,7 +340,9 @@ function moveOrbiting(w: World, i: number, absorbing: boolean, size: number, hol
     const nb = 1 + Math.min(2, Math.floor(Math.sqrt(Math.max(0, w.star.mass)) / 6));   // 1 a 3 cinturones
     const f = (i * 0.618034) % 1, k = Math.min(nb - 1, Math.floor(f * nb));
     const within = ((i * 0.414214) % 1) - 0.5;
-    target = lo + ((k + 0.5) / nb + within * 0.55 / nb) * (hi - lo);
+    // Cuantos más tenés, más definido se ve cada cinturón (más angosto).
+    const crowd = Math.min(1, w.orbitingCount / 140);
+    target = lo + ((k + 0.5) / nb + within * (0.55 - 0.36 * crowd) / nb) * (hi - lo);
   }
   // Recién atrapado se imanta: conserva el giro con que venía, se frena, baja un poco más que su órbita y después vuelve
   // suave a su lugar. Cada cuerpo a su manera: cuánto baja y cuánto tarda cambian (más lento si es un planeta).
@@ -358,7 +360,8 @@ function moveOrbiting(w: World, i: number, absorbing: boolean, size: number, hol
   w.orbitR[i] = r;
   if (absorbing && r <= size * 0.8) { w.state[i] = DEAD; return; }
   // Cuanto más crecés, más fuerte gira tu sistema: todo lo que te orbita va un poco más rápido.
-  const wOrbit = c.orbitSpeedK * Math.pow(c.orbitMin / Math.max(r, 1e-6), 1.5) * (1 + c.orbitSpinGrowth * Math.min(1, Math.sqrt(Math.max(0, s.mass) / 310)));
+  // Y gira más rápido cuanto más crecés y cuantos más cuerpos lo forman: se siente la intensidad.
+  const wOrbit = c.orbitSpeedK * Math.pow(c.orbitMin / Math.max(r, 1e-6), 1.5) * (1 + c.orbitSpinGrowth * Math.min(1, Math.sqrt(Math.max(0, s.mass) / 310))) * (1 + 0.5 * Math.min(1, w.orbitingCount / 140));
   // Al entrar se frena (gira más lento) y recupera el ritmo de la órbita al acoplarse.
   const a = w.orbitAngle[i] + (k >= 1 ? wOrbit : w.orbitW[i] + (wOrbit - w.orbitW[i]) * k) * DT;
   w.orbitAngle[i] = a;

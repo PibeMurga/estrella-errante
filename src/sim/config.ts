@@ -181,7 +181,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   orbitCapacity: 400,
   orbitEase: 0.08,
   orbitInfallSpeed: 12,
-  orbitClearance: 1.3,
+  orbitClearance: 1.5,
   orbitSpeedK: 2.2,
   blackHole: true,
   bhStartRadius: 5,
