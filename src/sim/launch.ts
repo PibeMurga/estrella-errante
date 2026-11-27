@@ -1,6 +1,7 @@
 import { DT } from './config';
 import type { Intent } from './step';
-import { BOLT, DEAD, massGain, FREE, GATHERING, KIND_ASTEROID, KIND_MOON, ORBITING, PROJECTILE, RETURNING, starSize, type World } from './world';
+import { BOLT, DEAD, massGain, FREE, GATHERING, KIND_ASTEROID, KIND_MOON, ORBIT_PLANET, ORBITING, PROJECTILE, RETURNING, starSize, type World } from './world';
+import { spawnDebris } from './tidal';
 
 // Lanzamiento con un solo botón. Un toque lanza un asteroide que vuelve (la honda).
 // Mantenido, junta asteroides de la órbita en un bólido adelante de la estrella; al soltar sale, y esos asteroides se pierden.
@@ -123,6 +124,7 @@ export function stepLaunch(w: World, intent: Intent): void {
 // Lo que se junta se compacta adelante de la estrella; lo que vuela sigue derecho, le pega al agujero negro o se pierde.
 export function stepBolts(w: World): void {
   const c = w.config, s = w.star, bh = w.bh;
+  plow(w);
   // El montón se arma pegado a la estrella, justo por fuera de su superficie y hacia donde apuntás:
   // así sale desde cerca y no queda del otro lado de un planeta que todavía no es tuyo.
   const gr = starSize(s.mass) * 1.15 + c.boltGatherDist;
@@ -157,6 +159,33 @@ export function stepBolts(w: World): void {
         w.vx[i] *= c.boltLoseSlow; w.vy[i] *= c.boltLoseSlow;
         w.noCatch[i] = c.boltNoCatch;
       }
+    }
+  }
+}
+
+// Un bólido grande se abre paso: deshace en esquirlas los asteroides y las lunas que se le cruzan y sigue de largo.
+// Cada roca grande que atraviesa le cuesta un cuerpo (queda suelto y frenado). Las esquirlas son demasiado chicas para
+// volver a romperse.
+function plow(w: World): void {
+  const c = w.config;
+  if (w.lastBoltSize < c.boltPlowMin) return;
+  let n = 0, cx = 0, cy = 0, vx = 0, vy = 0;
+  for (let i = 0; i < w.count; i++) if (w.state[i] === BOLT) { n++; cx += w.x[i]; cy += w.y[i]; vx += w.vx[i]; vy += w.vy[i]; }
+  if (n === 0) return;
+  cx /= n; cy /= n; vx /= n; vy /= n;
+  const R = 1.2 + boltReach(w) + Math.sqrt(n) * 0.35, R2 = R * R;
+  for (let i = 0; i < w.count; i++) {
+    const st = w.state[i];
+    if ((st !== FREE && st !== ORBIT_PLANET) || (w.kind[i] !== KIND_ASTEROID && w.kind[i] !== KIND_MOON) || w.radius[i] <= 0.3) continue;
+    const dx = w.x[i] - cx, dy = w.y[i] - cy;
+    if (dx * dx + dy * dy > R2) continue;
+    const big = w.radius[i] > 0.9;
+    w.state[i] = DEAD; w.parent[i] = -1;
+    const sp = Math.hypot(vx, vy) || 1;
+    spawnDebris(w, w.x[i], w.y[i], vx * 0.35, vy * 0.35, w.radius[i] * 1.6, -vy / sp, vx / sp, 3, 0.1, 0.28);
+    if (big) {
+      // Le cuesta un cuerpo: el primero que encuentra queda suelto y frenado.
+      for (let j = 0; j < w.count; j++) if (w.state[j] === BOLT) { w.state[j] = FREE; w.vx[j] *= 0.2; w.vy[j] *= 0.2; w.noCatch[j] = c.boltNoCatch; break; }
     }
   }
 }

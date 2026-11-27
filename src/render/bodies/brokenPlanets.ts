@@ -41,8 +41,10 @@ void main(){
     float n1 = fbm(P*5.+vSeed, 4)*.5+.5, n2 = fbm(P*19.+vSeed*1.7, 3)*.5+.5;
     float strata = smoothstep(.4, .6, sin(rr*16. + n1*5.)*.5+.5) * .18;   // capas del manto, insinuadas
     // El interior sale de los colores del planeta, más oscuros y apagados: la roca de adentro de ese mismo mundo.
-    vec3 deep = mix(vA, vC, .5) * .42 + vec3(.03);
-    vec3 rockIn = mix(deep * .7, mix(vA, vB, .5) * .55, n1);
+    // Roca del manto: basalto gris pardo, apenas teñido por el planeta (nunca el color de sus mares o nubes).
+    vec3 tint = mix(vA, vB, .5); float lum = dot(tint, vec3(.3, .59, .11));
+    vec3 basalt = mix(vec3(.2, .17, .15), vec3(.34, .29, .24), n1);
+    vec3 rockIn = mix(basalt, basalt * (tint / max(lum, .05)) * .9, .18) * (vIce > .5 ? 1.25 : 1.);
     rockIn *= (.7 + .55*n2) * (1. - strata);
     float ndc = max(dot(vCut, L), 0.);
     float crack = smoothstep(.86, .97, 1. - abs(snoise(P*3.5 + vSeed + vec3(0., uTime*.02, 0.))));

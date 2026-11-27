@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG } from '../../src/sim/config';
-import { abilityLevel, planetsInOrbit } from '../../src/sim/abilities';
+import { abilityLevel, planetsAlive, planetsInOrbit } from '../../src/sim/abilities';
 import { spawnComet } from '../../src/sim/comets';
 import { type Intent, step } from '../../src/sim/step';
-import { addBody, BOLT, CARRIED, captureRadiusFor, createWorld, FREE, GATHERING, KIND_ASTEROID, KIND_ROCKY, ORBITING, type World } from '../../src/sim/world';
+import { addBody, BOLT, CARRIED, captureRadiusFor, createWorld, DEAD, FREE, GATHERING, KIND_ASTEROID, KIND_ROCKY, ORBITING, type World } from '../../src/sim/world';
 
 const idle: Intent = { targetX: 0, targetY: 0, hasTarget: false };
 // Mundo con 20 planetas lejanos (la pantalla) y N de ellos en tu órbita.
@@ -23,6 +23,12 @@ describe('habilidades por cantidad de planetas', () => {
     expect(abilityLevel(system(6))).toBe(2);    // 30 %
     expect(abilityLevel(system(9))).toBe(3);    // 45 %
     expect(planetsInOrbit(system(6))).toBe(6);
+  });
+  it('se cuenta sobre los planetas que siguen existiendo: si el rival se come la mitad, alcanza con menos', () => {
+    const w = system(3);   // 3 de 20 = 15 %
+    for (let k = 10; k < 20; k++) w.state[w.planets[k]!] = DEAD;   // se comió 10
+    expect(planetsAlive(w)).toBe(10);
+    expect(abilityLevel(w)).toBe(2);   // 3 de 10 = 30 %
   });
   it('gravedad ampliada: el radio de captura crece', () => {
     const w = system(3);

@@ -1,4 +1,4 @@
-import { ABILITY_NAMES } from '../sim/abilities';
+import { ABILITY_NAMES, planetsAlive } from '../sim/abilities';
 import { rivalMass } from '../sim/phase';
 import { MAX_COMETS, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, type World } from '../sim/world';
 import { STAGE_HYPER, STAGES, stageFor, stageProgress } from '../sim/stages';
@@ -165,7 +165,7 @@ export function createHud(parent: HTMLElement): Hud {
       slingEl.className = w.orbitingCount > 0 ? 'sling' : 'sling off';
       worldsEl.textContent = `EN ÓRBITA ${pad(w.orbitingCount, 3)}`;
       // Tu sistema: planetas en órbita contra el próximo umbral de habilidad, y la habilidad activa.
-      const total = w.planets.length, c = w.config;
+      const total = planetsAlive(w), c = w.config;
       const nextF = w.ability === 0 ? c.ability1 : w.ability === 1 ? c.ability2 : w.ability === 2 ? c.ability3 : 0;
       const next = nextF > 0 ? pad(Math.ceil(total * nextF - 1e-9), 2) : 'MÁX';
       sysEl.textContent = `PLANETAS ${pad(w.planetsHeld, 2)}/${next}${w.ability > 0 ? ` · ${ABILITY_NAMES[w.ability]}` : ''}`;

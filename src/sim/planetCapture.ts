@@ -1,7 +1,7 @@
 import { boltReach, returnGathered } from './launch';
 import { STAGES, stageFor } from './stages';
 import { breakPlanet, spawnDebris } from './tidal';
-import { BOLT, DEAD, FREE, KIND_GAS, massGain, noteBreak, KIND_ROCKY, MAX_IMPACTS, OVER_DIMMED, PROJECTILE, RETURNING, starSize, type World } from './world';
+import { BOLT, DEAD, FREE, ORBITING, KIND_GAS, massGain, noteBreak, KIND_ROCKY, MAX_IMPACTS, OVER_DIMMED, PROJECTILE, RETURNING, starSize, type World } from './world';
 
 // Escalones de los planetas según su tamaño comparado con el de tu estrella (E):
 // hasta la mitad entran solos; hasta E hay que partirlos; hasta 1,5·E dañan; más grandes, golpe grave.
@@ -51,10 +51,20 @@ export function planetHp(w: World, p: number): number {
 
 export function hitPlanet(w: World, p: number, dmg: number): boolean {
   const c = w.config;
-  const hp = planetHp(w, p);
-  if (w.state[p] !== FREE || w.broken[p]! > 0 || hp < 0) return false;   // ya partido: no se vuelve a partir
+  // Los tuyos (en órbita) también se dañan con tus disparos: aguantan según su radio, sea cual sea su escalón.
+  const own = w.state[p] === ORBITING;
+  const hp = own ? Math.ceil(c.planetHpPerRadius * w.radius[p]) : planetHp(w, p);
+  if ((w.state[p] !== FREE && !own) || w.broken[p]! > 0 || hp < 0) return false;   // ya partido: no se vuelve a partir
   w.planetDmg[p] = w.planetDmg[p]! + dmg;
   if (w.planetDmg[p]! < hp) return false;
+  if (own) {
+    // Partiste uno tuyo: sale de tu órbita (con su masa) y los pedazos quedan sueltos; después pueden volver solos.
+    const a = w.orbitAngle[p], v = w.orbitW[p] * w.orbitR[p];
+    w.state[p] = FREE; w.orbitingCount--;
+    w.vx[p] = w.star.vx - Math.sin(a) * v + Math.cos(a) * 2; w.vy[p] = w.star.vy + Math.cos(a) * v + Math.sin(a) * 2;
+    w.noCatch[p] = c.noCatchTime;
+    w.star.mass = Math.max(c.starStartMass, w.star.mass - massGain(w, p));
+  }
   const R = w.radius[p];
   let ax = w.x[p] - w.star.x, ay = w.y[p] - w.star.y;
   const d = Math.hypot(ax, ay) || 1; ax /= d; ay /= d;
@@ -78,16 +88,18 @@ function crashRock(w: World, i: number, p: number, dx: number, dy: number, sling
   const c = w.config, r = w.rng;
   if (sling) w.star.mass = Math.max(c.starStartMass, w.star.mass - massGain(w, i));
   const d = Math.hypot(dx, dy) || 1, nx = dx / d, ny = dy / d;
-  const rvx = w.vx[i] - w.vx[p], rvy = w.vy[i] - w.vy[p];
+  // Uno de tus planetas se mueve con tu estrella.
+  const pvx = w.state[p] === ORBITING ? w.star.vx : w.vx[p], pvy = w.state[p] === ORBITING ? w.star.vy : w.vy[p];
+  const rvx = w.vx[i] - pvx, rvy = w.vy[i] - pvy;
   if (r.next() < c.rockShatterChance) {
     w.state[i] = DEAD;
-    spawnDebris(w, w.x[i], w.y[i], w.vx[p] + nx * 1.5, w.vy[p] + ny * 1.5, w.radius[i] * 1.5, nx, ny, 3, 0.12, Math.max(0.15, w.radius[i] * 0.45));
+    spawnDebris(w, w.x[i], w.y[i], pvx + nx * 1.5, pvy + ny * 1.5, w.radius[i] * 1.5, nx, ny, 3, 0.12, Math.max(0.15, w.radius[i] * 0.45));
     return;
   }
   // Rebote pesado: casi sin rebote en la normal y con mucho roce en la tangente.
   const vn = rvx * nx + rvy * ny, tx = -ny, ty = nx, vt = rvx * tx + rvy * ty;
   const outN = vn < 0 ? -vn * c.rockRestitution : vn, outT = vt * c.rockFriction;
-  w.vx[i] = w.vx[p] + nx * outN + tx * outT; w.vy[i] = w.vy[p] + ny * outN + ty * outT;
+  w.vx[i] = pvx + nx * outN + tx * outT; w.vy[i] = pvy + ny * outN + ty * outT;
   // Que quede apoyado fuera del planeta, no adentro.
   const R = w.radius[p] + w.radius[i] + 0.05;
   w.x[i] = w.x[p] + nx * R; w.y[i] = w.y[p] + ny * R;
@@ -103,7 +115,7 @@ export function stepPlanetHits(w: World): void {
     if (st !== PROJECTILE && st !== BOLT) continue;
     for (let k = 0; k < P.length * 2; k++) {
       const p = k < P.length ? P[k]! : w.twin[P[k - P.length]!]!;   // también el segundo pedazo de un partido
-      if (p < 0 || w.state[p] !== FREE) continue;
+      if (p < 0 || (w.state[p] !== FREE && w.state[p] !== ORBITING)) continue;   // también los tuyos: son obstáculo
       const r = w.radius[p] + w.radius[i] + (st === BOLT ? boltReach(w) : 0);   // un bólido grande pega en un área mayor
       const dx = w.x[i] - w.x[p], dy = w.y[i] - w.y[p];
       if (dx * dx + dy * dy >= r * r) continue;

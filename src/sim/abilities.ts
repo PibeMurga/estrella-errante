@@ -1,7 +1,7 @@
 import { isPlanetKind } from './planetCapture';
-import { ORBITING, type World } from './world';
+import { DEAD, ORBITING, type World } from './world';
 
-// Habilidades por cantidad de planetas en tu órbita, sobre el total de planetas de la pantalla.
+// Habilidades por cantidad de planetas en tu órbita, sobre los planetas de la pantalla que siguen existiendo.
 // Se pierden si bajás del umbral (por ejemplo, si un cometa te roba un planeta).
 export const ABILITY_NAMES: readonly string[] = ['', 'GRAVEDAD AMPLIADA', 'ESCUDO DE ÓRBITA', 'BÓLIDO MAYOR'];
 
@@ -15,8 +15,19 @@ export function planetsInOrbit(w: World): number {
   return n;
 }
 
+// Planetas que siguen existiendo (los que se tragó el rival o se deshicieron no cuentan). Uno partido cuenta una vez,
+// mientras quede alguno de sus dos pedazos.
+export function planetsAlive(w: World): number {
+  let n = 0;
+  for (let k = 0; k < w.planets.length; k++) {
+    const p = w.planets[k]!, t = w.twin[p]!;
+    if (w.state[p] !== DEAD || (t >= 0 && w.halfSide[p] !== 0 && w.state[t] !== DEAD)) n++;
+  }
+  return n;
+}
+
 export function abilityLevel(w: World): number {
-  const total = w.planets.length;
+  const total = planetsAlive(w);
   if (total === 0) return 0;
   const f = planetsInOrbit(w) / total, c = w.config;
   return f >= c.ability3 - 1e-9 ? 3 : f >= c.ability2 - 1e-9 ? 2 : f >= c.ability1 - 1e-9 ? 1 : 0;
