@@ -163,16 +163,25 @@ function rockHitsStar(w: World, i: number, dx: number, dy: number): void {
 // arranca cuerpos de la órbita (salen hacia el agujero, que se los come) y perdés masa.
 function crossDisk(w: World, dd: number): void {
   const c = w.config, s = w.star, bh = w.bh;
-  const R = bh.radius * c.bhDiskR;
-  const depth = dd < R ? 1 - (dd - bh.radius * c.bhSwallowR) / (R - bh.radius * c.bhSwallowR) : 0;
+  const R = bh.radius * c.bhDiskR, T = bh.radius * c.bhTidalR, S = bh.radius * c.bhSwallowR;
+  const depth = dd < R ? 1 - (dd - S) / (R - S) : 0;
+  // Zona de marea (más amplia que el disco): primero te arranca la órbita; sin órbita, deshace tu estrella de a poco.
+  const tide = dd < T ? Math.min(1, 1 - (dd - S) / (T - S)) : 0;
+  w.tide = Math.max(0, tide);
   if (depth > 0 && w.inDisk === 0) w.diskGrazes++;
   w.inDisk = Math.max(0, Math.min(1, depth));
-  if (depth <= 0) { w.diskStripAcc = 0; return; }
-  const k = w.inDisk * w.inDisk + 0.25 * w.inDisk;   // suave en el borde, muy fuerte adentro
+  if (tide <= 0) { w.diskStripAcc = 0; return; }
+  if (w.orbitingCount === 0) {
+    // Ya no te queda nada que te proteja: la marea te va deshaciendo, suave y cada vez más rápido. En cero, se terminó.
+    s.mass = Math.max(0, s.mass * (1 - c.bhTidalDrain * (tide * tide + 0.15 * tide) * DT) - 0.02 * tide * DT);
+    if (s.mass <= c.starStartMass * 0.25) { w.over = OVER_SWALLOWED; return; }
+  }
+  const kt = tide * tide * 0.35;                    // la marea, suave lejos del disco
+  const k = w.inDisk * w.inDisk + 0.25 * w.inDisk;   // el disco: suave en el borde, muy fuerte adentro
   const drag = Math.max(0, 1 - c.bhDiskDrag * k * DT);
   s.vx *= drag; s.vy *= drag;
-  s.mass = Math.max(c.starStartMass, s.mass * (1 - c.bhDiskDrain * k * DT));
-  w.diskStripAcc += c.bhDiskStrip * k * DT * w.orbitingCount;
+  if (k > 0) s.mass = Math.max(w.orbitingCount === 0 ? 0 : c.starStartMass, s.mass * (1 - c.bhDiskDrain * k * DT));
+  w.diskStripAcc += c.bhDiskStrip * (k + kt) * DT * w.orbitingCount;
   while (w.diskStripAcc >= 1 && w.orbitingCount > 0) {
     w.diskStripAcc -= 1;
     // El cuerpo de la órbita más cercano al agujero sale despedido hacia él.
@@ -367,13 +376,13 @@ export function step(w: World, intent: Intent): void {
   if (bh.active) {
     const dd = Math.hypot(s.x - bh.x, s.y - bh.y);
     if (hunting) {
-      w.inDisk = 0;
+      w.inDisk = 0; w.tide = 0;
       if (dd < holeR + bh.radius) { startMerge(w); w.tick++; return; }
     } else if (dd < bh.radius * c.bhSwallowR + starSize(s.mass) * 0.5) {
       w.over = OVER_SWALLOWED;
       w.tick++;
       return;
-    } else crossDisk(w, dd);
+    } else { crossDisk(w, dd); if (w.over !== OVER_NONE) { w.tick++; return; } }
   }
 
   setOrbitBand(w);

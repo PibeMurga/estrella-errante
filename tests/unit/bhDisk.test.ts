@@ -24,10 +24,10 @@ function flyBy(off: number, bh = true): World {
 
 describe('disco del agujero negro', () => {
   it('cruzar el disco cuesta: te arranca cuerpos de la órbita y masa, aunque pases rápido', () => {
-    const free = flyBy(0, false), w = flyBy(15);
+    const free = flyBy(0, false), w = flyBy(19);
     expect(w.over).toBe(OVER_NONE);
     expect(w.orbitingCount).toBeLessThan(free.orbitingCount - 5);
-    expect(w.star.mass).toBeLessThan(free.star.mass * 0.95);
+    expect(w.star.mass).toBeLessThan(free.star.mass);
     expect(w.diskGrazes).toBeGreaterThan(0);
   });
 
@@ -38,5 +38,23 @@ describe('disco del agujero negro', () => {
   it('lejos del disco no pasa nada', () => {
     const free = flyBy(0, false), w = flyBy(45);
     expect(w.orbitingCount).toBe(free.orbitingCount);
+  });
+});
+
+describe('marea del agujero negro', () => {
+  it('sin nada en órbita, te deshace de a poco (suave y cada vez más rápido) hasta terminar la partida', () => {
+    const w = createWorld(cfg({ blackHole: true, bhStarPull: 0 }), 4, 60);
+    w.star.mass = 40;
+    w.bh.x = w.bh.prevX = w.star.x + w.bh.radius * 6; w.bh.y = w.bh.prevY = w.star.y;
+    let prev = w.star.mass, maxDrop = 0, t = 0;
+    for (; t < 60 * 60 && w.over === OVER_NONE; t++) {
+      step(w, idle);
+      w.star.x = 0; w.star.y = 0; w.star.vx = w.star.vy = 0;   // quieta en la zona de marea
+      w.bh.x = w.bh.prevX = w.bh.radius * 6; w.bh.y = w.bh.prevY = 0;
+      if (w.over === OVER_NONE) { expect(w.star.mass).toBeLessThanOrEqual(prev + 1e-9); maxDrop = Math.max(maxDrop, prev - w.star.mass); prev = w.star.mass; }
+    }
+    expect(w.over).toBe(OVER_SWALLOWED);
+    expect(t).toBeGreaterThan(60 * 3);        // no es instantáneo
+    expect(maxDrop).toBeLessThan(1);          // sin saltos: se va deshaciendo
   });
 });

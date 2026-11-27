@@ -86,7 +86,9 @@ export interface SimConfig {
   cometStealMax: number;
   cometPlanetChance: number;
   halfSplitSpeed: number;
-  bhDiskR: number;               // radio del disco de acreción, en radios del horizonte (lo que se ve)
+  bhDiskR: number;
+  bhTidalR: number;              // zona de marea, en radios del horizonte: arranca la órbita y, sin órbita, deshace la estrella
+  bhTidalDrain: number;          // fracción de la masa que perdés por segundo sin órbita, en lo más hondo de la marea               // radio del disco de acreción, en radios del horizonte (lo que se ve)
   bhSwallowR: number;            // te traga a esta distancia, en radios del horizonte (la esfera de fotones)
   bhDiskStrip: number;           // fracción de tu órbita que te arranca por segundo en lo más hondo del disco
   bhDiskDrain: number;           // fracción de tu masa que perdés por segundo en lo más hondo del disco
@@ -158,10 +160,10 @@ export const DEFAULT_CONFIG: SimConfig = {
   bhAccel: 0.08,
   bhMaxSpeed: 16,
   bhPull: 9000,
-  bhMaxAccel: 100,
+  bhMaxAccel: 130,
   bhRange: 170,
   bhMassGain: 0.003,
-  bhStarPull: 0.9,
+  bhStarPull: 1.15,
   hurtWorldsLost: 3,
   hurtInvuln: 1.5,
   hurtBounce: 7,
@@ -222,6 +224,8 @@ export const DEFAULT_CONFIG: SimConfig = {
   cometPlanetChance: 0.5,
   halfSplitSpeed: 0.3,
   bhDiskR: 4.5,
+  bhTidalR: 9,
+  bhTidalDrain: 0.5,
   bhSwallowR: 1.5,
   bhDiskStrip: 1.2,
   bhDiskDrain: 0.25,

@@ -158,8 +158,8 @@ export function createHud(parent: HTMLElement): Hud {
         const d = Math.max(0, Math.hypot(bh.x - s.x, bh.y - s.y) - bh.radius);
         bhInfo.style.display = '';
         // Dentro del disco: el aviso cambia y late (te está arrancando materia).
-        bhDistEl.textContent = w.inDisk > 0 ? 'DISCO DE ACRECIÓN · PERDÉS MATERIA' : w.bhSlow > 0 ? `FRENADO POR TU BÓLIDO · ${w.bhSlow.toFixed(1).replace('.', ',')} s` : `A ${ua(d)} UA · ${d < lastBhDist - 0.05 ? 'SE ACERCA' : 'SE ALEJA'}`;   // UA: unidades astronómicas
-        bhInfo.classList.toggle('disk', w.inDisk > 0);
+        bhDistEl.textContent = w.tide > 0 && w.orbitingCount === 0 ? 'MAREA · TE ESTÁ DESHACIENDO' : w.inDisk > 0 ? 'DISCO DE ACRECIÓN · PERDÉS MATERIA' : w.bhSlow > 0 ? `FRENADO POR TU BÓLIDO · ${w.bhSlow.toFixed(1).replace('.', ',')} s` : `A ${ua(d)} UA · ${d < lastBhDist - 0.05 ? 'SE ACERCA' : 'SE ALEJA'}`;   // UA: unidades astronómicas
+        bhInfo.classList.toggle('disk', w.inDisk > 0 || (w.tide > 0 && w.orbitingCount === 0));
         arrowDist.textContent = `AGUJERO NEGRO · ${ua(d)} UA`;
         lastBhDist = d;
       } else bhInfo.style.display = 'none';

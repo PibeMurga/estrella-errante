@@ -64,7 +64,8 @@ export function createGravityFieldLayer(): Layer {
       // Hilo de plasma de tu estrella hacia el agujero, si te alcanza su tirón.
       const sx = ctx.starX, sy = ctx.starY, dx = bx - sx, dy = by - sy, d = Math.hypot(dx, dy) || 1;
       const E = starSize(w.star.mass);
-      const pull = d < range ? Math.min(1, ((range - d) / range) * 1.6) : 0;
+      // Más denso si la marea te está deshaciendo (sin nada en órbita que te proteja).
+      const pull = Math.min(1.8, (d < range ? Math.min(1, ((range - d) / range) * 1.6) : 0) + (w.orbitingCount === 0 ? 1.2 * w.tide : 0));
       const ux = dx / d, uy = dy / d, px = -uy, py = ux;
       for (let k = 0; k < STREAM; k++) {
         const j = DUST + k;

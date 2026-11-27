@@ -73,7 +73,8 @@ export interface World {
   breakFxCount: number; breakFxX: number; breakFxY: number; breakFxR: number; breakFxKind: number; breakFxAx: number; breakFxAy: number;   // última ruptura de un planeta (para la explosión)
   rockHits: number;    // asteroides veloces o grandes que golpearon la estrella (evento)
   diskGrazes: number;  // veces que la estrella entró al disco del agujero negro (evento)
-  inDisk: number;      // 0 = fuera; 0..1 = qué tan hondo está la estrella en el disco ahora
+  inDisk: number;
+  tide: number;        // 0..1: qué tan hondo está la estrella en la zona de marea del agujero negro      // 0 = fuera; 0..1 = qué tan hondo está la estrella en el disco ahora
   diskStripAcc: number;   // acumulador de cuerpos que el disco te arranca
   fireSlow: number;    // segundos que le quedan a la estrella para recuperar la marcha después de disparar
   fireSlowK: number;
@@ -230,7 +231,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       timer: new Float32Array(MAX_COMETS), carry: new Int32Array(MAX_COMETS),
     },
     cometClock: config.cometFirst, cometSteals: 0, cometKills: 0, rng: createRng(seed ^ 0x9e3779b9),
-    over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, fireSlow: 0, fireSlowK: 0, fireSlowT: 1, breakFxCount: 0, breakFxX: 0, breakFxY: 0, breakFxR: 0, breakFxKind: 0, breakFxAx: 1, breakFxAy: 0, rockHits: 0, diskGrazes: 0, inDisk: 0, diskStripAcc: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
+    over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, fireSlow: 0, fireSlowK: 0, fireSlowT: 1, breakFxCount: 0, breakFxX: 0, breakFxY: 0, breakFxR: 0, breakFxKind: 0, breakFxAx: 1, breakFxAy: 0, rockHits: 0, diskGrazes: 0, inDisk: 0, tide: 0, diskStripAcc: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
     x: f(), y: f(), prevX: f(), prevY: f(), vx: f(), vy: f(), radius: f(), mass: f(),
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
     parent: new Int32Array(capacity).fill(-1),
