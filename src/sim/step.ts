@@ -203,6 +203,21 @@ function mapStarsAct(w: World): void {
       const a = Math.min(14, c.starGravity * R * R * R / Math.max(g2, (R + me) * (R + me))) * (1 - g / reach);
       s.vx += (gx / g) * a * DT; s.vy += (gy / g) * a * DT;
     }
+    // Te acopla a su órbita: cerca de una estrella más grande que vos, tu movimiento se va volviendo una órbita a su
+    // alrededor (se frena lo que va hacia ella o se aleja, y se suma la velocidad de giro). Si la diferencia no es
+    // enorme, acelerando te escapás.
+    const zone = R * 6 + me;
+    if (g < zone && R > me * 0.9) {
+      const close = 1 - (g - R - me) / (zone - R - me);
+      const k = Math.min(1, c.starCouple * Math.min(2.5, R / me - 0.4) * close * close * DT);
+      const ux = gx / g, uy = gy / g, tx = -uy, ty = ux;
+      const rvx = s.vx - w.vx[st], rvy = s.vy - w.vy[st];
+      const vr = rvx * ux + rvy * uy, vtNow = rvx * tx + rvy * ty;
+      const vOrb = Math.min(22, Math.sqrt(c.starGravity * R * R * R / Math.max(g, R + me)));
+      const vtWant = (vtNow >= 0 ? 1 : -1) * vOrb;
+      const nvr = vr * (1 - k), nvt = vtNow + (vtWant - vtNow) * k;
+      s.vx = w.vx[st] + ux * nvr + tx * nvt; s.vy = w.vy[st] + uy * nvr + ty * nvt;
+    }
     const touch = R + me;
     if (g < touch) {
       if (w.ignited && me > R * 1.15) {

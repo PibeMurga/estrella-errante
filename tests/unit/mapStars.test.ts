@@ -33,3 +33,25 @@ describe('estrellas del mapa', () => {
     expect(w.star.mass).toBeGreaterThan(m0);
   });
 });
+
+describe('acople a la órbita de una estrella', () => {
+  it('cerca de una estrella más grande quedás girando a su alrededor (sin caer ni irte)', () => {
+    const w = createWorld({ ...GAME_CONFIG, asteroidCount: 0, planetCount: 0, blackHole: false, cometFirst: 1e9 }, 7);
+    const st = w.mapStars[0]!;
+    w.radius[st] = 12; w.vx[st] = w.vy[st] = 0;
+    w.star.x = w.x[st] - 30; w.star.y = w.y[st]; w.star.vx = 0; w.star.vy = 0;
+    w.invuln = 99;
+    let a0 = Math.atan2(w.star.y - w.y[st], w.star.x - w.x[st]), turned = 0, minD = Infinity, maxD = 0;
+    for (let k = 0; k < 60 * 8; k++) {
+      step(w, idle);
+      w.vx[st] = w.vy[st] = 0;
+      const a = Math.atan2(w.star.y - w.y[st], w.star.x - w.x[st]);
+      turned += Math.atan2(Math.sin(a - a0), Math.cos(a - a0)); a0 = a;
+      const d = Math.hypot(w.star.x - w.x[st], w.star.y - w.y[st]);
+      if (k > 120) { minD = Math.min(minD, d); maxD = Math.max(maxD, d); }
+    }
+    expect(Math.abs(turned)).toBeGreaterThan(Math.PI);   // dio media vuelta o más
+    expect(minD).toBeGreaterThan(12);                     // no cayó adentro
+    expect(maxD).toBeLessThan(12 * 7 + 10);               // no se fue
+  });
+});
