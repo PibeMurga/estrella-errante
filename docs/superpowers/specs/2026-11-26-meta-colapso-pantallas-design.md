@@ -254,19 +254,34 @@ Hecho:
 - El polvo del bólido se revuelve y deja una estela.
 - Los asteroides lanzados chocan como piedras pesadas: se deshacen o quedan sueltos casi sin rebote.
 
+Hecho después:
+
+- Golpes que marcan los planetas: cráteres, manchas oscuras en los gaseosos y grietas al rojo que crecen.
+- Los planetas que dañan también se parten, con 2,5 veces más aguante.
+- Ruptura con su propia explosión, cada vez distinta (fuego, polvo, chorros o grumos), y mitades que se separan despacio.
+- Choque contra un planeta grande:
+  - pesa más, sin rebote de pelota;
+  - deja aturdido;
+  - hay explosión y cráter en el punto de contacto.
+- Bólido más grande (hasta 30 asteroides) que pega en un área mayor.
+- Gravedad visible: polvo que cae al agujero negro y un hilo de plasma de tu estrella hacia él. El agujero tira más fuerte.
+- Golpear al agujero negro se señala: el visor dice «FRENADO» y su disco se apaga y gira más lento.
+- Sol con una corona irregular que se mueve, erupciones sin aspecto de fuegos artificiales y arcos raros.
+
 Pendiente:
 
-1. Varios golpes sobre un mismo planeta lo marcan: quedan cráteres, y en los que se pueden partir aparecen grietas que crecen hasta partirlo.
-2. Arrancar como planeta gaseoso chico entre planetas inmensos, pasar por enana marrón y encenderse como estrella. Es un diseño propio, en curso. Pregunta abierta: qué se puede hacer siendo planeta.
-3. El movimiento de la estrella: más pesada, pero que reaccione más rápido. Propuesta: arranca y gira enseguida, y le cuesta frenar.
-4. Un agujero negro más absorbente:
-   - que se vea cómo arrastra lo que tiene alrededor;
-   - que te atraiga;
-   - que quede claro que golpearlo lo frena, con un aviso y su disco apagado mientras dura.
-5. Señalar las fuerzas gravitatorias y los objetos que vienen hacia vos.
-6. Más cosas que esquivar y variaciones en el mapa. Propuestas:
-   - lluvias de escombros;
-   - rocas grandes;
-   - nubes de gas;
-   - ondas de una supernova lejana.
-7. Habilidades: contar sólo los planetas que siguen existiendo (recomendado; falta la respuesta de Lucas).
+1. Arrancar como planeta gaseoso chico entre planetas inmensos, pasar por enana marrón y encenderse como estrella. Es un diseño propio, en curso.
+2. El movimiento de la estrella: más pesada, pero que reaccione más rápido.
+3. Que el agujero negro se vea más absorbente: arrastre visible de lo que tiene alrededor.
+4. Objetos que vienen hacia vos: señalarlos mejor.
+5. Más cosas en el espacio: lluvias de escombros, rocas grandes errantes y nubes de gas (las ondas de supernova, después).
+6. Disparos:
+   - tus propios planetas en órbita son obstáculo;
+   - un bólido grande se abre paso rompiendo lo que encuentra.
+7. Impactos de todo con todo (planeta con planeta, planeta con estrella, cualquiera con asteroides): variados, más pesados y, a veces, con más consecuencias. Los asteroides que pasan:
+   - algunos golpean, con su animación de choque;
+   - otros se suman a tu órbita.
+8. Planetas que, al sumarse a tu órbita, a veces se fracturan o se parten en pedazos.
+9. Más variedad de tamaños, que se note sobre todo siendo planeta o estrella chica.
+10. Habilidades: contar sólo los planetas que siguen existiendo (recomendado; falta la respuesta de Lucas).
+11. Balance: el bot gana ahora 1 de 5 (perdía tragado). Revisar con Lucas si quedó demasiado difícil.
