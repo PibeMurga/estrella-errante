@@ -1,4 +1,5 @@
 import { isPlanetKind } from './planetCapture';
+import { U_ARMOR, U_REGEN, upg } from './upgrades';
 import { FREE, ORBITING, type World } from './world';
 
 // Resistencia de tu cuerpo (0 a 1): cada impacto la baja rápido y se recarga despacio. Si llega a cero, te fracturás:
@@ -25,12 +26,12 @@ export function damageBody(w: World, amount: number): void {
 // según cuánto perdiste respecto de tu tamaño, la resistencia. Un golpe que no te hace perder nada no la toca.
 export function loseMass(w: World, amount: number): void {
   const s = w.star, before = s.mass;
-  s.mass = Math.max(w.config.starStartMass, s.mass - amount);
+  s.mass = Math.max(w.config.starStartMass, s.mass - amount * (1 - 0.22 * upg(w, U_ARMOR)));   // coraza
   const lost = before - s.mass;
   if (lost > 0) damageBody(w, w.config.lossIntegrity * lost / Math.max(before, 6));
 }
 
 // Se recarga despacio.
 export function stepIntegrity(w: World, dt: number): void {
-  if (w.integrity < 1) w.integrity = Math.min(1, w.integrity + w.config.integrityRegen * dt);
+  if (w.integrity < 1) w.integrity = Math.min(1, w.integrity + w.config.integrityRegen * (1 + 0.6 * upg(w, U_REGEN)) * dt);
 }

@@ -4,7 +4,7 @@ test('arrancás como planeta gaseoso, pasás por enana marrón y te encendés: i
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.goto('/?seed=20261124&n=1');
+  await page.goto('/?seed=20261124&n=1&mejoras=0');
   await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
   await expect(page.locator('.hud .stage .name')).toHaveText('PLANETA GASEOSO');
   await page.mouse.move(640, 360);

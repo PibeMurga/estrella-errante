@@ -1,5 +1,6 @@
 import { it } from 'vitest';
 import { GAME_CONFIG } from '../../src/sim/config';
+import { chooseUpgrade } from '../../src/sim/upgrades';
 import { type Intent, step } from '../../src/sim/step';
 import { canCollapse } from '../../src/sim/phase';
 import { createWorld, FREE, KIND_ASTEROID, MAX_COMETS, OVER_WON, PHASE_HUNT } from '../../src/sim/world';
@@ -38,6 +39,7 @@ it('bot de balance', () => {
         intent.targetX = w.comets.x[c]!; intent.targetY = w.comets.y[c]!; intent.fire = true;
       }
       intent.collapse = canCollapse(w);
+      if (w.choosing) chooseUpgrade(w, 0);   // el bot toma la primera mejora ofrecida
       const a = performance.now();
       step(w, intent);
       worst = Math.max(worst, performance.now() - a);

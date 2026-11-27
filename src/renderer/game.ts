@@ -4,6 +4,7 @@ import { showFatal } from '../render/context';
 import { createSpaceView } from '../render/spaceView';
 import { GAME_CONFIG } from '../sim/config';
 import { createNameScreen } from '../ui/nameScreen';
+import { createUpgradeScreen } from '../ui/upgradeScreen';
 import { savedPlanetType } from '../ui/playerName';
 import { playerLook } from '../render/playerLook';
 import { createAmbient } from '../audio/ambient';
@@ -23,7 +24,9 @@ const seedParam = Number(new URLSearchParams(location.search).get('seed'));
 const seed = Number.isFinite(seedParam) && seedParam > 0 ? seedParam : Math.floor(Math.random() * 2 ** 31);
 // Con &estrella=1 la partida arranca ya como estrella (lo usan las pruebas que miden el disparo, el visor, etc.).
 const asStar = new URLSearchParams(location.search).get('estrella') === '1';
-const world = createWorld(asStar ? { ...GAME_CONFIG, planetStart: false } : GAME_CONFIG, seed);
+// &mejoras=0 apaga la elección de mejoras (lo usan las pruebas que cambian la masa a mano).
+const noUpg = asStar || new URLSearchParams(location.search).get('mejoras') === '0';
+const world = createWorld({ ...GAME_CONFIG, planetStart: !asStar, upgrades: !noUpg }, seed);
 if (asStar) world.star.mass = world.maxMass = 30;   // ya encendida: la enana roja recién nacida
 const view = createSpaceView(canvas, { world, quality: 'high' });
 
@@ -39,8 +42,10 @@ if (!view.ok) {
   // Nueva partida: se recarga con otra semilla (mapa nuevo). Las capas del dibujo arman sus índices al empezar.
   const restart = (): void => location.replace(`${location.pathname}?seed=${1 + Math.floor(Math.random() * (2 ** 31 - 2))}&n=1`);   // n=1: no vuelve a preguntar el nombre
   const gameOver = createGameOver(document.body, restart);
+  // Al elegir una mejora se descarta lo apretado mientras tanto (que el clic no dispare).
+  const upgradeScreen = createUpgradeScreen(document.body, () => { input.poll(world.star.x, world.star.y); });
   // Pausa con ESC (o Start): sólo mientras se juega, no en las cinemáticas ni en el cartel final.
-  const canPause = (): boolean => named && world.over === 0 && world.phase !== PHASE_COLLAPSE && world.phase !== PHASE_MERGE;
+  const canPause = (): boolean => named && !world.choosing && world.over === 0 && world.phase !== PHASE_COLLAPSE && world.phase !== PHASE_MERGE;
   const pause = createPause(document.body, {
     canPause, onRestart: restart,
     onVolume: (m, x) => { music.setVolume(m); sfx.setVolume(x); },
@@ -113,6 +118,7 @@ if (!view.ok) {
     music.setGrowth(stageFor(world.star.mass) / STAGE_HYPER);
     if (world.ignitions > lastIgn) { lastIgn = world.ignitions; music.swell(); }
     playEvents();
+    upgradeScreen.update(world);
     gameOver.update(world, elapsed);
     cine.update(world, elapsed);
     const next = governor.sample(elapsed * 1000);

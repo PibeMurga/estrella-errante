@@ -44,6 +44,7 @@ export function createAsteroidLayer(world: World, rng: Rng): Layer {
   const lift = new Float32Array(n);
   const tints = new Float32Array(n * 3);
   const litS = new Float32Array(n).fill(1);
+  const depthS = new Float32Array(n).fill(4);
   for (let s = 0; s < n; s++) {
     // Colores de rocas reales: la mayoría oscuras y pardas, y algunas distintas (gris claro, óxido, crema, hielo sucio).
     const b = 0.16 + rng.next() * 0.18, w = rng.next() * 0.04, kind = rng.next();
@@ -69,7 +70,10 @@ export function createAsteroidLayer(world: World, rng: Rng): Layer {
       for (let s = 0; s < n; s++) {
         const i = indices[s]!;
         if (w.state[i] === DEAD) continue;   // tragado
-        pos.set(w.prevX[i] + (w.x[i] - w.prevX[i]) * a, lift[s]!, -(w.prevY[i] + (w.y[i] - w.prevY[i]) * a));
+        // Profundidad sutil: los sueltos flotan a distintas alturas; en tu órbita se acomodan de a poco a tu plano.
+        const inOrbit = w.state[i] === ORBITING || w.state[i] === GATHERING;
+        depthS[s] = depthS[s]! + ((inOrbit ? 1 : 4) - depthS[s]!) * Math.min(1, ctx.dt * 0.8);
+        pos.set(w.prevX[i] + (w.x[i] - w.prevX[i]) * a, lift[s]! * depthS[s]!, -(w.prevY[i] + (w.y[i] - w.prevY[i]) * a));
         bound.center.copy(pos); bound.radius = w.radius[i] * 1.3;
         if (!frustum.intersectsSphere(bound)) continue;   // fuera de cuadro: no se dibuja
         axis.set(axes[s * 3]!, axes[s * 3 + 1]!, axes[s * 3 + 2]!);

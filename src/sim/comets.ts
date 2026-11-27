@@ -1,6 +1,7 @@
 import { DT } from './config';
 import { boltReach, returnGathered } from './launch';
 import { loseMass } from './integrity';
+import { U_REPEL, upg } from './upgrades';
 import { isPlanetKind } from './planetCapture';
 import { BOLT, CARRIED, DEAD, FREE, KIND_ASTEROID, MAX_COMETS, massGain, ORBITING, PROJECTILE, RETURNING, starSize, type World } from './world';
 
@@ -94,7 +95,7 @@ export function stepComets(w: World): void {
   const c = w.config, s = w.star, cm = w.comets;
   if (!w.ignited) return;   // los cometas llegan después de la ignición
   w.cometClock -= DT;
-  if (w.cometClock <= 0) { spawnOnEdge(w); w.cometClock += c.cometEvery; }
+  if (w.cometClock <= 0) { spawnOnEdge(w); w.cometClock += c.cometEvery * (1 + 0.35 * upg(w, U_REPEL)); }   // repelente
 
   const size = starSize(s.mass);
   for (let k = 0; k < MAX_COMETS; k++) {
@@ -133,7 +134,7 @@ export function stepComets(w: World): void {
       returnGathered(w);   // te toca: se desarma el montón y puede robar igual
       if (cm.carry[k] === 0 && w.orbitingCount > 0) {
         // Uno grande se lleva más.
-        const want = Math.round((c.cometStealMin + Math.floor(w.rng.next() * (c.cometStealMax - c.cometStealMin + 1))) * cm.size[k]!);
+        const want = Math.max(1, Math.round((c.cometStealMin + Math.floor(w.rng.next() * (c.cometStealMax - c.cometStealMin + 1))) * cm.size[k]! * (1 - 0.25 * upg(w, U_REPEL))));
         let got = 0;
         while (got < want) {
           let best = -1, bestD = Infinity;

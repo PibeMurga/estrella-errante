@@ -1,5 +1,6 @@
 import { boltReach, returnGathered } from './launch';
 import { loseMass } from './integrity';
+import { U_SLING, upg } from './upgrades';
 import { STAGES, stageFor } from './stages';
 import { breakPlanet, spawnDebris } from './tidal';
 import { BOLT, DEAD, FREE, ORBITING, OVER_SHATTERED, KIND_GAS, massGain, noteBreak, KIND_ROCKY, MAX_IMPACTS, OVER_DIMMED, PROJECTILE, RETURNING, starSize, type World } from './world';
@@ -129,7 +130,7 @@ export function stepPlanetHits(w: World): void {
       const slot = (w.impactCount % MAX_IMPACTS) * 4;
       w.impacts[slot] = p; w.impacts[slot + 1] = Math.atan2(dy, dx); w.impacts[slot + 2] = st === BOLT ? 0.55 + 0.12 * Math.sqrt(w.lastBoltSize) : 0.45;   // el golpe crece con el bólido w.impactCount++;
       crashRock(w, i, p, dx, dy, st === PROJECTILE);
-      hitPlanet(w, p, st === BOLT ? c.boltPlanetDmg * (w.ability >= 3 ? 1.5 : 1) : 1);   // un bólido entero parte uno mediano
+      hitPlanet(w, p, st === BOLT ? c.boltPlanetDmg * (w.ability >= 3 ? 1.5 : 1) : 1 + upg(w, U_SLING));   // un bólido entero parte uno mediano
       break;
     }
   }

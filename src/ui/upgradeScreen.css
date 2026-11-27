@@ -1,0 +1,15 @@
+/* Elegir una mejora: el registro de a bordo, en el fósforo del visor. */
+.upgrades { position: fixed; inset: 0; z-index: 26; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 22px;
+  background: radial-gradient(ellipse at center, #02060599 0%, #000000c8 75%); opacity: 0; pointer-events: none; transition: opacity .25s ease;
+  font-family: 'Cascadia Mono', 'Consolas', 'DejaVu Sans Mono', 'Liberation Mono', monospace; color: #7af5c9; text-shadow: 0 0 4px #7af5c9cc, 0 0 12px #7af5c944; letter-spacing: 3px; }
+.upgrades.on { opacity: 1; pointer-events: auto; }
+.upgrades .title { font-size: 24px; font-weight: 700; letter-spacing: 9px; }
+.upgrades .sub { font-size: 11px; opacity: .7; margin-top: -12px; }
+.upgrades .cards { display: flex; gap: 22px; }
+.upgrades .card { width: 230px; min-height: 150px; padding: 18px 18px 14px; background: #000000b3; border: 1.5px solid #7af5c955; box-shadow: 0 0 14px #7af5c91a, inset 0 0 24px #7af5c90a;
+  cursor: pointer; display: flex; flex-direction: column; gap: 10px; transition: border-color .15s, box-shadow .15s, transform .15s; }
+.upgrades .card:hover, .upgrades .card.sel { border-color: #7af5c9; box-shadow: 0 0 18px #7af5c955, inset 0 0 30px #7af5c914; transform: translateY(-3px); }
+.upgrades .card .k { font-size: 11px; opacity: .6; }
+.upgrades .card .n { font-size: 16px; font-weight: 700; letter-spacing: 4px; }
+.upgrades .card .d { font-size: 12px; letter-spacing: 1px; line-height: 1.45; opacity: .9; text-shadow: none; }
+.upgrades .card .lv { margin-top: auto; font-size: 13px; letter-spacing: 6px; }

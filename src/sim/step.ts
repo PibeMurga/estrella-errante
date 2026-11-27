@@ -2,6 +2,7 @@ import { stepComets } from './comets';
 import { breakPlanet } from './tidal';
 import { damageBody, loseMass, stepIntegrity } from './integrity';
 import { stepRockImpacts } from './rockImpacts';
+import { offerUpgrades, U_ANCHOR, U_DENSE, U_MAGNET, U_SPIN, U_TIDE, U_WAKE, upg } from './upgrades';
 import { OWN_LIST, ownPlanets } from './ownPlanets';
 import { stepEncounters, stepOwnPlanetRams, stepStarFlybys } from './encounters';
 import { DT, type SimConfig } from './config';
@@ -358,7 +359,7 @@ function moveOrbiting(w: World, i: number, absorbing: boolean, size: number, hol
   if (absorbing && r <= size * 0.8) { w.state[i] = DEAD; return; }
   // Cuanto más crecés, más fuerte gira tu sistema: todo lo que te orbita va un poco más rápido.
   // Y gira más rápido cuanto más crecés y cuantos más cuerpos lo forman: se siente la intensidad.
-  const wOrbit = c.orbitSpeedK * Math.pow(c.orbitMin / Math.max(r, 1e-6), 1.5) * (1 + c.orbitSpinGrowth * Math.min(1, Math.sqrt(Math.max(0, s.mass) / 310))) * (1 + 0.5 * Math.min(1, w.orbitingCount / 140));
+  const wOrbit = c.orbitSpeedK * Math.pow(c.orbitMin / Math.max(r, 1e-6), 1.5) * (1 + c.orbitSpinGrowth * Math.min(1, Math.sqrt(Math.max(0, s.mass) / 310))) * (1 + 0.5 * Math.min(1, w.orbitingCount / 140)) * (1 + 0.25 * upg(w, U_SPIN));
   // Al entrar se frena (gira más lento) y recupera el ritmo de la órbita al acoplarse.
   const a = w.orbitAngle[i] + (k >= 1 ? wOrbit : w.orbitW[i] + (wOrbit - w.orbitW[i]) * k) * DT;
   w.orbitAngle[i] = a;
@@ -456,6 +457,7 @@ export function step(w: World, intent: Intent): void {
   w.comets.prevY.set(w.comets.y);
   // Partida terminada: todo queda quieto (y sin interpolar) hasta que se reinicie.
   if (w.over !== OVER_NONE) return;
+  if (w.choosing) return;   // eligiendo una mejora: la partida espera
   if (w.phase === PHASE_COLLAPSE || w.phase === PHASE_MERGE || w.phase === PHASE_IGNITION) { cinematic(w); w.tick++; return; }
   // Siendo planeta el agujero negro rival duerme: no se mueve, no atrae ni traga. Despierta con la ignición.
   const awake = bh.active && w.ignited;
@@ -515,7 +517,8 @@ export function step(w: World, intent: Intent): void {
     const dist = Math.hypot(dx, dy);
     if (dist > 1e-6) {
       // Siendo agujero negro en la caza no frenás al acercarte: vas a fondo hacia lo que apuntás.
-      const speed = hunting ? (dist > 1 ? c.starMaxSpeed : 0) : Math.min(c.starMaxSpeed, Math.sqrt(2 * acc * 0.8 * dist), (c.starMaxSpeed * dist) / c.starSlowRadius);
+      const vmax = c.starMaxSpeed * (1 + 0.12 * upg(w, U_WAKE));   // estela
+      const speed = hunting ? (dist > 1 ? vmax : 0) : Math.min(vmax, Math.sqrt(2 * acc * 0.8 * dist), (vmax * dist) / c.starSlowRadius);
       // Recién disparaste: la marcha deseada vuelve de a poco a la normal.
       const slow = w.fireSlow > 0 ? 1 - w.fireSlowK * (w.fireSlow / w.fireSlowT) : 1;
       desX = (dx / dist) * speed * slow;
@@ -570,8 +573,10 @@ export function step(w: World, intent: Intent): void {
     }
   }
   if (coasting && strongest >= 0 && strongestA > w.starPullNow) couple(w, w.x[strongest], w.y[strongest], w.vx[strongest], w.vy[strongest], w.radius[strongest], c.starCouple * 1.6, 5);
-  s.vx += bhPullX * (coasting ? 1.6 : 1); s.vy += bhPullY * (coasting ? 1.6 : 1);
-  if (sp > c.starMaxSpeed) { s.vx *= c.starMaxSpeed / sp; s.vy *= c.starMaxSpeed / sp; }
+  const anchor = 1 - 0.2 * upg(w, U_ANCHOR);   // ancla
+  s.vx += bhPullX * (coasting ? 1.6 : 1) * anchor; s.vy += bhPullY * (coasting ? 1.6 : 1) * anchor;
+  const vcap = c.starMaxSpeed * (1 + 0.12 * upg(w, U_WAKE));
+  if (sp > vcap) { s.vx *= vcap / sp; s.vy *= vcap / sp; }
   s.x += s.vx * DT;
   s.y += s.vy * DT;
   const holeR = hunting ? playerHoleRadius(w) : 0;
@@ -613,7 +618,7 @@ export function step(w: World, intent: Intent): void {
           const ex = s.x - x, ey = s.y - y, e2 = ex * ex + ey * ey, R = captureR * c.starPullReach;
           if (e2 < R * R && e2 > 1e-6) {
             // Siendo planeta tu gravedad es mucho más débil: atrae poco y de cerca.
-            const e = Math.sqrt(e2), a = c.starPullAccel * (pieceOfPlanet ? 0.35 : 1) * (w.ignited ? 1 : c.planetPullMul) * (1 - e / R) * DT / e;
+            const e = Math.sqrt(e2), a = c.starPullAccel * (1 + 0.3 * upg(w, U_MAGNET)) * (pieceOfPlanet ? 0.35 : 1) * (w.ignited ? 1 : c.planetPullMul) * (1 - e / R) * DT / e;
             w.vx[i] += ex * a; w.vy[i] += ey * a;
           }
         }
@@ -656,7 +661,7 @@ export function step(w: World, intent: Intent): void {
         // Luna o escombro: gira alrededor de su planeta (que ya se movió en este paso, porque se creó antes).
         const p = w.parent[i]!;
         // Si su planeta es tuyo, de a poco pasa a ser tuyo también: se suma a tus cinturones (y a tu masa).
-        if (w.state[p] === ORBITING && !hunting && w.rng.next() < c.moonTransfer * DT && w.orbitingCount + w.gathered < c.orbitCapacity) {
+        if (w.state[p] === ORBITING && !hunting && w.rng.next() < c.moonTransfer * (1 + upg(w, U_TIDE)) * DT && w.orbitingCount + w.gathered < c.orbitCapacity) {
           const dx = w.x[i] - s.x, dy = w.y[i] - s.y, dd = Math.hypot(dx, dy) || 1;
           w.state[i] = ORBITING; w.parent[i] = -1;
           w.orbitR[i] = dd; w.orbitTarget[i] = dd; w.orbitAngle[i] = Math.atan2(dy, dx);
@@ -734,7 +739,7 @@ export function step(w: World, intent: Intent): void {
         w.life[i] = clamp(((x - s.x) * (w.vx[i] - s.vx) + (y - s.y) * (w.vy[i] - s.vy)) / Math.max(d, 1e-6), -12, 12);
         w.joinT[i] = 0;
         w.orbitingCount++;
-        s.mass += massGain(w, i);
+        s.mass += massGain(w, i) * (1 + 0.15 * upg(w, U_DENSE));   // masa densa
         w.captured[w.capturedCount++] = i;
         if (w.kind[i] === KIND_ARTIFACT) w.artifactsFound++;
       }
@@ -761,12 +766,12 @@ export function step(w: World, intent: Intent): void {
   }
   bh.radius = c.bhStartRadius * Math.cbrt(bh.mass);
   stepAbilities(w);
-  s.captureRadius = captureRadiusFor(c, s.mass) * (w.ability >= 1 ? c.abilityGravityMul : 1);   // gravedad ampliada
+  s.captureRadius = captureRadiusFor(c, s.mass) * (w.ability >= 1 ? c.abilityGravityMul : 1) * (1 + 0.12 * upg(w, U_MAGNET));   // gravedad ampliada (e imán)
   if (s.mass > w.maxMass) w.maxMass = s.mass;
   // Al llegar a la masa de ignición, se enciende la fusión: cinemática de la ignición (una sola vez).
   if (!w.ignited && w.phase === PHASE_PLAY && s.mass >= IGNITION_MASS) { w.phase = PHASE_IGNITION; w.phaseTime = 0; w.ignitions++; releaseLaunch(w); }
   const st = stageFor(s.mass);
-  if (st > w.stage) { w.stage = st; w.stageUps++; }
+  if (st > w.stage) { w.stage = st; w.stageUps++; if (c.upgrades && w.phase === PHASE_PLAY) offerUpgrades(w); }
   if (hunting) {
     w.phaseTime += DT;
     if (w.phaseTime >= c.huntTimeLimit) w.over = OVER_ESCAPED;

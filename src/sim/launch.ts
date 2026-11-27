@@ -2,6 +2,7 @@ import { DT } from './config';
 import type { Intent } from './step';
 import { BOLT, DEAD, massGain, FREE, GATHERING, KIND_ASTEROID, KIND_MOON, ORBIT_PLANET, ORBITING, PROJECTILE, RETURNING, starSize, type World } from './world';
 import { spawnDebris } from './tidal';
+import { U_BOLT, U_CHARGE, upg } from './upgrades';
 
 // Lanzamiento con un solo botón. Un toque lanza un asteroide que vuelve (la honda).
 // Mantenido, junta asteroides de la órbita en un bólido adelante de la estrella; al soltar sale, y esos asteroides se pierden.
@@ -114,8 +115,8 @@ export function stepLaunch(w: World, intent: Intent): void {
     const a = slingAngle(w, intent);
     if (Number.isFinite(a)) w.boltAngle = a;
     if (w.charge >= c.tapTime) {
-      const max = c.boltMax + (w.ability >= 3 ? c.abilityBoltBonus : 0);   // bólido mayor
-      const want = Math.min(max, 1 + Math.floor((w.charge - c.tapTime) * c.boltGatherRate));
+      const max = c.boltMax + (w.ability >= 3 ? c.abilityBoltBonus : 0) + 8 * upg(w, U_BOLT);   // bólido mayor
+      const want = Math.min(max, 1 + Math.floor((w.charge - c.tapTime) * c.boltGatherRate * (1 + 0.4 * upg(w, U_CHARGE))));
       while (w.gathered < want && gatherOne(w)) { /* suma de a uno */ }
     }
     return;
