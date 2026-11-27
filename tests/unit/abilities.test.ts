@@ -39,6 +39,7 @@ describe('habilidades por cantidad de planetas', () => {
     const countAst = (): number => { let n = 0; for (let i = 0; i < w.count; i++) if (w.state[i] === ORBITING && w.kind[i] === KIND_ASTEROID) n++; return n; };
     const ast0 = countAst();   // los planetas traen sus cinturones: se cuenta justo antes del golpe
     const E = starSize(w.star.mass);
+    (w.config as { planetStrip: number }).planetStrip = 0;   // que el planeta grande no robe por cercanía: se mide el escudo
     // Tus planetas lejos del golpe (si no, el grande también rompe alguno de ellos al pasar).
     for (let i = 0; i < w.count; i++) if (w.state[i] === ORBITING && w.kind[i] !== KIND_ASTEROID) { w.orbitR[i] = 120; w.orbitTarget[i] = 120; w.orbitAngle[i] = Math.PI; w.x[i] = w.star.x - 120; w.y[i] = w.star.y; }
     const big = addBody(w, { x: w.star.x + E * 2.1, y: 0, vx: 0, vy: 0, radius: E * 1.2, kind: KIND_ROCKY });   // daña pero no es grave

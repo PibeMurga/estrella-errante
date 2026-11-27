@@ -426,6 +426,15 @@ export function splitHalves(w: World, i: number, apart = 0): void {
   w.kind[j] = w.kind[i]!; w.state[j] = w.state[i]!; w.parent[j] = -1; w.noCatch[j] = w.noCatch[i]!;
   w.broken[j] = w.broken[i]!; w.breakAx[j] = ax; w.breakAy[j] = ay; w.planetDmg[j] = 0; w.joinT[j] = 1e9;
   w.halfSide[i] = 1; w.halfSide[j] = -1;
+  // Si era tuyo (en tu órbita), los dos pedazos siguen girando a tu alrededor, cada uno en su lugar.
+  if (w.state[i] === ORBITING) {
+    for (const b of [i, j]) {
+      const dx = w.x[b] - w.star.x, dy = w.y[b] - w.star.y;
+      w.orbitR[b] = Math.hypot(dx, dy); w.orbitAngle[b] = Math.atan2(dy, dx);
+      w.orbitTarget[b] = w.orbitTarget[i]; w.orbitW[b] = w.orbitW[i]; w.joinT[b] = 1e9; w.noCatch[b] = 0;
+    }
+    w.orbitingCount++;
+  }
   // Recién partido: los pedazos derivan unos segundos antes de que tu gravedad los pueda atrapar (nada de capturas al
   // instante: primero se separan, después se curvan hacia vos y entran).
   if (apart === 0) { w.noCatch[i] = w.config.splitNoCatch; w.noCatch[j] = w.config.splitNoCatch * (1.2 + 0.6 * ((j * 0.618034) % 1)); }

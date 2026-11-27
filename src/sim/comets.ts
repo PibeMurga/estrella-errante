@@ -1,5 +1,6 @@
 import { DT } from './config';
 import { boltReach, returnGathered } from './launch';
+import { loseMass } from './integrity';
 import { isPlanetKind } from './planetCapture';
 import { BOLT, CARRIED, DEAD, FREE, KIND_ASTEROID, MAX_COMETS, massGain, ORBITING, PROJECTILE, RETURNING, starSize, type World } from './world';
 
@@ -85,7 +86,7 @@ function steal(w: World, k: number, i: number): void {
   w.state[i] = CARRIED;
   w.parent[i] = k;
   w.orbitingCount--;
-  w.star.mass = Math.max(w.config.starStartMass, w.star.mass - massGain(w, i));
+  loseMass(w, massGain(w, i));   // te lo robaron: baja la resistencia
 }
 
 // Cometas cazadores: aparecen por los bordes, persiguen a la estrella, le roban cuerpos y huyen.

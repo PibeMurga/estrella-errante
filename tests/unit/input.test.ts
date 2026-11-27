@@ -94,6 +94,20 @@ describe('InputController', () => {
     expect(input.poll(7, 1)).toMatchObject({ targetX: 7, targetY: 1 });
   });
 
+  it('se puede mover con el izquierdo y cargar con el derecho al mismo tiempo', () => {
+    vi.stubGlobal('navigator', { getGamepads: () => [] });
+    const { el, listeners } = fakeElement();
+    const input = new InputController(el, toWorld);
+    const ev = (t: string, e: Record<string, unknown>): void => (listeners[t] as unknown as (e: Record<string, unknown>) => void)(e);
+    ev('pointerdown', { clientX: 100, clientY: 50, button: 0, buttons: 1, pointerId: 1 });
+    ev('pointerdown', { clientX: 100, clientY: 50, button: 2, buttons: 3, pointerId: 1 });
+    const it = input.poll(0, 0);
+    expect(it.hasTarget).toBe(true);
+    expect(it.hold).toBe(true);
+    ev('pointermove', { clientX: 120, clientY: 50, buttons: 3 });
+    expect(input.poll(0, 0)).toMatchObject({ hasTarget: true, hold: true });
+  });
+
   it('el clic derecho es el botón de lanzar: cuenta aunque se suelte antes del poll, y mantenido sigue apretado', () => {
     vi.stubGlobal('navigator', { getGamepads: () => [] });
     const { el, listeners } = fakeElement();

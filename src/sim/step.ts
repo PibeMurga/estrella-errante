@@ -1,6 +1,6 @@
 import { stepComets } from './comets';
 import { breakPlanet } from './tidal';
-import { damageBody, stepIntegrity } from './integrity';
+import { damageBody, loseMass, stepIntegrity } from './integrity';
 import { stepRockImpacts } from './rockImpacts';
 import { OWN_LIST, ownPlanets } from './ownPlanets';
 import { stepEncounters, stepOwnPlanetRams, stepStarFlybys } from './encounters';
@@ -53,7 +53,6 @@ function hurt(w: World, p: number): void {
   w.hits++;
   w.invuln = c.hurtInvuln;
   // El golpe baja tu resistencia (más si el planeta es grande o vos chico); en cero, te fracturás.
-  damageBody(w, c.hitIntegrity * (1 + clamp((w.radius[p] / starSize(s.mass) - 1) / 0.5, 0, 1) * 0.5) * smallness(w));
   let nx = s.x - w.x[p], ny = s.y - w.y[p];
   const nd = Math.hypot(nx, ny) || 1;
   nx /= nd; ny /= nd;
@@ -78,7 +77,7 @@ function hurt(w: World, p: number): void {
       w.vx[out] = Math.cos(a) * c.lostSpeed + s.vx * 0.3; w.vy[out] = Math.sin(a) * c.lostSpeed + s.vy * 0.3;
       w.noCatch[out] = c.noCatchTime;
       w.orbitingCount--;
-      s.mass = Math.max(c.starStartMass, s.mass - massGain(w, out));
+      loseMass(w, massGain(w, out));
       return;
     }
   }
@@ -87,7 +86,7 @@ function hurt(w: World, p: number): void {
   // Cuanto más chico sos, más te afecta: un planeta o una enana recién nacida sufre mucho más que una gigante.
   const frail = smallness(w);
   const toLose = Math.max(c.hurtWorldsLost, Math.ceil(w.orbitingCount * Math.min(0.9, (c.hurtLossMin + (c.hurtLossMax - c.hurtLossMin) * t) * frail)));
-  s.mass = Math.max(c.starStartMass, s.mass * (1 - Math.min(0.6, (c.hurtMassMin + (c.hurtMassMax - c.hurtMassMin) * t) * frail)));
+  loseMass(w, s.mass * Math.min(0.6, (c.hurtMassMin + (c.hurtMassMax - c.hurtMassMin) * t) * frail));
   let lost = 0;
   for (let i = 0; i < w.count && lost < toLose; i++) {
     if (w.state[i] !== ORBITING || isPlanetKind(w.kind[i]!)) continue;   // se pierden asteroides y lunas, no planetas
@@ -97,7 +96,7 @@ function hurt(w: World, p: number): void {
     w.vy[i] = Math.sin(a) * c.lostSpeed + s.vy * 0.3;
     w.noCatch[i] = c.noCatchTime;
     w.orbitingCount--;
-    s.mass = Math.max(c.starStartMass, s.mass - massGain(w, i));
+    loseMass(w, massGain(w, i));
     lost++;
   }
 }
@@ -158,7 +157,6 @@ function rockHitsStar(w: World, i: number, dx: number, dy: number): void {
   const slot = (w.impactCount % MAX_IMPACTS) * 4;
   w.impacts[slot] = -1; w.impacts[slot + 1] = Math.atan2(dy, dx); w.impacts[slot + 2] = 0.5 + 0.5 * Math.min(1, w.radius[i]); w.impactCount++;
   w.rockHits++;
-  damageBody(w, c.rockIntegrity * smallness(w));
   let lose = Math.round((w.radius[i] > c.rockHitSize ? 2 : 1) * smallness(w));   // más si sos chico
   for (let j = 0; j < w.count && lose > 0; j++) {
     if (w.state[j] !== ORBITING || isPlanetKind(w.kind[j]!)) continue;
@@ -166,7 +164,7 @@ function rockHitsStar(w: World, i: number, dx: number, dy: number): void {
     w.state[j] = FREE; w.orbitingCount--;
     w.vx[j] = s.vx + Math.cos(a) * c.lostSpeed; w.vy[j] = s.vy + Math.sin(a) * c.lostSpeed;
     w.noCatch[j] = c.noCatchTime;
-    s.mass = Math.max(c.starStartMass, s.mass - massGain(w, j));
+    loseMass(w, massGain(w, j));
     lose--;
   }
 }
@@ -239,8 +237,7 @@ function mapStarsAct(w: World): void {
       } else if (w.invuln <= 0) {
         // Te quema: perdés masa y resistencia y te empuja hacia afuera.
         w.invuln = c.hurtInvuln;
-        s.mass = Math.max(c.starStartMass, s.mass * 0.82);
-        damageBody(w, 0.45);
+        loseMass(w, s.mass * 0.18);
         s.vx = w.vx[st] - (gx / g) * 9; s.vy = w.vy[st] - (gy / g) * 9;
         s.x = w.x[st] - (gx / g) * touch; s.y = w.y[st] - (gy / g) * touch;
         w.starBurns++;
@@ -264,7 +261,7 @@ function mapStarsAct(w: World): void {
         w.state[best] = FREE; w.orbitingCount--;
         w.vx[best] = s.vx + (bx / bd) * 7; w.vy[best] = s.vy + (by / bd) * 7;
         w.noCatch[best] = 2.5;
-        s.mass = Math.max(c.starStartMass, s.mass - massGain(w, best));
+        loseMass(w, massGain(w, best));
         w.planetSteals++;
       }
     }
@@ -292,7 +289,7 @@ function crossDisk(w: World, dd: number): void {
   const k = w.inDisk * w.inDisk + 0.25 * w.inDisk;   // el disco: suave en el borde, muy fuerte adentro
   const drag = Math.max(0, 1 - c.bhDiskDrag * k * DT);
   s.vx *= drag; s.vy *= drag;
-  if (k > 0) s.mass = Math.max(w.orbitingCount === 0 ? 0 : c.starStartMass, s.mass * (1 - c.bhDiskDrain * k * DT));
+  if (k > 0) { if (w.orbitingCount === 0) s.mass = Math.max(0, s.mass * (1 - c.bhDiskDrain * k * DT)); else loseMass(w, s.mass * c.bhDiskDrain * k * DT); }
   w.diskStripAcc += c.bhDiskStrip * (k + kt) * DT * w.orbitingCount;
   while (w.diskStripAcc >= 1 && w.orbitingCount > 0) {
     w.diskStripAcc -= 1;
@@ -308,7 +305,7 @@ function crossDisk(w: World, dd: number): void {
     w.state[best] = FREE; w.orbitingCount--;
     w.vx[best] = s.vx + (gx / gd) * 12; w.vy[best] = s.vy + (gy / gd) * 12;
     w.noCatch[best] = 3;
-    s.mass = Math.max(c.starStartMass, s.mass - massGain(w, best));
+    loseMass(w, massGain(w, best));
   }
 }
 
@@ -560,7 +557,7 @@ export function step(w: World, intent: Intent): void {
           w.state[best] = FREE; w.orbitingCount--;
           w.vx[best] = s.vx + (bx / bd) * 6; w.vy[best] = s.vy + (by / bd) * 6;
           w.noCatch[best] = 2.5;
-          s.mass = Math.max(c.starStartMass, s.mass - massGain(w, best));
+          loseMass(w, massGain(w, best));
           w.planetSteals++;
         }
       }

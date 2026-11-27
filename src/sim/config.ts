@@ -101,7 +101,8 @@ export interface SimConfig {
   starCouple: number;
   coastPullMul: number;          // al soltar el clic izquierdo, las fuerzas de alrededor te tiran esto más            // qué tan fuerte te acopla una estrella a su órbita (por segundo, de cerca)           // cuánto te tira una estrella del mapa: a = esto × radio³ / distancia²
   planetStrip: number;           // cuerpos por segundo que te roba un planeta grande de cerca (escala con √ de tu órbita)         // cuánto te tira un planeta suelto: a = esto × radio³ / distancia²       // cuánto más rápido gira tu sistema siendo hipergigante (0,8 = 80 % más)
-  integrityRegen: number;        // resistencia que recuperás por segundo
+  integrityRegen: number;
+  lossIntegrity: number;         // resistencia que baja por cada fracción de tu masa que perdés (0,1 de la masa = 0,1 × esto)        // resistencia que recuperás por segundo
   integrityAfterFracture: number; // con cuánta resistencia quedás después de fracturarte
   fractureMassLoss: number;      // fracción de la masa que perdés al fracturarte
   fractureOrbitLoss: number;     // fracción de lo que tenés en órbita que sale despedido al fracturarte
@@ -263,6 +264,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   coastPullMul: 3,
   planetStrip: 1.4,
   integrityRegen: 0.045,
+  lossIntegrity: 1.6,
   integrityAfterFracture: 0.35,
   fractureMassLoss: 0.3,
   fractureOrbitLoss: 0.5,

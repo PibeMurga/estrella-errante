@@ -21,6 +21,15 @@ export function damageBody(w: World, amount: number): void {
   }
 }
 
+// Perdés masa de verdad (algo se te escapó de la órbita, te lo robaron o te lo arrancó un choque): baja la masa y,
+// según cuánto perdiste respecto de tu tamaño, la resistencia. Un golpe que no te hace perder nada no la toca.
+export function loseMass(w: World, amount: number): void {
+  const s = w.star, before = s.mass;
+  s.mass = Math.max(w.config.starStartMass, s.mass - amount);
+  const lost = before - s.mass;
+  if (lost > 0) damageBody(w, w.config.lossIntegrity * lost / Math.max(before, 6));
+}
+
 // Se recarga despacio.
 export function stepIntegrity(w: World, dt: number): void {
   if (w.integrity < 1) w.integrity = Math.min(1, w.integrity + w.config.integrityRegen * dt);

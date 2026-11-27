@@ -1,5 +1,5 @@
 import { boltReach, returnGathered } from './launch';
-import { damageBody } from './integrity';
+import { loseMass } from './integrity';
 import { STAGES, stageFor } from './stages';
 import { breakPlanet, spawnDebris } from './tidal';
 import { BOLT, DEAD, FREE, ORBITING, OVER_SHATTERED, KIND_GAS, massGain, noteBreak, KIND_ROCKY, MAX_IMPACTS, OVER_DIMMED, PROJECTILE, RETURNING, starSize, type World } from './world';
@@ -43,13 +43,12 @@ export function graveHit(w: World, p: number): void {
   if (w.orbitingCount === 0) { w.over = OVER_DIMMED; return; }
   w.graveHits++;
   w.invuln = c.hurtInvuln;
-  damageBody(w, c.hitIntegrity * 2);
   const nx = s.x - w.x[p], ny = s.y - w.y[p];
   const nd = Math.hypot(nx, ny) || 1;
   s.vx = (nx / nd) * c.hurtBounce * 1.4; s.vy = (ny / nd) * c.hurtBounce * 1.4;
   const st = stageFor(s.mass);
   const width = st > 0 ? STAGES[st]!.mass - STAGES[st - 1]!.mass : s.mass * 0.5;
-  s.mass = Math.max(c.starStartMass, s.mass - width);
+  loseMass(w, width);
   w.stage = stageFor(s.mass);
 }
 
@@ -71,14 +70,7 @@ export function hitPlanet(w: World, p: number, dmg: number): boolean {
   if ((w.state[p] !== FREE && !own) || w.broken[p]! > 0 || hp < 0) return false;   // ya partido: no se vuelve a partir
   w.planetDmg[p] = w.planetDmg[p]! + dmg;
   if (w.planetDmg[p]! < hp) return false;
-  if (own) {
-    // Partiste uno tuyo: sale de tu órbita (con su masa) y los pedazos quedan sueltos; después pueden volver solos.
-    const a = w.orbitAngle[p], v = w.orbitW[p] * w.orbitR[p];
-    w.state[p] = FREE; w.orbitingCount--;
-    w.vx[p] = w.star.vx - Math.sin(a) * v + Math.cos(a) * 2; w.vy[p] = w.star.vy + Math.cos(a) * v + Math.sin(a) * 2;
-    w.noCatch[p] = c.noCatchTime;
-    w.star.mass = Math.max(c.starStartMass, w.star.mass - massGain(w, p));
-  }
+  // Partiste uno tuyo: sus pedazos siguen girando a tu alrededor (no perdiste nada; la resistencia no baja).
   const R = w.radius[p];
   let ax = w.x[p] - w.star.x, ay = w.y[p] - w.star.y;
   const d = Math.hypot(ax, ay) || 1; ax /= d; ay /= d;

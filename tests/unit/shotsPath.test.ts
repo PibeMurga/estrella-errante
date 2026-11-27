@@ -29,13 +29,15 @@ describe('lo que hay en el camino del disparo', () => {
     expect(w.planetDmg[p]).toBeGreaterThan(0);
   });
 
-  it('si lo golpeás lo suficiente, tu planeta se parte y los pedazos salen de tu órbita', () => {
+  it('si lo golpeás lo suficiente, tu planeta se parte pero sus pedazos siguen en tu órbita (no perdés nada)', () => {
     const { w, p } = withOwnPlanet();
-    const n0 = w.orbitingCount;
+    const n0 = w.orbitingCount, res0 = w.integrity;
     for (let k = 0; k < 40 && w.broken[p] === 0; k++) { shoot(w, w.x[p] - 3.6); step(w, idle); }
     expect(w.broken[p]).toBeGreaterThan(0);
-    expect(w.state[p]).toBe(FREE);
-    expect(w.orbitingCount).toBeLessThan(n0);
+    expect(w.state[p]).toBe(ORBITING);
+    expect(w.state[w.twin[p]!]).toBe(ORBITING);
+    expect(w.orbitingCount).toBe(n0 + 1);
+    expect(w.integrity).toBeGreaterThanOrEqual(res0);
   });
 
   it('un bólido grande se abre paso: rompe los asteroides sueltos que encuentra y sigue', () => {
