@@ -206,7 +206,8 @@ export function createSunLayer(sunPos: Vector3): Layer {
   const far = new DirectionalLight(0xdfe6ff, 0);
   group.add(sun, halo, shell, front, light, far, far.target);
   const FAR = new Vector3(-620, 520, -740);   // dirección de la estrella lejana (relativa a vos)
-  const starAt = new Vector3(), lamp = new Vector3();
+  const starAt = new Vector3(), lamp = new Vector3(), lampT = new Vector3();
+  let lampInit = false, levelS = 0.38;
   let shownR = -1;   // radio que se ve: sigue al radio real con una curva suave, sin saltos
 
   return {
@@ -226,10 +227,13 @@ export function createSunLayer(sunPos: Vector3): Layer {
         if (d < nd) { nd = d; near = i; }
       }
       const NEAR = 380, closeness = near >= 0 && nd < NEAR ? 1 - nd / NEAR : 0;
-      if (closeness > 0) lamp.set(w.x[near], 0, -w.y[near]); else lamp.copy(starAt).add(FAR);
+      if (closeness > 0) lampT.set(w.x[near], 0, -w.y[near]); else lampT.copy(starAt).add(FAR);
+      // La luz se mueve y cambia suave (en uno o dos segundos): nada de saltos cuando cambia la estrella más cercana.
+      if (!lampInit) { lamp.copy(lampT); lampInit = true; } else lamp.lerp(lampT, Math.min(1, ctx.dt * 1.2));
       // La luz de los cuerpos sale de esa estrella y pasa a la tuya con el encendido.
       sunPos.set(lamp.x + (starAt.x - lamp.x) * ign, lamp.y + (starAt.y - lamp.y) * ign, lamp.z + (starAt.z - lamp.z) * ign);
-      sceneLight.level = (0.38 + 0.5 * closeness) * (1 - ign) + ign;
+      levelS += ((0.38 + 0.5 * closeness) - levelS) * Math.min(1, ctx.dt * 1.2);
+      sceneLight.level = levelS * (1 - ign) + ign;
       far.intensity = 1.1 * (1 - ign);
       far.position.copy(starAt).add(FAR); far.target.position.copy(starAt);
       if (w !== lastWorld) { lastWorld = w; seed.value = Math.floor(Math.random() * 1000); }   // partida nueva: otra secuencia

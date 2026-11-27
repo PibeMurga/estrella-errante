@@ -146,7 +146,7 @@ export interface World {
 
 export interface BodySpec { x: number; y: number; vx: number; vy: number; radius: number; kind: number }
 
-const MAX_MOONS = 4;
+const MAX_MOONS = 6;
 const MAX_DEBRIS = 110;
 export const MAX_MAP_STARS = 6;
 
@@ -294,8 +294,9 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     const r = 2 + (config.planetMaxRadius - 2) * Math.pow(rng.next(), 2.4);
     const p = addBody(w, { x: px, y: py, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, radius: r, kind: KIND_ROCKY + Math.floor(rng.next() * 3) });
     if (p < 0) break;
-    if (rng.next() < 0.45) {
-      const moons = 1 + Math.floor(rng.next() * MAX_MOONS);
+    // Lunas: más seguido y desparejo (muchos sin ninguna, algunos con varias).
+    if (rng.next() < 0.58) {
+      const moons = 1 + Math.floor(Math.pow(rng.next(), 1.4) * MAX_MOONS);
       let orbit = r * 1.9;
       for (let m = 0; m < moons; m++) {
         orbit += rng.range(1.6, 3.2);

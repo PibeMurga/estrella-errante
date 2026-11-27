@@ -43,9 +43,16 @@ export function createAsteroidLayer(world: World, rng: Rng): Layer {
   const spin = new Float32Array(n);
   const lift = new Float32Array(n);
   const tints = new Float32Array(n * 3);
+  const litS = new Float32Array(n).fill(1);
   for (let s = 0; s < n; s++) {
-    const b = 0.16 + rng.next() * 0.18, w = rng.next() * 0.04;
-    tint.setRGB(b + w, b, b - w * 0.6);
+    // Colores de rocas reales: la mayoría oscuras y pardas, y algunas distintas (gris claro, óxido, crema, hielo sucio).
+    const b = 0.16 + rng.next() * 0.18, w = rng.next() * 0.04, kind = rng.next();
+    if (kind < 0.6) tint.setRGB(b + w, b, b - w * 0.6);                              // carbonosa: oscura, parda
+    else if (kind < 0.75) tint.setRGB(b * 1.25 + 0.04, b * 0.95, b * 0.7);          // parda más cálida
+    else if (kind < 0.86) tint.setRGB(b * 1.4, b * 1.38, b * 1.34);                 // gris claro (silicato)
+    else if (kind < 0.93) tint.setRGB(b * 1.55 + 0.05, b * 0.75, b * 0.5);          // rojiza, con óxido de hierro
+    else if (kind < 0.97) tint.setRGB(b * 1.9 + 0.06, b * 1.75 + 0.05, b * 1.4);    // crema clara
+    else tint.setRGB(b * 1.3, b * 1.45, b * 1.75 + 0.04);                            // gris azulado (hielo sucio)
     tints[s * 3] = tint.r; tints[s * 3 + 1] = tint.g; tints[s * 3 + 2] = tint.b;
     axis.set(rng.range(-1, 1), rng.range(-1, 1), rng.range(-1, 1)).normalize();
     axes[s * 3] = axis.x; axes[s * 3 + 1] = axis.y; axes[s * 3 + 2] = axis.z;
@@ -71,7 +78,10 @@ export function createAsteroidLayer(world: World, rng: Rng): Layer {
         m4.compose(pos, q, scl);
         mesh.setMatrixAt(v, m4);
         // Lo que gira a tu alrededor está más cerca de tu estrella: se ve más iluminado.
-        const lit = w.state[i] === ORBITING || w.state[i] === GATHERING ? 1.35 : 1;
+        // (de a poco: nada de cambios de luz repentinos)
+        const want = w.state[i] === ORBITING || w.state[i] === GATHERING ? 1.35 : 1;
+        litS[s] = litS[s]! + (want - litS[s]!) * Math.min(1, ctx.dt * 1.5);
+        const lit = litS[s]!;
         tint.setRGB(tints[s * 3]! * lit, tints[s * 3 + 1]! * lit, tints[s * 3 + 2]! * lit);
         mesh.setColorAt(v, tint);
         v++;
