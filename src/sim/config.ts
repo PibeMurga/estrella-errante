@@ -6,7 +6,8 @@ export interface SimConfig {
   arenaHalfHeight: number;
   asteroidCount: number;
   planetCount: number;
-  planetMaxRadius: number;       // el planeta más grande del mapa (muchos medianos, pocos inmensos)
+  planetMaxRadius: number;
+  mapStars: number;              // estrellas del mapa (chicas y grandes, algunas con planetas)       // el planeta más grande del mapa (muchos medianos, pocos inmensos)
   spawnClearRadius: number;
   starStartMass: number;
   starMaxSpeed: number;          // unidades por segundo
@@ -94,6 +95,8 @@ export interface SimConfig {
   planetPullMul: number;
   orbitSpinGrowth: number;
   planetGravity: number;
+  lethalRatio: number;           // chocar contra algo más grande que esto por tu tamaño te hace pedazos
+  starGravity: number;           // cuánto te tira una estrella del mapa: a = esto × radio³ / distancia²
   planetStrip: number;           // cuerpos por segundo que te roba un planeta grande de cerca (escala con √ de tu órbita)         // cuánto te tira un planeta suelto: a = esto × radio³ / distancia²       // cuánto más rápido gira tu sistema siendo hipergigante (0,8 = 80 % más)
   integrityRegen: number;        // resistencia que recuperás por segundo
   integrityAfterFracture: number; // con cuánta resistencia quedás después de fracturarte
@@ -155,6 +158,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   asteroidCount: 2600,
   planetCount: 40,
   planetMaxRadius: 16,
+  mapStars: 0,
   spawnClearRadius: 15,
   starStartMass: 1,
   starMaxSpeed: 32,
@@ -249,6 +253,8 @@ export const DEFAULT_CONFIG: SimConfig = {
   planetPullMul: 0.35,
   orbitSpinGrowth: 0.8,
   planetGravity: 1.5,
+  lethalRatio: 2.5,
+  starGravity: 4,
   planetStrip: 1.4,
   integrityRegen: 0.045,
   integrityAfterFracture: 0.35,
@@ -299,4 +305,4 @@ export const DEFAULT_CONFIG: SimConfig = {
 
 // La partida de verdad: arranca como planeta gaseoso y se enciende con la ignición. (La base arranca como estrella, para
 // las pruebas y los bancos que miden otras cosas.)
-export const GAME_CONFIG: SimConfig = { ...DEFAULT_CONFIG, planetStart: true };
+export const GAME_CONFIG: SimConfig = { ...DEFAULT_CONFIG, planetStart: true, mapStars: 5 };

@@ -1,7 +1,7 @@
 import { AdditiveBlending, DirectionalLight, Group, Mesh, PlaneGeometry, PointLight, ShaderMaterial, SphereGeometry, Vector3 } from 'three';
 import { sceneLight } from '../lighting';
 import { STAGE_HYPER, STAGE_IGNITION } from '../../sim/stages';
-import { OVER_SWALLOWED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_IGNITION, PHASE_MERGE, PHASE_PLAY, starSize } from '../../sim/world';
+import { DEAD, OVER_SHATTERED, OVER_SWALLOWED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_IGNITION, PHASE_MERGE, PHASE_PLAY, starSize } from '../../sim/world';
 import { toWorld } from '../cameraRig';
 import type { Layer } from '../layer';
 import { NOISE_GLSL } from '../shaders/noise';
@@ -206,7 +206,7 @@ export function createSunLayer(sunPos: Vector3): Layer {
   const far = new DirectionalLight(0xdfe6ff, 0);
   group.add(sun, halo, shell, front, light, far, far.target);
   const FAR = new Vector3(-620, 520, -740);   // dirección de la estrella lejana (relativa a vos)
-  const starAt = new Vector3();
+  const starAt = new Vector3(), lamp = new Vector3();
   let shownR = -1;   // radio que se ve: sigue al radio real con una curva suave, sin saltos
 
   return {
@@ -217,14 +217,24 @@ export function createSunLayer(sunPos: Vector3): Layer {
       // Encendido: 0 siendo planeta; en la ignición sube después del destello; 1 desde que nació tu estrella.
       const ign = w.phase === PHASE_IGNITION ? smooth01((w.phaseTime - 1.2) / 1.8) : w.ignited ? 1 : 0;
       starAt.copy(sunPos);
-      // La luz de los cuerpos sale de la estrella lejana y pasa a la tuya con el encendido.
-      sunPos.set(starAt.x + FAR.x * (1 - ign), starAt.y + FAR.y * (1 - ign), starAt.z + FAR.z * (1 - ign));
-      sceneLight.level = 0.38 + 0.62 * ign;
+      // Siendo planeta, la luz viene de la estrella del mapa más cercana (si hay una a la vuelta) o de una lejana.
+      let near = -1, nd = Infinity;
+      for (let q = 0; q < w.mapStars.length; q++) {
+        const i = w.mapStars[q]!;
+        if (w.state[i] === DEAD) continue;
+        const d = Math.hypot(w.x[i] - ctx.starX, w.y[i] - ctx.starY) - w.radius[i];
+        if (d < nd) { nd = d; near = i; }
+      }
+      const NEAR = 380, closeness = near >= 0 && nd < NEAR ? 1 - nd / NEAR : 0;
+      if (closeness > 0) lamp.set(w.x[near], 0, -w.y[near]); else lamp.copy(starAt).add(FAR);
+      // La luz de los cuerpos sale de esa estrella y pasa a la tuya con el encendido.
+      sunPos.set(lamp.x + (starAt.x - lamp.x) * ign, lamp.y + (starAt.y - lamp.y) * ign, lamp.z + (starAt.z - lamp.z) * ign);
+      sceneLight.level = (0.38 + 0.5 * closeness) * (1 - ign) + ign;
       far.intensity = 1.1 * (1 - ign);
       far.position.copy(starAt).add(FAR); far.target.position.copy(starAt);
       if (w !== lastWorld) { lastWorld = w; seed.value = Math.floor(Math.random() * 1000); }   // partida nueva: otra secuencia
       // Tragada por el agujero negro, o ya convertida en agujero negro: no hay estrella.
-      const swallowed = w.over === OVER_SWALLOWED;
+      const swallowed = w.over === OVER_SWALLOWED || w.over === OVER_SHATTERED;
       const gone = w.phase === PHASE_HUNT || w.phase === PHASE_MERGE;
       const target = swallowed || gone ? 0 : starRenderRadius(w.star.mass) * ign;
       shownR = gone ? 0 : shownR < 0 ? target : smoothToward(shownR, target, swallowed ? 2.5 : w.phase === PHASE_IGNITION ? 4 : 1.2, ctx.dt);

@@ -2,7 +2,7 @@ import { boltReach, returnGathered } from './launch';
 import { damageBody } from './integrity';
 import { STAGES, stageFor } from './stages';
 import { breakPlanet, spawnDebris } from './tidal';
-import { BOLT, DEAD, FREE, ORBITING, KIND_GAS, massGain, noteBreak, KIND_ROCKY, MAX_IMPACTS, OVER_DIMMED, PROJECTILE, RETURNING, starSize, type World } from './world';
+import { BOLT, DEAD, FREE, ORBITING, OVER_SHATTERED, KIND_GAS, massGain, noteBreak, KIND_ROCKY, MAX_IMPACTS, OVER_DIMMED, PROJECTILE, RETURNING, starSize, type World } from './world';
 
 // Escalones de los planetas según su tamaño comparado con el de tu estrella (E):
 // hasta la mitad entran solos; hasta E hay que partirlos; hasta 1,5·E dañan; más grandes, golpe grave.
@@ -24,10 +24,22 @@ export function planetTier(radius: number, starMass: number): number {
   return TIER_GRAVE;
 }
 
+// Tu mundo se hace pedazos: explosión, escombros por todos lados y se termina la partida.
+export function shatter(w: World, dx: number, dy: number): void {
+  const s = w.star, d = Math.hypot(dx, dy) || 1, R = starSize(s.mass);
+  w.breakFxCount++; w.breakFxX = s.x; w.breakFxY = s.y; w.breakFxR = R * 1.4; w.breakFxKind = KIND_ROCKY; w.breakFxAx = -dy / d; w.breakFxAy = dx / d;
+  spawnDebris(w, s.x, s.y, s.vx, s.vy, R, -dy / d, dx / d, Math.min(30, 8 + Math.round(R * 3)), 0.3, 1.2);
+  for (let i = 0; i < w.count; i++) if (w.state[i] === ORBITING) { w.state[i] = FREE; w.noCatch[i] = 99; }
+  w.orbitingCount = 0;
+  w.over = OVER_SHATTERED;
+}
+
 // Golpe grave: perdés una etapa entera de masa y rebotás. Sin nada en órbita, la estrella se apaga.
 export function graveHit(w: World, p: number): void {
   const c = w.config, s = w.star;
   returnGathered(w);
+  // Desproporcionado: contra algo de más de 2,5 veces tu tamaño, tu mundo se hace pedazos.
+  if (w.radius[p] > starSize(s.mass) * c.lethalRatio) { shatter(w, w.x[p] - s.x, w.y[p] - s.y); return; }
   if (w.orbitingCount === 0) { w.over = OVER_DIMMED; return; }
   w.graveHits++;
   w.invuln = c.hurtInvuln;

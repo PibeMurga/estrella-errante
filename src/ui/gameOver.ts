@@ -1,5 +1,5 @@
 import { playerName } from './playerName';
-import { OVER_ESCAPED, OVER_SWALLOWED, OVER_WON, type World } from '../sim/world';
+import { OVER_ESCAPED, OVER_SHATTERED, OVER_SWALLOWED, OVER_WON, type World } from '../sim/world';
 import { STAGES } from '../sim/stages';
 import './gameOver.css';
 
@@ -55,6 +55,7 @@ export function createGameOver(parent: HTMLElement, onRestart: () => void): Game
         [OVER_SWALLOWED]: ['ESTRELLA TRAGADA', 'EL AGUJERO NEGRO TE ALCANZÓ'],
         [OVER_ESCAPED]: ['EL RIVAL SE ESCAPÓ', 'NO LO ALCANZASTE A TIEMPO'],
         [OVER_WON]: ['FUSIÓN', 'TE COMISTE AL AGUJERO NEGRO RIVAL · GANASTE LA PANTALLA'],
+        [OVER_SHATTERED]: ['HECHO PEDAZOS', 'CHOCASTE CONTRA ALGO MUCHÍSIMO MÁS GRANDE QUE VOS'],
       };
       const [tt, wy] = titles[w.over] ?? ['ESTRELLA APAGADA', 'CHOCASTE CONTRA UN PLANETA SIN NADA EN ÓRBITA QUE TE PROTEJA'];
       title.textContent = tt; why.textContent = `${playerName()} · ${wy}`;

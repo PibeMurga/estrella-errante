@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG } from '../../src/sim/config';
 import { type Intent, step } from '../../src/sim/step';
-import { addBody, createWorld, FREE, KIND_ASTEROID, KIND_GAS, ORBITING, OVER_DIMMED, OVER_NONE, type World } from '../../src/sim/world';
+import { addBody, createWorld, FREE, KIND_ASTEROID, KIND_GAS, ORBITING, OVER_DIMMED, OVER_NONE, OVER_SHATTERED, type World } from '../../src/sim/world';
 
 const NO_INPUT: Intent = { targetX: 0, targetY: 0, hasTarget: false };
 
@@ -90,5 +90,14 @@ describe('cuanto más grande el planeta, más duele', () => {
     expect(100 - leve.orbitingCount).toBeGreaterThanOrEqual(12);
     expect(100 - fuerte.orbitingCount).toBeGreaterThan(100 - leve.orbitingCount);
     expect(fuerte.star.mass).toBeLessThan(m0 * 0.92);
+  });
+});
+
+describe('choque desproporcionado', () => {
+  it('contra algo de más de 2,5 veces tu tamaño, tu mundo se hace pedazos', () => {
+    const w = worldWithOrbit(5);
+    addBody(w, { x: 9, y: 0, vx: 0, vy: 0, radius: 7, kind: KIND_GAS });
+    step(w, NO_INPUT);
+    expect(w.over).toBe(OVER_SHATTERED);
   });
 });

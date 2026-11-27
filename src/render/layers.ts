@@ -9,6 +9,7 @@ import { createPlanetsLayer } from './bodies/planets';
 import { createPlanetScarsLayer } from './bodies/planetScars';
 import { createSunLayer } from './bodies/sun';
 import { createPlayerPlanetLayer } from './bodies/playerPlanet';
+import { createMapStarsLayer } from './bodies/mapStars';
 import { createIgnitionLayer } from './fx/ignition';
 import { createBoltLayer } from './fx/bolt';
 import { createCometsLayer } from './fx/comets';
@@ -34,6 +35,7 @@ export function buildLayers(deps: LayerDeps): BuiltLayers {
       createSky(deps.quality, deps.rng),
       createSunLayer(sunPos),
       createPlayerPlanetLayer(sunPos),
+      createMapStarsLayer(deps.world),
       planets,
       createPlanetScarsLayer(deps.world, sunPos, new Vector3(1.25, 1.02, 0.8), planets.spinOf),
       createBrokenPlanetsLayer(deps.world, sunPos),

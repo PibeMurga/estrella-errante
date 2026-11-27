@@ -28,9 +28,13 @@ export function stepRockImpacts(w: World): void {
       const own = w.state[p] === ORBITING, pvx = own ? s.vx : w.vx[p], pvy = own ? s.vy : w.vy[p];
       if (!own && dx * (w.vx[i] - pvx) + dy * (w.vy[i] - pvy) >= 0) continue;   // sólo si se acerca (los escombros que salen, no)
       const d = Math.hypot(dx, dy) || 1, nx = dx / d, ny = dy / d;
-      const slot = (w.impactCount % MAX_IMPACTS) * 4;
-      w.impacts[slot] = p; w.impacts[slot + 1] = Math.atan2(dy, dx); w.impacts[slot + 2] = 0.25 + 0.4 * Math.min(1, w.radius[i]); w.impactCount++;
-      if (!own && w.rng.next() < w.config.rockBounceChance) {
+      // Contra planetas ajenos, la mayoría se hunde sin ruido (es lo normal: rocas chicas contra un mundo); sólo algunos
+      // dejan un golpe visible, y chico. Contra los tuyos se ve siempre.
+      if (own || w.rng.next() < 0.35) {
+        const slot = (w.impactCount % MAX_IMPACTS) * 4;
+        w.impacts[slot] = p; w.impacts[slot + 1] = Math.atan2(dy, dx); w.impacts[slot + 2] = (own ? 1 : 0.55) * (0.25 + 0.4 * Math.min(1, w.radius[i])); w.impactCount++;
+      }
+      if (!own && w.rng.next() < w.config.rockBounceChance * 0.5) {
         // Rebota, como algo pesado: casi sin rebote en la normal, mucho roce en la tangente; queda apoyado afuera.
         const rvx = w.vx[i] - w.vx[p], rvy = w.vy[i] - w.vy[p];
         const vn = rvx * nx + rvy * ny, vt = rvx * -ny + rvy * nx;

@@ -64,6 +64,16 @@ export function createMinimap(parent: HTMLElement): Minimap {
         g.fillStyle = own ? '#7af5c9' : t === TIER_CAPTURE || (t === TIER_BREAK && w.broken[i]! > 0) ? '#9aa3a0' : t === TIER_BREAK ? '#ffd23a' : '#ff4a3a';
         g.beginPath(); g.arc(X(w.x[i]), Y(w.y[i]), Math.max(1.6, w.radius[i] * k), 0, Math.PI * 2); g.fill();
       }
+      // Estrellas del mapa: brillantes, con su halo.
+      for (let q = 0; q < w.mapStars.length; q++) {
+        const i = w.mapStars[q]!;
+        if (w.state[i] === DEAD) continue;
+        const dx = w.x[i] - s.x, dy = w.y[i] - s.y;
+        if (Math.abs(dx) > RANGE + 20 || Math.abs(dy) > RANGE + 20) continue;
+        const rr = Math.max(2.6, w.radius[i] * k);
+        g.fillStyle = 'rgba(255,210,140,0.22)'; g.beginPath(); g.arc(X(w.x[i]), Y(w.y[i]), rr * 2.2, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#ffe2b0'; g.beginPath(); g.arc(X(w.x[i]), Y(w.y[i]), rr, 0, Math.PI * 2); g.fill();
+      }
       // Cometas.
       const cm = w.comets;
       g.fillStyle = '#8fe8ff';

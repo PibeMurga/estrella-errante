@@ -7,10 +7,10 @@ import { stepEncounters, stepOwnPlanetRams, stepStarFlybys } from './encounters'
 import { DT, type SimConfig } from './config';
 import { IGNITION_MASS, stageFor } from './stages';
 import { stepAbilities } from './abilities';
-import { graveHit, isPlanetKind, joinsOrbit, stepPlanetHits, planetTier, TIER_GRAVE, TIER_HURT } from './planetCapture';
+import { graveHit, isPlanetKind, shatter, joinsOrbit, stepPlanetHits, planetTier, TIER_GRAVE, TIER_HURT } from './planetCapture';
 import { releaseLaunch, returnGathered, sling, slingAngle, stepBolts, stepLaunch } from './launch';
 import { canCollapse, playerHoleRadius, startCollapse, startHunt, startMerge, stepMerge } from './phase';
-import { ABSORBING, BOLT, KIND_ASTEROID, CARRIED, captureRadiusFor, DEAD, massGain, FREE, GATHERING, KIND_GAS, KIND_ICE, KIND_ROCKY, MAX_IMPACTS, ORBIT_PLANET, ORBITING, OVER_DIMMED, OVER_ESCAPED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_IGNITION, PHASE_MERGE, PHASE_PLAY, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
+import { ABSORBING, BOLT, KIND_ASTEROID, KIND_STAR, noteBreak, CARRIED, captureRadiusFor, DEAD, massGain, FREE, GATHERING, KIND_GAS, KIND_ICE, KIND_ROCKY, MAX_IMPACTS, ORBIT_PLANET, ORBITING, OVER_DIMMED, OVER_ESCAPED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_IGNITION, PHASE_MERGE, PHASE_PLAY, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
 
 // target: hacia dónde ir. aim: hacia dónde apuntar la honda (stick derecho); sin aim se apunta al objetivo.
 export interface Intent {
@@ -177,13 +177,76 @@ function solidBigPlanets(w: World): void {
   const s = w.star, size = starSize(s.mass);
   for (let q = 0; q < w.planets.length * 2; q++) {
     const P = w.planets, p = q < P.length ? P[q]! : w.twin[P[q - P.length]!]!;
-    if (p < 0 || w.state[p] !== FREE || w.radius[p] <= size) continue;
+    if (p < 0 || w.radius[p] <= size) continue;
+    const okState = w.state[p] === FREE || (w.state[p] === ORBIT_PLANET && w.parent[p]! >= 0 && w.kind[w.parent[p]!] === KIND_STAR);
+    if (!okState) continue;
     const dx = s.x - w.x[p], dy = s.y - w.y[p], D = size + w.radius[p], d2 = dx * dx + dy * dy;
     if (d2 >= D * D) continue;
     const d = Math.sqrt(d2) || 1, nx = dx / d, ny = dy / d;
     s.x = w.x[p] + nx * D; s.y = w.y[p] + ny * D;
     const vn = (s.vx - w.vx[p]) * nx + (s.vy - w.vy[p]) * ny;
     if (vn < 0) { s.vx -= vn * nx; s.vy -= vn * ny; }
+  }
+}
+
+// Las estrellas del mapa: te tiran con su gravedad (mucho más que un planeta), de cerca te arrancan cuerpos de la
+// órbita, y si la tocás: siendo más chico que ella, te quema (perdés masa y resistencia y te empuja hacia afuera);
+// siendo una estrella claramente más grande, la absorbés (suma mucha masa) y sus planetas quedan sueltos.
+function mapStarsAct(w: World): void {
+  const c = w.config, s = w.star, me = starSize(s.mass), M = w.mapStars;
+  for (let q = 0; q < M.length; q++) {
+    const st = M[q]!;
+    if (w.state[st] === DEAD) continue;
+    const R = w.radius[st], gx = w.x[st] - s.x, gy = w.y[st] - s.y, g2 = gx * gx + gy * gy, g = Math.sqrt(g2) || 1;
+    const reach = R * 14 + me;
+    if (g < reach) {
+      const a = Math.min(14, c.starGravity * R * R * R / Math.max(g2, (R + me) * (R + me))) * (1 - g / reach);
+      s.vx += (gx / g) * a * DT; s.vy += (gy / g) * a * DT;
+    }
+    const touch = R + me;
+    if (g < touch) {
+      if (w.ignited && me > R * 1.15) {
+        // La absorbés: suma mucha masa; sus planetas quedan sueltos.
+        s.mass += 6 + R * 2.2;
+        noteBreak(w, st, gx / g, gy / g);
+        w.state[st] = DEAD;
+        for (let j = 0; j < w.count; j++) if (w.parent[j] === st && w.state[j] !== DEAD) { w.parent[j] = -1; w.state[j] = FREE; w.noCatch[j] = 1; }
+        w.starsEaten++;
+      } else if (R > me * c.lethalRatio) {
+        shatter(w, gx, gy);   // demasiado grande: te deshace
+        return;
+      } else if (w.invuln <= 0) {
+        // Te quema: perdés masa y resistencia y te empuja hacia afuera.
+        w.invuln = c.hurtInvuln;
+        s.mass = Math.max(c.starStartMass, s.mass * 0.82);
+        damageBody(w, 0.45);
+        s.vx = w.vx[st] - (gx / g) * 9; s.vy = w.vy[st] - (gy / g) * 9;
+        s.x = w.x[st] - (gx / g) * touch; s.y = w.y[st] - (gy / g) * touch;
+        w.starBurns++;
+        if (w.orbitingCount === 0 && s.mass <= c.starStartMass * 1.01) { w.over = OVER_DIMMED; return; }
+      }
+    }
+    // De cerca, la marea de la estrella te arranca de a poco lo que tenés en órbita.
+    const strip = Math.max(0, 1 - (g - R - me) / (R * 3));
+    if (strip > 0 && w.orbitingCount > 0) {
+      w.planetStripAcc += c.planetStrip * 1.6 * strip * strip * DT * Math.sqrt(w.orbitingCount);
+      while (w.planetStripAcc >= 1 && w.orbitingCount > 0) {
+        w.planetStripAcc -= 1;
+        let best = -1, bestD = Infinity;
+        for (let i = 0; i < w.count; i++) {
+          if (w.state[i] !== ORBITING || isPlanetKind(w.kind[i]!)) continue;
+          const e = (w.x[i] - w.x[st]) ** 2 + (w.y[i] - w.y[st]) ** 2;
+          if (e < bestD) { bestD = e; best = i; }
+        }
+        if (best < 0) break;
+        const bx = w.x[st] - w.x[best], by = w.y[st] - w.y[best], bd = Math.hypot(bx, by) || 1;
+        w.state[best] = FREE; w.orbitingCount--;
+        w.vx[best] = s.vx + (bx / bd) * 7; w.vy[best] = s.vy + (by / bd) * 7;
+        w.noCatch[best] = 2.5;
+        s.mass = Math.max(c.starStartMass, s.mass - massGain(w, best));
+        w.planetSteals++;
+      }
+    }
   }
 }
 
@@ -364,6 +427,7 @@ export function step(w: World, intent: Intent): void {
   if (w.slingCd > 0) w.slingCd = Math.max(0, w.slingCd - DT);
   if (w.bhSlow > 0) w.bhSlow = Math.max(0, w.bhSlow - DT);
 
+  let bhPullX = 0, bhPullY = 0;
   // El agujero negro persigue a la estrella, cada vez un poco más rápido.
   const range2 = c.bhRange * c.bhRange;
   // Crece con la raíz de su masa: comer lo hace más peligroso, pero no imposible de esquivar.
@@ -394,12 +458,39 @@ export function step(w: World, intent: Intent): void {
     const g2 = gx * gx + gy * gy;
     if (!hunting && g2 < range2 && g2 > 1e-9) {
       const a = c.bhStarPull * Math.min(c.bhMaxAccel, G / Math.max(g2, 1)) * DT / Math.sqrt(g2);
-      s.vx += gx * a;
-      s.vy += gy * a;
+      bhPullX = gx * a; bhPullY = gy * a;   // se suma después del control: tu manejo no lo anula
     }
   }
 
   if (w.fireSlow > 0) w.fireSlow = Math.max(0, w.fireSlow - DT);
+  // Movimiento con inercia: acelera hacia una velocidad deseada y frena para llegar sin pasarse.
+  const acc = hunting ? c.starAccel : c.starAccel / (1 + c.starMassInertia * s.mass);   // siendo agujero negro ya no cargás con la inercia de la estrella
+  let desX = 0;
+  let desY = 0;
+  let maxDv = acc * c.starBrake * DT;
+  if (intent.hasTarget && Number.isFinite(intent.targetX) && Number.isFinite(intent.targetY)) {
+    const dx = intent.targetX - s.x;
+    const dy = intent.targetY - s.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > 1e-6) {
+      // Siendo agujero negro en la caza no frenás al acercarte: vas a fondo hacia lo que apuntás.
+      const speed = hunting ? (dist > 1 ? c.starMaxSpeed : 0) : Math.min(c.starMaxSpeed, Math.sqrt(2 * acc * 0.8 * dist), (c.starMaxSpeed * dist) / c.starSlowRadius);
+      // Recién disparaste: la marcha deseada vuelve de a poco a la normal.
+      const slow = w.fireSlow > 0 ? 1 - w.fireSlowK * (w.fireSlow / w.fireSlowT) : 1;
+      desX = (dx / dist) * speed * slow;
+      desY = (dy / dist) * speed * slow;
+    }
+    maxDv = acc * DT;
+  }
+  let dvx = desX - s.vx;
+  let dvy = desY - s.vy;
+  const dv = Math.hypot(dvx, dvy);
+  if (dv > maxDv) { dvx *= maxDv / dv; dvy *= maxDv / dv; }
+  s.vx += dvx;
+  s.vy += dvy;
+  const sp = Math.hypot(s.vx, s.vy);
+  if (!hunting) mapStarsAct(w);
+  if (w.over !== OVER_NONE) { w.tick++; return; }
   // Los planetas sueltos también te tiran, según su tamaño (los inmensos se sienten; los chicos, casi nada).
   if (!hunting) {
     const P = w.planets, me = starSize(s.mass);
@@ -434,32 +525,7 @@ export function step(w: World, intent: Intent): void {
       }
     }
   }
-  // Movimiento con inercia: acelera hacia una velocidad deseada y frena para llegar sin pasarse.
-  const acc = hunting ? c.starAccel : c.starAccel / (1 + c.starMassInertia * s.mass);   // siendo agujero negro ya no cargás con la inercia de la estrella
-  let desX = 0;
-  let desY = 0;
-  let maxDv = acc * c.starBrake * DT;
-  if (intent.hasTarget && Number.isFinite(intent.targetX) && Number.isFinite(intent.targetY)) {
-    const dx = intent.targetX - s.x;
-    const dy = intent.targetY - s.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist > 1e-6) {
-      // Siendo agujero negro en la caza no frenás al acercarte: vas a fondo hacia lo que apuntás.
-      const speed = hunting ? (dist > 1 ? c.starMaxSpeed : 0) : Math.min(c.starMaxSpeed, Math.sqrt(2 * acc * 0.8 * dist), (c.starMaxSpeed * dist) / c.starSlowRadius);
-      // Recién disparaste: la marcha deseada vuelve de a poco a la normal.
-      const slow = w.fireSlow > 0 ? 1 - w.fireSlowK * (w.fireSlow / w.fireSlowT) : 1;
-      desX = (dx / dist) * speed * slow;
-      desY = (dy / dist) * speed * slow;
-    }
-    maxDv = acc * DT;
-  }
-  let dvx = desX - s.vx;
-  let dvy = desY - s.vy;
-  const dv = Math.hypot(dvx, dvy);
-  if (dv > maxDv) { dvx *= maxDv / dv; dvy *= maxDv / dv; }
-  s.vx += dvx;
-  s.vy += dvy;
-  const sp = Math.hypot(s.vx, s.vy);
+  s.vx += bhPullX; s.vy += bhPullY;
   if (sp > c.starMaxSpeed) { s.vx *= c.starMaxSpeed / sp; s.vy *= c.starMaxSpeed / sp; }
   s.x += s.vx * DT;
   s.y += s.vy * DT;
@@ -497,7 +563,7 @@ export function step(w: World, intent: Intent): void {
         if (y - s.y > hh) { y -= 2 * hh; w.prevY[i] -= 2 * hh; } else if (y - s.y < -hh) { y += 2 * hh; w.prevY[i] += 2 * hh; }
         // La gravedad de tu sistema: los asteroides y lunas sueltas cercanas se curvan hacia vos y caen a tu órbita.
         const pieceOfPlanet = w.broken[i]! > 0 && w.kind[i] !== KIND_GAS;   // los pedazos de un partido también caen hacia vos
-        if (!hunting && (pieceOfPlanet || (w.kind[i] !== KIND_ROCKY && w.kind[i] !== KIND_ICE && w.kind[i] !== KIND_GAS)) && w.noCatch[i]! <= 0
+        if (!hunting && w.kind[i] !== KIND_STAR && (pieceOfPlanet || (w.kind[i] !== KIND_ROCKY && w.kind[i] !== KIND_ICE && w.kind[i] !== KIND_GAS)) && w.noCatch[i]! <= 0
             && w.radius[i] <= c.rockHitSize && w.vx[i] * w.vx[i] + w.vy[i] * w.vy[i] <= c.rockHitSpeed * c.rockHitSpeed) {   // los que te golpean, no: pasan derecho
           const ex = s.x - x, ey = s.y - y, e2 = ex * ex + ey * ey, R = captureR * c.starPullReach;
           if (e2 < R * R && e2 > 1e-6) {
@@ -577,7 +643,9 @@ export function step(w: World, intent: Intent): void {
       }
       // Escalón del planeta: los más grandes que la estrella la dañan al tocarla (o es un golpe grave).
       const k = w.kind[i]!;
-      const tier = st === FREE && w.parent[i] === -1 && isPlanetKind(k) ? planetTier(w.radius[i], s.mass) : -1;
+      // Planetas sueltos, y también los que giran alrededor de una estrella del mapa: son sólidos igual.
+      const loose = isPlanetKind(k) && ((st === FREE && w.parent[i] === -1) || (st === ORBIT_PLANET && w.parent[i] >= 0 && w.kind[w.parent[i]!] === KIND_STAR));
+      const tier = loose ? planetTier(w.radius[i], s.mass) : -1;
       if (tier >= TIER_HURT && d < size + w.radius[i] && hit < 0 && w.invuln <= 0) hit = i;
       if (w.noCatch[i]! > 0) { w.noCatch[i] = w.noCatch[i]! - DT; continue; }
       // Los asteroides veloces o grandes no se suman: si te tocan, te golpean.

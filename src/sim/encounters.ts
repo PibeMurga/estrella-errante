@@ -2,7 +2,7 @@ import { DT } from './config';
 import { hitPlanet, joinsOrbit, planetTier, TIER_BREAK } from './planetCapture';
 import { ownPlanet, ownPlanets } from './ownPlanets';
 import { breakPlanet, spawnDebris } from './tidal';
-import { DEAD, FREE, ORBITING, KIND_GAS, KIND_ICE, KIND_ROCKY, massGain, MAX_IMPACTS, noteBreak, starSize, type World } from './world';
+import { DEAD, FREE, KIND_STAR, ORBIT_PLANET, ORBITING, KIND_GAS, KIND_ICE, KIND_ROCKY, massGain, MAX_IMPACTS, noteBreak, starSize, type World } from './world';
 
 // Encuentros entre planetas libres. Dos planetas no se atraviesan: el más chico bordea al más grande por fuera,
 // en arco, y sigue con la misma dirección y velocidad que traía (sólo se corre su posición, nunca su velocidad).
@@ -188,8 +188,19 @@ export function stepStarFlybys(w: World): void {
   const hw = c.arenaHalfWidth, hh = c.arenaHalfHeight;
   for (let i = 0; i < w.count; i++) {
     const k = w.kind[i]!;
-    if (k < KIND_ROCKY || k > KIND_GAS || w.state[i] !== FREE || w.parent[i] !== -1) continue;
+    if (k < KIND_ROCKY || k > KIND_GAS) continue;
     const r = w.radius[i]!;
+    // Un planeta que gira alrededor de una estrella del mapa y te toca, sale despedido de su órbita: desde ahí, las reglas
+    // de siempre (choca, se parte o se suma).
+    if (w.state[i] === ORBIT_PLANET && w.parent[i]! >= 0 && w.kind[w.parent[i]!] === KIND_STAR && r <= size) {
+      const ex = w.x[i]! - s.x, ey = w.y[i]! - s.y;
+      if (ex * ex + ey * ey < (size + r) * (size + r)) {
+        const pa = w.parent[i]!, ang = w.orbitAngle[i]!, v = w.orbitW[i]! * w.orbitR[i]!;
+        w.vx[i] = w.vx[pa]! - Math.sin(ang) * v; w.vy[i] = w.vy[pa]! + Math.cos(ang) * v;
+        w.state[i] = FREE; w.parent[i] = -1;
+      }
+    }
+    if (w.state[i] !== FREE || w.parent[i] !== -1) continue;
     if (r <= c.maxCaptureSize || r > size) continue;
     const dx = w.x[i]! - s.x, dy = w.y[i]! - s.y;
     if (Math.abs(dx) > hw || Math.abs(dy) > hh) continue;

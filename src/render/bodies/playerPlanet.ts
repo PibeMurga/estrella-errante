@@ -1,5 +1,5 @@
 import { Color, Mesh, ShaderMaterial, SphereGeometry, Vector3 } from 'three';
-import { OVER_SWALLOWED, PHASE_IGNITION, starSize, type World } from '../../sim/world';
+import { OVER_SHATTERED, OVER_SWALLOWED, PHASE_IGNITION, starSize, type World } from '../../sim/world';
 import { toWorld } from '../cameraRig';
 import type { Layer } from '../layer';
 import { sceneLight } from '../lighting';
@@ -73,7 +73,7 @@ export function createPlayerPlanetLayer(sunPos: Vector3): Layer {
       const w: World = ctx.world;
       const igniting = w.phase === PHASE_IGNITION, t = igniting ? w.phaseTime : 0;
       const fade = igniting ? 1 - smooth01((t - 1.2) / 0.7) : w.ignited ? 0 : 1;
-      mesh.visible = fade > 0.01 && w.over !== OVER_SWALLOWED;
+      mesh.visible = fade > 0.01 && w.over !== OVER_SWALLOWED && w.over !== OVER_SHATTERED;
       if (!mesh.visible) { shownR = -1; return; }
       const target = starSize(w.star.mass) * (igniting ? 1 - 0.28 * smooth01(t / 1.2) : 1);   // se comprime antes de encenderse
       shownR = shownR < 0 ? target : smoothToward(shownR, target, igniting ? 6 : 1.2, ctx.dt);

@@ -18,6 +18,7 @@ export const OVER_SWALLOWED = 1; // la tragó el agujero negro
 export const OVER_DIMMED = 2;    // se apagó: chocó sin mundos que la protejan
 export const OVER_ESCAPED = 3;   // en la caza, el rival se escapó (se acabó el tiempo)
 export const OVER_WON = 4;       // te fusionaste con el rival: ganaste la pantalla
+export const OVER_SHATTERED = 5; // chocaste contra algo muchísimo más grande: tu mundo se hizo pedazos
 export const PHASE_PLAY = 0;     // crecer
 export const PHASE_COLLAPSE = 1; // cinemática: supernova y nacimiento de tu agujero negro
 export const PHASE_HUNT = 2;     // sos el agujero negro y cazás al rival
@@ -28,6 +29,7 @@ export const KIND_ROCKY = 1;
 export const KIND_ICE = 2;
 export const KIND_GAS = 3;
 export const KIND_MOON = 4;
+export const KIND_STAR = 5;   // estrella del mapa (no la tuya)
 export const MAX_IMPACTS = 16;
 
 export interface Star {
@@ -81,6 +83,9 @@ export interface World {
   fractures: number;   // veces que te fracturaste (evento)
   planetStripAcc: number;   // acumulador de lo que te roba un planeta grande al pasar cerca
   planetSteals: number;     // cuerpos que te robaron planetas grandes (evento)
+  mapStars: Int32Array;  // índices de las estrellas del mapa
+  starBurns: number;     // veces que te quemó una estrella más grande (evento)
+  starsEaten: number;    // estrellas que absorbiste (evento)
   rockHits: number;
   contactHits: number;
   disintegrated: number;   // planetas o pedazos que se desintegraron contra la estrella (evento)  // choques pesados entre planetas (evento)    // asteroides veloces o grandes que golpearon la estrella (evento)
@@ -140,7 +145,8 @@ export interface World {
 export interface BodySpec { x: number; y: number; vx: number; vy: number; radius: number; kind: number }
 
 const MAX_MOONS = 4;
-const MAX_DEBRIS = 60;
+const MAX_DEBRIS = 110;
+export const MAX_MAP_STARS = 6;
 
 // Masa que aporta a tu estrella el cuerpo i al entrar a tu sistema (y la que se lleva al irse).
 // Suma sólo una parte (un planeta, una décima; un asteroide, tres cuartos): el enjambre se ve grande pero la masa crece despacio.
@@ -232,7 +238,7 @@ function makeDensity(rng: Rng, hw: number, hh: number): (x: number, y: number) =
 }
 
 export function createWorld(config: SimConfig, seed: number, extraCapacity = 0): World {
-  const capacity = config.asteroidCount + config.planetCount * (1 + MAX_MOONS + MAX_DEBRIS) + config.debrisReserve + config.planetCount + extraCapacity;   // + un pedazo de reserva por planeta
+  const capacity = config.asteroidCount + config.planetCount * (1 + MAX_MOONS + MAX_DEBRIS) + config.debrisReserve + config.planetCount + Math.min(MAX_MAP_STARS, config.mapStars) * 8 + extraCapacity;   // + un pedazo de reserva por planeta
   const f = (): Float64Array => new Float64Array(capacity);
   const w: World = {
     config, capacity, tick: 0, count: 0,
@@ -249,14 +255,14 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       tint: new Float32Array(MAX_COMETS), bright: new Float32Array(MAX_COMETS).fill(1), wander: new Float32Array(MAX_COMETS),
     },
     cometClock: config.cometFirst, cometSteals: 0, cometKills: 0, rng: createRng(seed ^ 0x9e3779b9),
-    over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, fireSlow: 0, fireSlowK: 0, fireSlowT: 1, breakFxCount: 0, breakFxX: 0, breakFxY: 0, breakFxR: 0, breakFxKind: 0, breakFxAx: 1, breakFxAy: 0, ignited: !config.planetStart, ignitions: 0, integrity: 1, fractures: 0, planetStripAcc: 0, planetSteals: 0, rockHits: 0, contactHits: 0, disintegrated: 0, diskGrazes: 0, inDisk: 0, tide: 0, diskStripAcc: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
+    over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, fireSlow: 0, fireSlowK: 0, fireSlowT: 1, breakFxCount: 0, breakFxX: 0, breakFxY: 0, breakFxR: 0, breakFxKind: 0, breakFxAx: 1, breakFxAy: 0, ignited: !config.planetStart, ignitions: 0, integrity: 1, fractures: 0, planetStripAcc: 0, planetSteals: 0, starBurns: 0, starsEaten: 0, rockHits: 0, contactHits: 0, disintegrated: 0, diskGrazes: 0, inDisk: 0, tide: 0, diskStripAcc: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
     x: f(), y: f(), prevX: f(), prevY: f(), vx: f(), vy: f(), radius: f(), mass: f(),
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
     parent: new Int32Array(capacity).fill(-1),
     state: new Uint8Array(capacity), kind: new Uint8Array(capacity), noCatch: new Float32Array(capacity), life: new Float32Array(capacity),
     broken: new Float32Array(capacity), breakAx: new Float32Array(capacity), breakAy: new Float32Array(capacity), twin: new Int32Array(capacity).fill(-1), halfSide: new Int8Array(capacity), impacts: new Float32Array(MAX_IMPACTS * 4), impactCount: 0, tidalBreaks: 0, planetCrashes: 0, crashX: 0, crashY: 0, crashR: 0,
     orbitingCount: 0, stage: 0, stageUps: 0, maxMass: config.starStartMass, absorbed: 0, captured: new Int32Array(capacity), capturedCount: 0,
-    planets: new Int32Array(0), planetDmg: new Float32Array(capacity), joinT: new Float32Array(capacity).fill(1e9), planetCaptures: 0, graveHits: 0, planetBreaks: 0, lastStealCount: 0, ability: 0, planetsHeld: 0, abilityUps: 0, abilityDowns: 0,
+    planets: new Int32Array(0), mapStars: new Int32Array(0), planetDmg: new Float32Array(capacity), joinT: new Float32Array(capacity).fill(1e9), planetCaptures: 0, graveHits: 0, planetBreaks: 0, lastStealCount: 0, ability: 0, planetsHeld: 0, abilityUps: 0, abilityDowns: 0,
   };
   const rng = createRng(seed);
   const hw = config.arenaHalfWidth, hh = config.arenaHalfHeight;
@@ -292,8 +298,10 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
         orbit += rng.range(1.6, 3.2);
         addSatellite(w, p, orbit, rng.range(0, Math.PI * 2), rng.range(0.5, 1.3), KIND_MOON, (rng.next() < 0.5 ? 1 : -1) * 2.2 / Math.pow(orbit / r, 1.5));
       }
-    } else if (rng.next() < 0.45) {
-      const n = 25 + Math.floor(rng.next() * (MAX_DEBRIS - 25));
+    }
+    // Cinturones: más probables y más poblados cuanto más grande el planeta (los gigantes también imantan mucho).
+    if (rng.next() < 0.22 + 0.55 * Math.min(1, Math.max(0, (r - 4) / 8))) {
+      const n = Math.min(MAX_DEBRIS, 20 + Math.floor((0.4 + 0.6 * rng.next()) * (r / 16) * (MAX_DEBRIS - 20)));
       const inner = r * 2.1, outer = r * 3.4;
       for (let d = 0; d < n; d++) {
         const orbit = rng.range(inner, outer);
@@ -301,6 +309,32 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       }
     }
   }
+  // Estrellas del mapa: chicas (algunas del tamaño de Júpiter, como las enanas rojas reales) y grandes; algunas con
+  // sus propios planetas girando alrededor. Lejos de donde arrancás.
+  const nStars = Math.min(MAX_MAP_STARS, config.mapStars);
+  const starList: number[] = [];
+  for (let k = 0; k < nStars; k++) {
+    let px = 0, py = 0;
+    do { px = rng.range(-hw * 0.92, hw * 0.92); py = rng.range(-hh * 0.9, hh * 0.9); } while (Math.hypot(px, py) < 180);
+    const R = 3.5 + 11 * Math.pow(rng.next(), 1.6);
+    const ang = rng.range(0, Math.PI * 2), sp = rng.range(0.2, 0.8);
+    const st = addBody(w, { x: px, y: py, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, radius: R, kind: KIND_STAR });
+    if (st < 0) break;
+    w.mass[st] = R * R * R * 6;   // mucho más densa que un planeta
+    starList.push(st);
+    // Algunas con su sistema: de 1 a 3 planetas en órbitas amplias.
+    if (rng.next() < 0.6) {
+      const np = 1 + Math.floor(rng.next() * 3);
+      let orbit = R * 3.2;
+      for (let m = 0; m < np; m++) {
+        orbit += rng.range(R * 1.4, R * 2.6);
+        const pr = rng.range(1.8, 6);
+        const pi = addSatellite(w, st, orbit, rng.range(0, Math.PI * 2), pr, KIND_ROCKY + Math.floor(rng.next() * 3), (rng.next() < 0.85 ? 1 : -1) * 1.1 / Math.pow(orbit / R, 1.5));
+        void pi;
+      }
+    }
+  }
+  w.mapStars = Int32Array.from(starList);
   // Reserva de asteroides muertos: los cometas los reviven como escombros al morir.
   for (let k = 0; k < config.debrisReserve; k++) {
     const i = addBody(w, { x: 0, y: 0, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID });
