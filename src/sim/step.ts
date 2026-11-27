@@ -80,8 +80,10 @@ function hurt(w: World, p: number): void {
   }
   // Cuanto más grande el planeta, más duele: perdés una parte de tu órbita y de tu masa.
   const t = clamp((w.radius[p] / starSize(s.mass) - 1) / 0.5, 0, 1);
-  const toLose = Math.max(c.hurtWorldsLost, Math.ceil(w.orbitingCount * (c.hurtLossMin + (c.hurtLossMax - c.hurtLossMin) * t)));
-  s.mass = Math.max(c.starStartMass, s.mass * (1 - (c.hurtMassMin + (c.hurtMassMax - c.hurtMassMin) * t)));
+  // Cuanto más chico sos, más te afecta: un planeta o una enana recién nacida sufre mucho más que una gigante.
+  const frail = smallness(w);
+  const toLose = Math.max(c.hurtWorldsLost, Math.ceil(w.orbitingCount * Math.min(0.9, (c.hurtLossMin + (c.hurtLossMax - c.hurtLossMin) * t) * frail)));
+  s.mass = Math.max(c.starStartMass, s.mass * (1 - Math.min(0.6, (c.hurtMassMin + (c.hurtMassMax - c.hurtMassMin) * t) * frail)));
   let lost = 0;
   for (let i = 0; i < w.count && lost < toLose; i++) {
     if (w.state[i] !== ORBITING || isPlanetKind(w.kind[i]!)) continue;   // se pierden asteroides y lunas, no planetas
@@ -134,12 +136,17 @@ function flight(w: World, i: number, st: number): void {
   w.y[i] += w.vy[i] * DT;
 }
 
+// Qué tan frágil sos por tu tamaño: 1,8 siendo muy chico, baja hasta 1 cuando tu cuerpo mide 10 o más.
+function smallness(w: World): number {
+  return 1 + 0.8 * clamp((10 - starSize(w.star.mass)) / 7, 0, 1);
+}
+
 // Un asteroide veloz o grande golpea la estrella: se funde en ella (suma su masa), la empuja un poco y le arranca uno o
 // dos cuerpos de la órbita (dos si es grande). Destello en la superficie, en el punto del golpe.
 function rockHitsStar(w: World, i: number, dx: number, dy: number): void {
   const c = w.config, s = w.star;
   // Apenas un sacudón: una estrella pesa muchísimo más que una roca.
-  const kick = Math.min(1.2, (w.radius[i] ** 3) * 0.6 / Math.sqrt(Math.max(s.mass, 1)));
+  const kick = Math.min(1.2, (w.radius[i] ** 3) * 0.6 / Math.sqrt(Math.max(s.mass, 1))) * smallness(w);
   s.vx += (-dx / (Math.hypot(dx, dy) || 1)) * kick;
   s.vy += (-dy / (Math.hypot(dx, dy) || 1)) * kick;
   w.state[i] = DEAD;
@@ -147,7 +154,7 @@ function rockHitsStar(w: World, i: number, dx: number, dy: number): void {
   const slot = (w.impactCount % MAX_IMPACTS) * 4;
   w.impacts[slot] = -1; w.impacts[slot + 1] = Math.atan2(dy, dx); w.impacts[slot + 2] = 0.5 + 0.5 * Math.min(1, w.radius[i]); w.impactCount++;
   w.rockHits++;
-  let lose = w.radius[i] > c.rockHitSize ? 2 : 1;
+  let lose = Math.round((w.radius[i] > c.rockHitSize ? 2 : 1) * smallness(w));   // más si sos chico
   for (let j = 0; j < w.count && lose > 0; j++) {
     if (w.state[j] !== ORBITING || isPlanetKind(w.kind[j]!)) continue;
     const a = w.orbitAngle[j];

@@ -22,29 +22,33 @@ describe('planetas que dañan', () => {
     const w = worldWithOrbit(5);
     addBody(w, { x: 5.5, y: 0, vx: 0, vy: 0, radius: 3.4, kind: KIND_GAS });
     step(w, NO_INPUT);
-    expect(w.orbitingCount).toBe(2);
+    const left = w.orbitingCount;
+    expect(left).toBeLessThanOrEqual(2);   // siendo chica, pierde más
     expect(w.star.vx).toBeLessThan(0);
     expect(w.invuln).toBeGreaterThan(0);
     expect(w.hits).toBe(1);
     let free = 0;
     for (let i = 0; i < w.count; i++) if (w.kind[i] === KIND_ASTEROID && w.state[i] === FREE) free++;
-    expect(free).toBe(3);
+    expect(free).toBe(5 - left);
   });
 
   it('los mundos perdidos no se vuelven a capturar enseguida', () => {
     const w = worldWithOrbit(5);
     addBody(w, { x: 5.5, y: 0, vx: 0, vy: 0, radius: 3.4, kind: KIND_GAS });
-    for (let k = 0; k < 10; k++) step(w, NO_INPUT);
-    expect(w.orbitingCount).toBe(2);
+    step(w, NO_INPUT);
+    const left = w.orbitingCount;
+    for (let k = 0; k < 9; k++) step(w, NO_INPUT);
+    expect(w.orbitingCount).toBe(left);
   });
 
   it('mientras dura la invulnerabilidad no vuelve a dañar', () => {
     const w = worldWithOrbit(5);
     const p = addBody(w, { x: 5.5, y: 0, vx: 0, vy: 0, radius: 3.4, kind: KIND_GAS });
     step(w, NO_INPUT);
+    const left = w.orbitingCount;
     w.x[p] = w.star.x + 5.2; w.y[p] = w.star.y;
     step(w, NO_INPUT);
-    expect(w.orbitingCount).toBe(2);
+    expect(w.orbitingCount).toBe(left);
     expect(w.hits).toBe(1);
   });
 

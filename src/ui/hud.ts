@@ -2,7 +2,7 @@ import { ABILITY_NAMES, planetsAlive } from '../sim/abilities';
 import { playerName } from './playerName';
 import { formatLike, formatSolar } from './solarMass';
 import { rivalMass } from '../sim/phase';
-import { MAX_COMETS, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, type World } from '../sim/world';
+import { MAX_COMETS, PHASE_COLLAPSE, PHASE_HUNT, PHASE_IGNITION, PHASE_MERGE, PHASE_PLAY, type World } from '../sim/world';
 import { STAGE_HYPER, STAGES, stageFor, stageProgress } from '../sim/stages';
 import './hud.css';
 
@@ -58,7 +58,8 @@ export function createHud(parent: HTMLElement): Hud {
   const race = q<HTMLElement>('.race'), mvEl = q<HTMLElement>('.mv'), rvEl = q<HTMLElement>('.rvv');
   const mb = q<HTMLElement>('.mb'), rb = q<HTMLElement>('.rb'), note = q<HTMLElement>('.note');
   const banner = q<HTMLElement>('.banner');
-  let bannerOn = false, lastHunting = false;
+  let bannerOn = false, lastHunting = false, bannerKind = 0, tipT = 0, ignSeen = 0;
+  const bannerB = banner.querySelector('b') as HTMLElement, bannerS = banner.querySelector('span') as HTMLElement;
   let lastRace = -1, lastNote = '';
 
   const logText: string[] = [], logAge: number[] = [];
@@ -82,7 +83,7 @@ export function createHud(parent: HTMLElement): Hud {
     reset(w) {
       seen = { ign: w.ignitions, stageUps: w.stageUps, bolts: w.bolts, bh: w.boltHitsBh, pcap: w.planetCaptures, pbrk: w.planetBreaks, grave: w.graveHits, aup: w.abilityUps, adn: w.abilityDowns, steals: w.cometSteals, kills: w.cometKills, hits: w.hits, comets: activeComets(w), tidal: w.tidalBreaks, crashes: w.planetCrashes, phase: w.phase };
       logText.length = 0; logAge.length = 0;
-      lastSeg = -1; acc = 1; lastBhDist = Infinity; lastOrbit = w.orbitingCount;
+      lastSeg = -1; acc = 1; lastBhDist = Infinity; lastOrbit = w.orbitingCount; ignSeen = w.ignitions; tipT = 0;
     },
     setVisible(on) { if (on !== visible) { visible = on; root.style.display = on ? '' : 'none'; } },
     update(w, view, dt, width, height) {
@@ -149,12 +150,25 @@ export function createHud(parent: HTMLElement): Hud {
         nt = `CAZA · ALCANZALO ANTES DE ${pad(left / 60, 2)}:${pad(left % 60, 2)}`;
       } else if (w.phase === 0 && w.stage >= STAGE_HYPER) nt = 'HIPERGIGANTE · SUPERÁ AL RIVAL Y COLAPSÁS';
       if (nt !== lastNote) { note.textContent = nt; note.className = nt.startsWith('COLAPSO') ? 'note am blink' : 'note am'; lastNote = nt; }
-      if (w.phase >= PHASE_HUNT) nameEl.textContent = 'AGUJERO NEGRO';
+      const asHole = w.phase === PHASE_HUNT || w.phase === PHASE_MERGE;   // (la ignición no: ahí todavía sos planeta)
+      if (asHole) nameEl.textContent = 'AGUJERO NEGRO';
+      else if (w.phase === PHASE_IGNITION) nameEl.textContent = 'IGNICIÓN';
       // Alertas del agujero negro: rojas mientras te persigue; verdes (el fósforo del visor) cuando lo perseguís vos.
-      const hunting = w.phase >= PHASE_HUNT;
+      const hunting = asHole;
       if (hunting !== lastHunting) { root.classList.toggle('hunting', hunting); lastHunting = hunting; }
       // Al nacer tu agujero negro, un aviso grande y claro de qué hacer ahora.
-      const bOn = w.phase === PHASE_HUNT && w.phaseTime < 4.5 && w.over === 0;
+      // Al encenderte, cómo se dispara ahora (una sola vez, unos segundos).
+      if (w.ignitions > ignSeen) { ignSeen = w.ignitions; tipT = 7; }
+      if (tipT > 0) tipT -= dt;
+      const huntOn = w.phase === PHASE_HUNT && w.phaseTime < 4.5 && w.over === 0;
+      const tipOn = !huntOn && tipT > 0 && w.phase === PHASE_PLAY && w.over === 0;
+      const bText = huntOn ? 1 : tipOn ? 2 : 0;
+      if (bText !== bannerKind && bText > 0) {
+        bannerB.textContent = bText === 1 ? 'SOS UN AGUJERO NEGRO' : 'YA PODÉS DISPARAR';
+        bannerS.textContent = bText === 1 ? 'ATRAPÁ AL RIVAL ANTES DE QUE ESCAPE' : 'MANTENÉ EL CLIC: JUNTÁS ASTEROIDES Y AL SOLTAR LOS LANZÁS · UN TOQUE: HONDA';
+      }
+      if (bText !== bannerKind) bannerKind = bText;
+      const bOn = bText > 0;
       if (bOn !== bannerOn) { banner.classList.toggle('on', bOn); bannerOn = bOn; }
 
       if (bh.active) {
