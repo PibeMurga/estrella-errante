@@ -19,7 +19,6 @@ export function spawnComet(w: World, x: number, y: number): number {
     cm.hp[k] = w.config.cometHp;
     cm.timer[k] = 0;
     cm.carry[k] = -1;
-    cm.beamId[k] = w.eclipses;
     return k;
   }
   return -1;
@@ -76,8 +75,6 @@ export function stepComets(w: World): void {
   if (w.cometClock <= 0) { spawnOnEdge(w); w.cometClock += c.cometEvery; }
 
   const size = starSize(s.mass);
-  const beamOn = w.beamTime > 0;
-  const bx = Math.cos(w.eclipseAngle), by = Math.sin(w.eclipseAngle);
   for (let k = 0; k < MAX_COMETS; k++) {
     if (cm.mode[k] === COMET_OFF) continue;
     let x = cm.x[k]!, y = cm.y[k]!;
@@ -136,18 +133,6 @@ export function stepComets(w: World): void {
       const hw = c.arenaHalfWidth, hh = c.arenaHalfHeight;
       if (w.x[carried] - w.prevX[carried] > hw) w.prevX[carried] += 2 * hw; else if (w.prevX[carried] - w.x[carried] > hw) w.prevX[carried] -= 2 * hw;
       if (w.y[carried] - w.prevY[carried] > hh) w.prevY[carried] += 2 * hh; else if (w.prevY[carried] - w.y[carried] > hh) w.prevY[carried] -= 2 * hh;
-    }
-
-    // Rayo del eclipse: 3 de daño, una sola vez por rayo.
-    if (beamOn && cm.beamId[k] !== w.eclipses) {
-      const rx = x - s.x, ry = y - s.y;
-      const along = rx * bx + ry * by;
-      const across = Math.abs(rx * by - ry * bx);
-      if (along > 0 && along < c.beamLength && across < c.beamHalfWidth + c.cometRadius) {
-        cm.beamId[k] = w.eclipses;
-        damage(w, k, 3);
-        continue;
-      }
     }
   }
 

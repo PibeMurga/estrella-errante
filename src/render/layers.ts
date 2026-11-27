@@ -7,7 +7,6 @@ import { createAsteroidLayer } from './bodies/asteroids';
 import { createBrokenPlanetsLayer } from './bodies/brokenPlanets';
 import { createPlanetsLayer } from './bodies/planets';
 import { createSunLayer } from './bodies/sun';
-import { createBeamLayer } from './fx/beam';
 import { createCometsLayer } from './fx/comets';
 import { createImpactLayer } from './fx/impact';
 import type { Layer } from './layer';
@@ -31,7 +30,6 @@ export function buildLayers(deps: LayerDeps): BuiltLayers {
       ambient,
       createBlackHoleLayer(deps.pipeline),
       createBlackHoleLayer(deps.pipeline, 'player'),
-      createBeamLayer(),
       createCometsLayer(),
       createImpactLayer(),
     ],

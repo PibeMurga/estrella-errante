@@ -45,7 +45,6 @@ export interface Comets {
   readonly mode: Uint8Array;     // 0 apagado, 1 caza, 2 huye
   readonly timer: Float32Array;  // segundos de huida que quedan
   readonly carry: Int32Array;    // mundo robado, o -1
-  readonly beamId: Int32Array;   // último rayo que lo dañó
 }
 
 export interface World {
@@ -68,11 +67,6 @@ export interface World {
   hits: number;        // choques con planetas (evento para el dibujo y la interfaz)
   slingCd: number;     // segundos hasta poder volver a disparar
   shots: number;       // disparos de honda (evento)
-  eclipses: number;    // eclipses producidos (evento)
-  eclipseAngle: number;     // dirección del último rayo
-  eclipseStrength: number;  // cuántos mundos lo formaron
-  eclipseCd: number;
-  beamTime: number;    // segundos que le quedan al rayo
   readonly x: Float64Array; readonly y: Float64Array;
   readonly prevX: Float64Array; readonly prevY: Float64Array;
   readonly vx: Float64Array; readonly vy: Float64Array;
@@ -181,11 +175,10 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     comets: {
       x: new Float64Array(MAX_COMETS), y: new Float64Array(MAX_COMETS), prevX: new Float64Array(MAX_COMETS), prevY: new Float64Array(MAX_COMETS),
       vx: new Float64Array(MAX_COMETS), vy: new Float64Array(MAX_COMETS), hp: new Float32Array(MAX_COMETS), mode: new Uint8Array(MAX_COMETS),
-      timer: new Float32Array(MAX_COMETS), carry: new Int32Array(MAX_COMETS).fill(-1), beamId: new Int32Array(MAX_COMETS),
+      timer: new Float32Array(MAX_COMETS), carry: new Int32Array(MAX_COMETS).fill(-1),
     },
     cometClock: config.cometFirst, cometSteals: 0, cometKills: 0, rng: createRng(seed ^ 0x9e3779b9),
     over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, shots: 0,
-    eclipses: 0, eclipseAngle: 0, eclipseStrength: 0, eclipseCd: 0, beamTime: 0,
     x: f(), y: f(), prevX: f(), prevY: f(), vx: f(), vy: f(), radius: f(), mass: f(),
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
     parent: new Int32Array(capacity).fill(-1),

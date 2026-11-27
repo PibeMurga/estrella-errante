@@ -151,12 +151,6 @@ describe('correcciones de la revisión', () => {
     }
     expect(maxD).toBeLessThan(Math.min(cfg.arenaHalfWidth, cfg.arenaHalfHeight));
   });
-  it('al colapsar se apaga el rayo del eclipse', () => {
-    const w = hyperWorld();
-    w.beamTime = 0.5;
-    step(w, press);
-    expect(w.beamTime).toBe(0);
-  });
   it('al ganar, la masa máxima incluye al rival', () => {
     const w = huntWorld();
     w.bh.x = w.bh.prevX = w.star.x + 1; w.bh.y = w.bh.prevY = w.star.y;

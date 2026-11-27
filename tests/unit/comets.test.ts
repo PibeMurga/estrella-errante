@@ -65,23 +65,6 @@ describe('cometa cazador', () => {
     expect(w.comets.hp[k]).toBe(DEFAULT_CONFIG.cometHp - 1);
   });
 
-  it('el rayo del eclipse lo destruye: suelta lo robado y deja asteroides', () => {
-    const w = createWorld(cfg(), 2, 10);
-    const k = spawnComet(w, 50, 0);
-    const i = addBody(w, { x: 50, y: 0, vx: 0, vy: 0, radius: 0.6, kind: KIND_ASTEROID });
-    w.state[i] = CARRIED; w.comets.carry[k] = i;
-    let freeBefore = 0;
-    for (let b = 0; b < w.count; b++) if (w.state[b] === FREE && w.kind[b] === KIND_ASTEROID) freeBefore++;
-    w.beamTime = DEFAULT_CONFIG.beamDuration; w.eclipseAngle = 0; w.eclipses = 1;
-    step(w, IDLE);
-    expect(w.comets.mode[k]).toBe(0);
-    expect(w.cometKills).toBe(1);
-    expect(w.state[i]).toBe(FREE);
-    let freeAfter = 0;
-    for (let b = 0; b < w.count; b++) if (w.state[b] === FREE && w.kind[b] === KIND_ASTEROID) freeAfter++;
-    expect(freeAfter - freeBefore).toBe(1 + DEFAULT_CONFIG.cometDebris);
-  });
-
   it('nunca hay más cometas que el tamaño de la reserva', () => {
     const w = createWorld(cfg({ cometFirst: 0.1, cometEvery: 0.1 }), 2, 10);
     for (let s = 0; s < 600; s++) step(w, IDLE);

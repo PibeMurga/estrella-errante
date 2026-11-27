@@ -22,7 +22,6 @@ export function canCollapse(w: World): boolean {
 export function startCollapse(w: World): void {
   w.phase = PHASE_COLLAPSE; w.phaseTime = 0;
   w.star.vx = 0; w.star.vy = 0;
-  w.beamTime = 0;   // si justo había un rayo de eclipse, se apaga: no queda congelado sobre la supernova
   const cm = w.comets;
   for (let k = 0; k < cm.mode.length; k++) {
     const c = cm.carry[k]!;

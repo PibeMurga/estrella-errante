@@ -32,7 +32,7 @@ export function createHud(parent: HTMLElement): Hud {
     <div class="note am"></div>
     <div class="clock"><span class="time">00:00</span><br><span class="dim mass">MASA 0000</span></div>
     <div class="bhinfo am">AGUJERO NEGRO<br><span class="bhdist"></span></div>
-    <div class="bottom"><span class="sling">HONDA ●</span><span class="am ecl">ECLIPSE ×0</span><span class="worlds">EN ÓRBITA 000</span></div>
+    <div class="bottom"><span class="sling">HONDA ●</span><span class="worlds">EN ÓRBITA 000</span></div>
     <div class="log">${'<div></div>'.repeat(LOG_LINES)}</div>
     <div class="arrow am"><svg width="22" height="22" viewBox="-11 -11 22 22"><path d="M-6 -8 L7 0 L-6 8" fill="none" stroke="#ffb000" stroke-width="2.4"/></svg><span class="adist"></span></div>
     <div class="brackets"><i></i><i></i><i></i><i></i></div>`;
@@ -43,7 +43,7 @@ export function createHud(parent: HTMLElement): Hud {
   const segs = Array.from(root.querySelectorAll<HTMLElement>('.seg i'));
   const timeEl = q<HTMLElement>('.time'), massEl = q<HTMLElement>('.mass');
   const bhDistEl = q<HTMLElement>('.bhdist'), bhInfo = q<HTMLElement>('.bhinfo');
-  const slingEl = q<HTMLElement>('.sling'), eclEl = q<HTMLElement>('.ecl'), worldsEl = q<HTMLElement>('.worlds');
+  const slingEl = q<HTMLElement>('.sling'), worldsEl = q<HTMLElement>('.worlds');
   const logEls = Array.from(root.querySelectorAll<HTMLElement>('.log div'));
   const arrow = q<HTMLElement>('.arrow'), arrowSvg = q<SVGElement>('.arrow svg'), arrowDist = q<HTMLElement>('.adist');
   const brackets = q<HTMLElement>('.brackets');
@@ -57,7 +57,7 @@ export function createHud(parent: HTMLElement): Hud {
   let shownMode = -1, lastTx = NaN, lastTy = NaN, lastHalf = NaN, lastAng = NaN, visible = true;
   let acc = 1, lastSeg = -1, lastBhDist = Infinity, lastOrbit = 0;
   let lastFlip = false;
-  let seen = { stageUps: 0, eclipses: 0, steals: 0, kills: 0, hits: 0, comets: 0, tidal: 0, crashes: 0, phase: 0 };
+  let seen = { stageUps: 0, steals: 0, kills: 0, hits: 0, comets: 0, tidal: 0, crashes: 0, phase: 0 };
 
   const log = (text: string): void => {
     logText.unshift(text); logAge.unshift(0);
@@ -69,7 +69,7 @@ export function createHud(parent: HTMLElement): Hud {
   const hud: Hud = {
     root,
     reset(w) {
-      seen = { stageUps: w.stageUps, eclipses: w.eclipses, steals: w.cometSteals, kills: w.cometKills, hits: w.hits, comets: activeComets(w), tidal: w.tidalBreaks, crashes: w.planetCrashes, phase: w.phase };
+      seen = { stageUps: w.stageUps, steals: w.cometSteals, kills: w.cometKills, hits: w.hits, comets: activeComets(w), tidal: w.tidalBreaks, crashes: w.planetCrashes, phase: w.phase };
       logText.length = 0; logAge.length = 0;
       lastSeg = -1; acc = 1; lastBhDist = Infinity; lastOrbit = w.orbitingCount;
     },
@@ -151,12 +151,10 @@ export function createHud(parent: HTMLElement): Hud {
 
       slingEl.textContent = w.slingCd > 0 ? 'HONDA ○' : 'HONDA ●';
       slingEl.className = w.orbitingCount > 0 ? 'sling' : 'sling off';
-      eclEl.textContent = `ECLIPSE ×${w.eclipses}`;
       worldsEl.textContent = `EN ÓRBITA ${pad(w.orbitingCount, 3)}`;
 
       // Registro de sucesos.
       if (w.stageUps > seen.stageUps) log(`ETAPA: ${STAGES[w.stage]!.name}`);
-      if (w.eclipses > seen.eclipses) log(`ECLIPSE ×${w.eclipseStrength}`);
       if (w.cometSteals > seen.steals) log('UN COMETA SE LLEVÓ UN CUERPO DE TU ÓRBITA');
       if (w.cometKills > seen.kills) log('COMETA DESTRUIDO');
       if (w.hits > seen.hits) log(`CHOQUE CON UN PLANETA: PERDISTE ${Math.max(1, lastOrbit - w.orbitingCount)} CUERPOS DE TU ÓRBITA`);
@@ -170,7 +168,7 @@ export function createHud(parent: HTMLElement): Hud {
         if (w.phase === PHASE_MERGE) log('FUSIÓN');
         seen.phase = w.phase;
       }
-      seen.stageUps = w.stageUps; seen.eclipses = w.eclipses; seen.steals = w.cometSteals;
+      seen.stageUps = w.stageUps; seen.steals = w.cometSteals;
       lastOrbit = w.orbitingCount;
       seen.kills = w.cometKills; seen.hits = w.hits; seen.tidal = w.tidalBreaks; seen.crashes = w.planetCrashes; seen.comets = ac;
       for (let k = 0; k < LOG_LINES; k++) {

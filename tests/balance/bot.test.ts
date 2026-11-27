@@ -43,6 +43,6 @@ it('bot de balance', () => {
       worst = Math.max(worst, performance.now() - a);
     }
     const ms = (performance.now() - t0) / (w.tick || 1);
-    console.log(`${w.over === OVER_WON ? 'GANÓ' : 'perdió'} semilla ${seed}: fase=${w.phase}, ${(w.tick / 60).toFixed(0)} s, fin=${w.over}, masaMax=${w.maxMass.toFixed(0)}, etapa=${STAGES[w.stage]!.name}, eclipses=${w.eclipses}, cometas muertos=${w.cometKills}, robos=${w.cometSteals}, choques=${w.hits}, disparos=${w.shots}, órbita=${w.orbitingCount}, absorbidos=${w.absorbed}, bh r=${w.bh.radius.toFixed(1)}, paso medio=${ms.toFixed(3)} ms, peor=${worst.toFixed(2)} ms`);
+    console.log(`${w.over === OVER_WON ? 'GANÓ' : 'perdió'} semilla ${seed}: fase=${w.phase}, ${(w.tick / 60).toFixed(0)} s, fin=${w.over}, masaMax=${w.maxMass.toFixed(0)}, etapa=${STAGES[w.stage]!.name}, cometas muertos=${w.cometKills}, robos=${w.cometSteals}, choques=${w.hits}, disparos=${w.shots}, órbita=${w.orbitingCount}, absorbidos=${w.absorbed}, bh r=${w.bh.radius.toFixed(1)}, paso medio=${ms.toFixed(3)} ms, peor=${worst.toFixed(2)} ms`);
   }
 }, 600_000);

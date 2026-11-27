@@ -44,13 +44,6 @@ export interface SimConfig {
   slingLife: number;             // segundos de vuelo antes de volver
   slingReturnSpeed: number;      // velocidad de vuelta (se suma la de la estrella)
   slingLoseDist: number;         // si al empezar a volver está más lejos que esto, se pierde
-  eclipseMin: number;            // mundos alineados que hacen falta para un eclipse
-  eclipseWindowDeg: number;      // ancho de la alineación, en grados
-  eclipseDensity: number;        // hace falta esto veces lo que cabría por azar en la ventana (con muchos mundos)
-  eclipseCooldown: number;       // segundos entre eclipses
-  beamDuration: number;          // segundos que dura el rayo
-  beamLength: number;            // largo del rayo
-  beamHalfWidth: number;         // medio ancho del rayo para el daño
   cometFirst: number;            // segundos hasta el primer cometa
   cometEvery: number;            // segundos entre cometas
   cometSpeed: number;            // al cazar (la estrella llega a starMaxSpeed)
@@ -119,13 +112,6 @@ export const DEFAULT_CONFIG: SimConfig = {
   slingLife: 2.2,
   slingReturnSpeed: 50,
   slingLoseDist: 220,
-  eclipseMin: 4,
-  eclipseWindowDeg: 7,
-  eclipseDensity: 2.5,
-  eclipseCooldown: 2.5,
-  beamDuration: 0.6,
-  beamLength: 150,
-  beamHalfWidth: 4,
   cometFirst: 60,
   cometEvery: 40,
   cometSpeed: 24,
