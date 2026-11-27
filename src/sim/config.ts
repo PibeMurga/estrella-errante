@@ -63,6 +63,7 @@ export interface SimConfig {
   tapTime: number;               // apretado menos que esto es un toque: un asteroide que vuelve
   boltGatherRate: number;        // cuerpos por segundo que se suman al bólido mientras se mantiene
   boltMax: number;               // tope de cuerpos de un bólido
+  boltReachK: number;            // un bólido grande pega en un área mayor: radio extra = esto × √(cuerpos)
   boltSpeed: number;             // velocidad del bólido
   boltLife: number;              // segundos de vuelo; después queda suelto
   boltLoseSlow: number;          // al terminar el vuelo conserva esta fracción de la velocidad
@@ -192,8 +193,9 @@ export const DEFAULT_CONFIG: SimConfig = {
   huntSwallowFactor: 1.2,
   huntStartMaxDist: 260,
   tapTime: 0.22,
-  boltGatherRate: 6,
-  boltMax: 12,
+  boltGatherRate: 9,
+  boltMax: 30,
+  boltReachK: 0.55,
   boltSpeed: 55,
   boltLife: 2.4,
   boltLoseSlow: 0.15,
@@ -210,7 +212,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   ability2: 0.30,
   ability3: 0.45,
   abilityGravityMul: 1.3,
-  abilityBoltBonus: 6,
+  abilityBoltBonus: 12,
   cometStealMin: 3,
   cometStealMax: 5,
   cometPlanetChance: 0.5,

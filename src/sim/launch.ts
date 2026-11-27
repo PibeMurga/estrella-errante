@@ -44,6 +44,11 @@ function closestTo(w: World, aim: number): number {
   return best;
 }
 
+// Radio extra con que pega cada cuerpo de un bólido en vuelo: cuanto más grande el bólido, más ancho el golpe.
+export function boltReach(w: World): number {
+  return w.config.boltReachK * Math.sqrt(Math.max(1, w.lastBoltSize));
+}
+
 // Disparar frena a la estrella: pierde parte de su velocidad y la recupera de a poco (ver el movimiento en step).
 function brakeOnFire(w: World, k: number): void {
   w.star.vx *= 1 - k; w.star.vy *= 1 - k;
@@ -136,12 +141,13 @@ export function stepBolts(w: World): void {
       w.x[i] += w.vx[i] * DT; w.y[i] += w.vy[i] * DT;
       if (bh.active) {
         const gx = bh.x - w.x[i], gy = bh.y - w.y[i];
-        if (gx * gx + gy * gy < bh.radius * bh.radius * 1.44) {
+        const hr = bh.radius * 1.2 + boltReach(w);
+        if (gx * gx + gy * gy < hr * hr) {
           // Le pegó al agujero negro: lo alimenta y lo frena un poco. No lo empuja.
           w.state[i] = DEAD;
           bh.mass += w.mass[i] * c.boltBhFeed;
           if (w.bhSlow <= 0) w.boltHitsBh++;
-          w.bhSlow = c.boltBhSlow;
+          w.bhSlow = Math.max(w.bhSlow, c.boltBhSlow * (0.5 + w.lastBoltSize / 24));   // uno grande lo frena más tiempo
           continue;
         }
       }

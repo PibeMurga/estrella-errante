@@ -111,3 +111,20 @@ test('los golpes dejan cráteres en el planeta y, en los que se pueden partir, g
   await page.screenshot({ path: 'artifacts/e2e/crateres.png', clip: { x: 640, y: 200, width: 360, height: 320 } });
   expect(errors).toEqual([]);
 });
+
+test('cada ruptura de un planeta tiene su propia explosión', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  await page.goto('/?seed=20261124');
+  await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
+  for (let k = 0; k < 4; k++) {
+    await page.evaluate((kind) => {
+      const w = window.__GAME__!.world; const s = w.star;
+      w.breakFxCount += 1; w.breakFxX = s.x + 22; w.breakFxY = s.y; w.breakFxR = 5; w.breakFxKind = kind; w.breakFxAx = 0.8; w.breakFxAy = 0.6;
+    }, [1, 2, 3, 1][k]!);
+    await page.waitForTimeout(700);
+    await page.screenshot({ path: `artifacts/e2e/ruptura-${k}.png`, clip: { x: 640, y: 180, width: 360, height: 360 } });
+  }
+  expect(errors).toEqual([]);
+});

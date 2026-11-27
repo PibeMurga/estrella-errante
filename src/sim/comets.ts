@@ -1,5 +1,5 @@
 import { DT } from './config';
-import { returnGathered } from './launch';
+import { boltReach, returnGathered } from './launch';
 import { isPlanetKind } from './planetCapture';
 import { BOLT, CARRIED, DEAD, FREE, KIND_ASTEROID, MAX_COMETS, massGain, ORBITING, PROJECTILE, RETURNING, starSize, type World } from './world';
 
@@ -171,7 +171,7 @@ export function stepComets(w: World): void {
     if (w.state[i] !== PROJECTILE && w.state[i] !== BOLT) continue;
     for (let k = 0; k < MAX_COMETS; k++) {
       if (cm.mode[k] === COMET_OFF) continue;
-      const r = c.cometRadius + w.radius[i];
+      const r = c.cometRadius + w.radius[i] + (w.state[i] === BOLT ? boltReach(w) : 0);
       if ((w.x[i] - cm.x[k]!) ** 2 + (w.y[i] - cm.y[k]!) ** 2 < r * r) {
         if (w.state[i] === BOLT) { damage(w, k, c.cometHp); break; }
         w.state[i] = RETURNING;

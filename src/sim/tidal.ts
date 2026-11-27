@@ -1,4 +1,4 @@
-import { DEAD, FREE, KIND_ASTEROID, splitHalves, type World } from './world';
+import { DEAD, FREE, KIND_ASTEROID, noteBreak, splitHalves, type World } from './world';
 
 // Escombros de un planeta que se parte: se reviven asteroides de la reserva (cuerpos DEAD de tipo asteroide)
 // en dos chorros a lo largo del eje (ax, ay), con la velocidad del planeta (vx, vy) más un empujón.
@@ -34,8 +34,9 @@ export function breakPlanet(w: World, i: number, ax: number, ay: number, tidal =
   w.breakAx[i] = ax; w.breakAy[i] = ay;
   if (tidal) w.tidalBreaks++;
   const R = w.radius[i];
-  w.breakFxCount++; w.breakFxX = w.x[i]; w.breakFxY = w.y[i]; w.breakFxR = R;   // el render dibuja una explosión
-  spawnDebris(w, w.x[i], w.y[i], w.vx[i], w.vy[i], R, ax, ay, c.tidalDebris);
+  noteBreak(w, i, ax, ay);   // el render dibuja una explosión (cada una distinta)
+  // Cada ruptura suelta una cantidad distinta de escombros.
+  spawnDebris(w, w.x[i], w.y[i], w.vx[i], w.vy[i], R, ax, ay, Math.round(c.tidalDebris * w.rng.range(0.5, 1.5)));
   w.radius[i] = R * 0.85;
   w.mass[i] = w.radius[i] ** 3;
   splitHalves(w, i);   // dos pedazos que siguen cada uno por su cuenta

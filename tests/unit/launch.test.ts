@@ -63,7 +63,7 @@ describe('lanzamiento cargado', () => {
     expect(w.gathered).toBe(0);
   });
   it('el bólido tiene un límite', () => {
-    const w = orbitWorld();
+    const w = orbitWorld(cfg.boltMax + 10);
     run(w, 6, hold());
     expect(w.gathered).toBe(cfg.boltMax);
   });

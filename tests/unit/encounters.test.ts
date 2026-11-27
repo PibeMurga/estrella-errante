@@ -44,7 +44,9 @@ describe('encuentros entre planetas', () => {
     expect(w.state[b]).toBe(DEAD);
     expect(w.state[a]).toBe(FREE);
     expect(w.broken[a]).toBeGreaterThan(0);
-    expect(freeDebris(w) - before).toBe(DEFAULT_CONFIG.tidalDebris * 2);
+    const got = freeDebris(w) - before;   // cada ruptura suelta una cantidad distinta (entre la mitad y 1,5 veces)
+    expect(got).toBeGreaterThanOrEqual(Math.round(DEFAULT_CONFIG.tidalDebris * 0.5) * 2);
+    expect(got).toBeLessThanOrEqual(Math.round(DEFAULT_CONFIG.tidalDebris * 1.5) * 2);
     // Cantidad de movimiento: el sobreviviente sigue con la velocidad combinada.
     const ma = 5.2 ** 3, mb = 5 ** 3;
     const t = w.twin[a]!;   // el sobreviviente quedó en dos pedazos: su centro de masa lleva esa velocidad

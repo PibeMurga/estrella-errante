@@ -26,7 +26,9 @@ describe('ruptura por marea', () => {
     step(w, IDLE);
     expect(w.broken[p]).toBeGreaterThan(0);
     expect(w.tidalBreaks).toBe(1);
-    expect(freeAsteroids(w) - before).toBe(DEFAULT_CONFIG.tidalDebris);
+    const got = freeAsteroids(w) - before;   // cantidad distinta en cada ruptura
+    expect(got).toBeGreaterThanOrEqual(Math.round(DEFAULT_CONFIG.tidalDebris * 0.5));
+    expect(got).toBeLessThanOrEqual(Math.round(DEFAULT_CONFIG.tidalDebris * 1.5));
     expect(w.radius[p]).toBeLessThan(r0);
     expect(w.state[p]).toBe(FREE);
     // El eje apunta al agujero negro.

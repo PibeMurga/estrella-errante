@@ -70,7 +70,7 @@ export interface World {
   invuln: number;      // segundos de invulnerabilidad que quedan
   hits: number;        // choques con planetas (evento para el dibujo y la interfaz)
   slingCd: number;     // segundos hasta poder volver a disparar
-  breakFxCount: number; breakFxX: number; breakFxY: number; breakFxR: number;   // última ruptura de un planeta (para la explosión)
+  breakFxCount: number; breakFxX: number; breakFxY: number; breakFxR: number; breakFxKind: number; breakFxAx: number; breakFxAy: number;   // última ruptura de un planeta (para la explosión)
   diskGrazes: number;  // veces que la estrella entró al disco del agujero negro (evento)
   inDisk: number;      // 0 = fuera; 0..1 = qué tan hondo está la estrella en el disco ahora
   diskStripAcc: number;   // acumulador de cuerpos que el disco te arranca
@@ -229,7 +229,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       timer: new Float32Array(MAX_COMETS), carry: new Int32Array(MAX_COMETS),
     },
     cometClock: config.cometFirst, cometSteals: 0, cometKills: 0, rng: createRng(seed ^ 0x9e3779b9),
-    over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, fireSlow: 0, fireSlowK: 0, fireSlowT: 1, breakFxCount: 0, breakFxX: 0, breakFxY: 0, breakFxR: 0, diskGrazes: 0, inDisk: 0, diskStripAcc: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
+    over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, fireSlow: 0, fireSlowK: 0, fireSlowT: 1, breakFxCount: 0, breakFxX: 0, breakFxY: 0, breakFxR: 0, breakFxKind: 0, breakFxAx: 1, breakFxAy: 0, diskGrazes: 0, inDisk: 0, diskStripAcc: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
     x: f(), y: f(), prevX: f(), prevY: f(), vx: f(), vy: f(), radius: f(), mass: f(),
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
     parent: new Int32Array(capacity).fill(-1),
@@ -307,6 +307,12 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
 // pedazo con su masa y su centro de masa, alejándose del otro por el eje del corte (el chico, más rápido, como en un
 // empujón que conserva el momento). Desde ahí cada uno sigue por su cuenta: deriva, se captura o se pierde solo.
 // `apart` = segundos de separación ya recorridos. Sin pedazo de reserva, queda como un cuerpo (el render lo dibuja igual).
+// Anota una ruptura para que el render dibuje su explosión.
+export function noteBreak(w: World, i: number, ax: number, ay: number): void {
+  w.breakFxCount++; w.breakFxX = w.x[i]; w.breakFxY = w.y[i]; w.breakFxR = w.radius[i];
+  w.breakFxKind = w.kind[i]!; w.breakFxAx = ax; w.breakFxAy = ay;
+}
+
 export function splitHalves(w: World, i: number, apart = 0): void {
   const j = w.twin[i]!;
   if (j < 0 || w.state[j] !== DEAD || w.halfSide[i] !== 0) return;

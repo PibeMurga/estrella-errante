@@ -39,30 +39,22 @@ export function createImpactLayer(): Layer {
   mesh.frustumCulled = false;
   mesh.visible = false;
   mesh.renderOrder = 10;
-  let seen = 0, seenBreak = 0, start = 0;
+  let seen = 0, start = 0;
 
   return {
     object: mesh,
     update(ctx) {
       const w = ctx.world;
       if (w.planetCrashes < seen) seen = w.planetCrashes;   // mundo nuevo
-      if (w.breakFxCount < seenBreak) seenBreak = w.breakFxCount;
       if (w.planetCrashes > seen) {
-        seen = w.planetCrashes; seenBreak = w.breakFxCount;   // el choque ya trae su propia explosión
+        seen = w.planetCrashes;
         start = ctx.time;
         mat.uniforms['uSeed']!.value = (seen * 7.31) % 50;
         mesh.position.set(w.crashX, 0.5, -w.crashY);
         mesh.scale.setScalar(w.crashR * 0.5 * SPAN);
-      } else if (w.breakFxCount > seenBreak) {
-        // Un planeta que se parte: la misma explosión, más contenida (no exagerada).
-        seenBreak = w.breakFxCount;
-        start = ctx.time;
-        mat.uniforms['uSeed']!.value = (seenBreak * 3.17) % 50;
-        mesh.position.set(w.breakFxX, 0.5, -w.breakFxY);
-        mesh.scale.setScalar(w.breakFxR * 0.55 * 0.5 * SPAN);
       }
       const t = ctx.time - start;
-      mesh.visible = (seen > 0 || seenBreak > 0) && t < 6;
+      mesh.visible = seen > 0 && t < 6;
       if (!mesh.visible) return;
       mat.uniforms['uT']!.value = t;
       mesh.quaternion.copy(ctx.camera.quaternion);   // siempre de frente a la cámara
