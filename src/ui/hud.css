@@ -15,7 +15,7 @@
 .hud .corner.bl { left: 20px; bottom: 20px; border-right: none; border-top: none; }
 .hud .corner.br { right: 20px; bottom: 20px; border-left: none; border-top: none; }
 
-.hud .stage { position: absolute; left: 50%; top: 26px; transform: translateX(-50%); text-align: center; font-size: 13px; letter-spacing: 3px; }
+.hud .stage { position: absolute; left: 50%; top: 24px; transform: translateX(-50%); text-align: center; font-size: 17px; letter-spacing: 4px; }
 .hud .seg { display: flex; flex-direction: column-reverse; gap: 2px; width: 10px; height: 220px; }
 .hud .seg i { flex: 1; width: 10px; background: var(--ph); box-shadow: 0 0 5px #7af5c9aa; transition: background .3s; }
 .hud .seg i.o { background: #7af5c914; box-shadow: none; }
@@ -40,8 +40,9 @@
 .hud .brackets i:nth-child(4) { right: -1px; bottom: -1px; border-left: none; border-top: none; }
 
 /* La carrera de masa: vos (fósforo) contra el rival (ámbar), y el aviso debajo. */
-.hud .race { position: absolute; left: 50%; top: 74px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; font-size: 11px; }
-.hud .race .bar { display: flex; width: 340px; height: 7px; gap: 2px; }
+.hud .race { position: absolute; left: 50%; top: 58px; transform: translateX(-50%); display: flex; align-items: center; gap: 16px; font-size: 15px; letter-spacing: 2px; }
+.hud .race .bar { display: flex; width: 420px; height: 11px; gap: 2px; }
+.hud .race .me, .hud .race .rv { white-space: nowrap; }
 .hud .race .mb { background: var(--ph); box-shadow: 0 0 5px #7af5c9aa; transition: width .3s; }
 .hud .race .rb { background: var(--am); box-shadow: 0 0 5px #ffb000aa; transition: width .3s; }
 .hud .race .rv { color: var(--am); text-shadow: 0 0 6px #ffb000aa; }

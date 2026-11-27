@@ -1,6 +1,6 @@
 import { ABILITY_NAMES, planetsAlive } from '../sim/abilities';
 import { playerName } from './playerName';
-import { formatLike, formatSolar } from './solarMass';
+import { formatLike, formatSolar, solarMasses } from './solarMass';
 import { createMinimap } from './minimap';
 import { rivalMass } from '../sim/phase';
 import { MAX_COMETS, PHASE_COLLAPSE, PHASE_HUNT, PHASE_IGNITION, PHASE_MERGE, PHASE_PLAY, type World } from '../sim/world';
@@ -155,7 +155,9 @@ export function createHud(parent: HTMLElement): Hud {
       // La carrera: tu masa contra la del rival (en la caza, tu ventaja).
       race.style.display = bh.active || w.phase === PHASE_MERGE ? '' : 'none';
       const me = s.mass, rv = rivalMass(w);
-      const f = Math.round((me / Math.max(1e-6, me + rv)) * 1000) / 10;
+      // La barra en la misma escala que los números (masas reales), así lo que dice y lo que muestra coinciden.
+      const sm = solarMasses(me), sr = solarMasses(rv);
+      const f = Math.round((sm / Math.max(1e-9, sm + sr)) * 1000) / 10;
       if (f !== lastRace) { mb.style.width = `${f}%`; rb.style.width = `${100 - f}%`; lastRace = f; }
       mvEl.textContent = formatSolar(me); rvEl.textContent = formatLike(rv, me);   // las dos en la misma unidad
       let nt = '';
