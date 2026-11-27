@@ -169,7 +169,9 @@ describe('el planeta que partís es tuyo', () => {
     const p = addBody(w, { x: 30, y: 0, vx: 0, vy: 0, radius: E * 0.9, kind: KIND_ROCKY });
     hitPlanet(w, p, 1000);
     const r = w.radius[p];
-    run(w, 2);
+    run(w, 1);
+    expect(w.state[p]).not.toBe(ORBITING);   // recién partido: primero deriva, no entra al instante
+    run(w, cfg.splitNoCatch + 4);
     expect(w.state[p]).toBe(ORBITING);
     expect(w.radius[p]).toBe(r);
   });

@@ -88,6 +88,7 @@ export interface SimConfig {
   cometStealMax: number;
   cometPlanetChance: number;
   halfSplitSpeed: number;
+  splitNoCatch: number;          // segundos que derivan los pedazos de un planeta recién partido antes de poder entrar a tu órbita
   bhDiskR: number;
   bhTidalR: number;              // zona de marea, en radios del horizonte: arranca la órbita y, sin órbita, deshace la estrella
   bhTidalDrain: number;          // fracción de la masa que perdés por segundo sin órbita, en lo más hondo de la marea               // radio del disco de acreción, en radios del horizonte (lo que se ve)
@@ -171,8 +172,8 @@ export const DEFAULT_CONFIG: SimConfig = {
   bhStarPull: 1.3,
   hurtWorldsLost: 3,
   hurtInvuln: 1.5,
-  hurtBounce: 7,
-  lostSpeed: 18,
+  hurtBounce: 3,
+  lostSpeed: 7,
   noCatchTime: 1.5,
   slingCooldown: 0.35,
   slingSpeed: 70,
@@ -228,6 +229,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   cometStealMax: 5,
   cometPlanetChance: 0.5,
   halfSplitSpeed: 0.3,
+  splitNoCatch: 3.5,
   bhDiskR: 4.5,
   bhTidalR: 9,
   bhTidalDrain: 0.5,
@@ -254,8 +256,8 @@ export const DEFAULT_CONFIG: SimConfig = {
   huntPullAccel: 900,
   huntPullMax: 300,
   huntPullDrag: 1.2,
-  planetJoinTime: 2.5,
-  bodyJoinTime: 0.7,
+  planetJoinTime: 4.5,
+  bodyJoinTime: 1.2,
   planetInfallSpeed: 5,
   huntOrbitFall: 1.6,
   hurtLossMin: 0.25,

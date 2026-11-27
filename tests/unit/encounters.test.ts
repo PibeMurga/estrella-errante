@@ -16,20 +16,20 @@ const freeDebris = (w: World): number => { let n = 0; for (let i = 0; i < w.coun
 const X0 = 300, Y0 = 200;
 
 describe('encuentros entre planetas', () => {
-  it('el chico bordea al grande en arco, nunca lo toca, y sigue con su misma velocidad', () => {
+  it('si se tocan, chocan pesados: sin rebote, se reparten el movimiento, no se enciman y queda la marca', () => {
     const w = createWorld(cfg({ crashChance: 0 }), 5, 10);
     const big = addBody(w, { x: X0, y: Y0, vx: 0, vy: 0, radius: 6, kind: KIND_ROCKY });
-    const small = addBody(w, { x: X0 - 70, y: Y0 + 1, vx: 8, vy: 0, radius: 4.5, kind: KIND_ICE });
-    let minD = Infinity, maxSide = 0;
-    run(w, 20, () => {
+    const small = addBody(w, { x: X0 - 40, y: Y0 + 1, vx: 8, vy: 0, radius: 2.5, kind: KIND_ICE });
+    let minD = Infinity, maxBack = 0;
+    run(w, 12, () => {
       minD = Math.min(minD, Math.hypot(w.x[small]! - w.x[big]!, w.y[small]! - w.y[big]!));
-      maxSide = Math.max(maxSide, Math.abs(w.y[small]! - Y0));
+      maxBack = Math.max(maxBack, -(w.vx[small]! - w.vx[big]!));   // velocidad con que se alejaría (rebote)
     });
-    expect(minD).toBeGreaterThanOrEqual((6 + 4.5) * DEFAULT_CONFIG.encounterGap - 1e-6);
-    expect(maxSide).toBeGreaterThan(6);                 // se desvió rodeándolo
-    expect(w.x[small]).toBeGreaterThan(X0 + 70);        // y siguió de largo
-    expect(w.vx[small]).toBe(8); expect(w.vy[small]).toBe(0);
-    expect(w.x[big]).toBe(X0); expect(w.y[big]).toBe(Y0);   // el grande no se mueve
+    expect(minD).toBeGreaterThanOrEqual((6 + 2.5) * 0.9);
+    expect(maxBack).toBeLessThan(0.5);                                // sin rebote
+    expect(w.vx[big]).toBeGreaterThan(0);                             // el grande también recibe el golpe
+    expect(w.contactHits).toBeGreaterThan(0);
+    expect(w.impactCount).toBeGreaterThan(1);                          // marcas en los dos
     expect(w.planetCrashes).toBe(0);
   });
 
@@ -87,15 +87,14 @@ describe('encuentros entre planetas', () => {
     expect(under / n).toBeLessThan(0.42);
   });
 
-  it('un planeta que no se puede capturar, más chico que la estrella, la rodea y sigue: no la atraviesa', () => {
+  it('un planeta que no se puede capturar, más chico que la estrella, choca pesado contra ella: no la atraviesa ni rebota', () => {
     const w = createWorld(cfg(), 5, 10);
     const size = starSize(w.star.mass);
     const p = addBody(w, { x: -60, y: 0.5, vx: 9, vy: 0, radius: 3, kind: KIND_ROCKY });
-    let minD = Infinity;
-    run(w, 16, () => { minD = Math.min(minD, Math.hypot(w.x[p]! - w.star.x, w.y[p]! - w.star.y)); });
-    expect(minD).toBeGreaterThanOrEqual((size + 3) * DEFAULT_CONFIG.encounterGap - 1e-6);
-    expect(w.x[p]).toBeGreaterThan(60);
-    expect(w.vx[p]).toBe(9);
+    let minD = Infinity, maxBack = 0;
+    run(w, 10, () => { minD = Math.min(minD, Math.hypot(w.x[p]! - w.star.x, w.y[p]! - w.star.y)); maxBack = Math.max(maxBack, -(w.vx[p]! - w.star.vx)); });
+    expect(minD).toBeGreaterThanOrEqual((size + 3) * 0.98);
+    expect(maxBack).toBeLessThan(0.5);   // sin rebote
     expect(w.state[p]).toBe(FREE);
   });
 

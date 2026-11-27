@@ -1,6 +1,6 @@
 import { DT } from './config';
 import { breakPlanet } from './tidal';
-import { DEAD, FREE, KIND_GAS, KIND_ICE, KIND_ROCKY, starSize, type World } from './world';
+import { DEAD, FREE, KIND_GAS, KIND_ICE, KIND_ROCKY, MAX_IMPACTS, starSize, type World } from './world';
 
 // Encuentros entre planetas libres. Dos planetas no se atraviesan: el más chico bordea al más grande por fuera,
 // en arco, y sigue con la misma dirección y velocidad que traía (sólo se corre su posición, nunca su velocidad).
@@ -46,6 +46,41 @@ function crash(w: World, big: number, small: number, nx: number, ny: number): vo
   breakPlanet(w, big, nx, ny, false);
 }
 
+// Dos planetas que se tocan chocan como lo que son: masas enormes. Sin rebote: pierden la velocidad con que se acercaban
+// (se reparten la cantidad de movimiento) y quedan apoyados, sin encimarse. El golpe queda marcado en los dos. Si el
+// chico es rocoso o helado y llegó con fuerza, se parte; si el grande es un gaseoso, el chico se hunde en sus nubes.
+function heavyContact(w: World, big: number, small: number, nx: number, ny: number, overlap: number): void {
+  const mb = w.mass[big]!, ms = w.mass[small]!, m = mb + ms;
+  const rvx = w.vx[small]! - w.vx[big]!, rvy = w.vy[small]! - w.vy[big]!;
+  const vn = rvx * nx + rvy * ny;
+  // Se separan sin velocidad: cada uno se corre según la masa del otro.
+  w.x[small] = w.x[small]! + nx * overlap * (mb / m); w.y[small] = w.y[small]! + ny * overlap * (mb / m);
+  w.x[big] = w.x[big]! - nx * overlap * (ms / m); w.y[big] = w.y[big]! - ny * overlap * (ms / m);
+  if (vn >= 0) return;   // ya se separan
+  // Choque plástico en la normal: se reparte la cantidad de movimiento; en la tangente, roce.
+  const jn = -vn, tx = -ny, ty = nx, vt = rvx * tx + rvy * ty;
+  const f = 0.3;   // roce: pierde parte del deslizamiento
+  w.vx[small] = w.vx[small]! + (nx * jn - tx * vt * f) * (mb / m); w.vy[small] = w.vy[small]! + (ny * jn - ty * vt * f) * (mb / m);
+  w.vx[big] = w.vx[big]! - (nx * jn - tx * vt * f) * (ms / m); w.vy[big] = w.vy[big]! - (ny * jn - ty * vt * f) * (ms / m);
+  if (jn < 0.4) return;   // apenas se rozaron
+  // El golpe: cráter en los dos (o una mancha oscura en las nubes del gaseoso).
+  const strength = Math.min(1.6, 0.4 + jn / 4);
+  mark(w, big, Math.atan2(ny, nx), strength);
+  mark(w, small, Math.atan2(-ny, -nx), strength);
+  w.contactHits++;
+  if (w.kind[big] === KIND_GAS && solid(w.kind[small]!) && w.radius[small]! < w.radius[big]! * 0.6) {
+    // Se hunde en el gigante gaseoso: desaparece en sus nubes.
+    w.state[small] = DEAD;
+    return;
+  }
+  if (solid(w.kind[small]!) && w.broken[small]! === 0 && jn > 2.5) breakPlanet(w, small, nx, ny, false);
+}
+
+function mark(w: World, p: number, ang: number, size: number): void {
+  const slot = (w.impactCount % MAX_IMPACTS) * 4;
+  w.impacts[slot] = p; w.impacts[slot + 1] = ang; w.impacts[slot + 2] = size; w.impactCount++;
+}
+
 export function stepEncounters(w: World): void {
   const c = w.config;
   const hw = c.arenaHalfWidth, hh = c.arenaHalfHeight;
@@ -74,13 +109,13 @@ export function stepEncounters(w: World): void {
         if (d < sum * 0.97) { const inv = d > 1e-6 ? 1 / d : 0; crash(w, big, small, d > 1e-6 ? dx * inv : 1, dy * inv); break; }
         continue;
       }
-      bypass(w, small, w.x[big]!, w.y[big]!, w.vx[big]!, w.vy[big]!, dx, dy, sum * c.encounterGap);
+      if (d < sum) heavyContact(w, big, small, d > 1e-6 ? dx / d : 1, d > 1e-6 ? dy / d : 0, sum - d);
     }
   }
 }
 
-// Un planeta que la estrella no puede capturar, pero que es más chico que ella, no la atraviesa:
-// se acerca, la rodea en arco y sigue de largo. Los más grandes que la estrella chocan (eso lo resuelve el paso).
+// Un planeta que la estrella no puede capturar, pero que es más chico que ella, no la atraviesa: choca pesado y se
+// desliza apoyado. Los más grandes que la estrella la dañan (eso lo resuelve el paso).
 export function stepStarFlybys(w: World): void {
   const c = w.config, s = w.star;
   const size = starSize(s.mass);
@@ -92,9 +127,17 @@ export function stepStarFlybys(w: World): void {
     if (r <= Math.max(c.maxCaptureSize, size * 0.5) || r > size || w.broken[i]! > 0) continue;   // los chicos y los partidos entran solos: no esquivan
     const dx = w.x[i]! - s.x, dy = w.y[i]! - s.y;
     if (Math.abs(dx) > hw || Math.abs(dy) > hh) continue;
-    const D = (size + r) * c.encounterGap;
-    if (dx * dx + dy * dy >= 16 * D * D) continue;   // empieza a desviarse desde lejos, de a poco
-    bypass(w, i, s.x, s.y, s.vx, s.vy, dx, dy, D);
+    // Choca pesado contra la estrella: sin rebote ni arco; pierde la velocidad con que se acercaba y se desliza apoyado.
+    const D = size + r, d2 = dx * dx + dy * dy;
+    if (d2 >= D * D) continue;
+    const d = Math.sqrt(d2) || 1, nx = dx / d, ny = dy / d;
+    w.x[i] = s.x + nx * D; w.y[i] = s.y + ny * D;
+    const rvx = w.vx[i]! - s.vx, rvy = w.vy[i]! - s.vy, vn = rvx * nx + rvy * ny;
+    if (vn < 0) {
+      const vt = rvx * -ny + rvy * nx;
+      w.vx[i] = s.vx + (-ny) * vt * 0.6; w.vy[i] = s.vy + nx * vt * 0.6;
+      if (-vn > 0.8) mark(w, i, Math.atan2(-ny, -nx), Math.min(1.2, 0.4 - vn / 5));
+    }
   }
 }
 

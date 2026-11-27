@@ -230,12 +230,14 @@ function moveOrbiting(w: World, i: number, absorbing: boolean, size: number, hol
     if (!absorbing) target = Math.max(size * 1.3, target * (1 - (0.08 + 0.22 * v1) * Math.sin(Math.PI * Math.min(1, t * 1.15))));
   }
   const maxDr = (planet ? c.planetInfallSpeed : c.orbitInfallSpeed) * (absorbing ? 1.6 : 1) * (0.25 + 0.75 * k) * DT;
-  const r = w.orbitR[i] + clamp((target - w.orbitR[i]) * c.orbitEase, -maxDr, maxDr);
+  // Al entrar sigue con el movimiento que traía (hacia vos o alejándose) y de a poco pasa a acomodarse: continuo, pesado.
+  const settle = clamp((target - w.orbitR[i]) * c.orbitEase, -maxDr, maxDr);
+  const r = Math.max(absorbing ? 0 : size * 1.2, w.orbitR[i] + (k >= 1 || absorbing ? settle : (1 - k) * w.life[i]! * DT + k * settle));
   w.orbitR[i] = r;
   if (absorbing && r <= size * 0.8) { w.state[i] = DEAD; return; }
   const wOrbit = c.orbitSpeedK * Math.pow(c.orbitMin / Math.max(r, 1e-6), 1.5);
   // Al entrar se frena (gira más lento) y recupera el ritmo de la órbita al acoplarse.
-  const a = w.orbitAngle[i] + (k >= 1 ? wOrbit : (w.orbitW[i] + (wOrbit - w.orbitW[i]) * k) * (0.55 + 0.45 * k)) * DT;
+  const a = w.orbitAngle[i] + (k >= 1 ? wOrbit : w.orbitW[i] + (wOrbit - w.orbitW[i]) * k) * DT;
   w.orbitAngle[i] = a;
   w.x[i] = s.x + Math.cos(a) * r;
   w.y[i] = s.y + Math.sin(a) * r;
@@ -405,11 +407,12 @@ export function step(w: World, intent: Intent): void {
         if (x - s.x > hw) { x -= 2 * hw; w.prevX[i] -= 2 * hw; } else if (x - s.x < -hw) { x += 2 * hw; w.prevX[i] += 2 * hw; }
         if (y - s.y > hh) { y -= 2 * hh; w.prevY[i] -= 2 * hh; } else if (y - s.y < -hh) { y += 2 * hh; w.prevY[i] += 2 * hh; }
         // La gravedad de tu sistema: los asteroides y lunas sueltas cercanas se curvan hacia vos y caen a tu órbita.
-        if (!hunting && w.kind[i] !== KIND_ROCKY && w.kind[i] !== KIND_ICE && w.kind[i] !== KIND_GAS && w.noCatch[i]! <= 0
+        const pieceOfPlanet = w.broken[i]! > 0 && w.kind[i] !== KIND_GAS;   // los pedazos de un partido también caen hacia vos
+        if (!hunting && (pieceOfPlanet || (w.kind[i] !== KIND_ROCKY && w.kind[i] !== KIND_ICE && w.kind[i] !== KIND_GAS)) && w.noCatch[i]! <= 0
             && w.radius[i] <= c.rockHitSize && w.vx[i] * w.vx[i] + w.vy[i] * w.vy[i] <= c.rockHitSpeed * c.rockHitSpeed) {   // los que te golpean, no: pasan derecho
           const ex = s.x - x, ey = s.y - y, e2 = ex * ex + ey * ey, R = captureR * c.starPullReach;
           if (e2 < R * R && e2 > 1e-6) {
-            const e = Math.sqrt(e2), a = c.starPullAccel * (1 - e / R) * DT / e;
+            const e = Math.sqrt(e2), a = c.starPullAccel * (pieceOfPlanet ? 0.35 : 1) * (1 - e / R) * DT / e;
             w.vx[i] += ex * a; w.vy[i] += ey * a;
           }
         }
@@ -514,6 +517,8 @@ export function step(w: World, intent: Intent): void {
         w.orbitAngle[i] = Math.atan2(y - s.y, x - s.x);
         // Giro con que venía, alrededor de la estrella: desde ahí se acopla de a poco (ver moveOrbiting).
         w.orbitW[i] = clamp(((x - s.x) * (w.vy[i] - s.vy) - (y - s.y) * (w.vx[i] - s.vx)) / Math.max(d * d, 1e-6), -3, 3);
+        // Y la velocidad con que se acercaba (o alejaba): la conserva al principio, así no se frena de golpe.
+        w.life[i] = clamp(((x - s.x) * (w.vx[i] - s.vx) + (y - s.y) * (w.vy[i] - s.vy)) / Math.max(d, 1e-6), -12, 12);
         w.joinT[i] = 0;
         w.orbitingCount++;
         s.mass += massGain(w, i);
