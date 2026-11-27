@@ -405,7 +405,8 @@ export function step(w: World, intent: Intent): void {
         if (x - s.x > hw) { x -= 2 * hw; w.prevX[i] -= 2 * hw; } else if (x - s.x < -hw) { x += 2 * hw; w.prevX[i] += 2 * hw; }
         if (y - s.y > hh) { y -= 2 * hh; w.prevY[i] -= 2 * hh; } else if (y - s.y < -hh) { y += 2 * hh; w.prevY[i] += 2 * hh; }
         // La gravedad de tu sistema: los asteroides y lunas sueltas cercanas se curvan hacia vos y caen a tu órbita.
-        if (!hunting && w.kind[i] !== KIND_ROCKY && w.kind[i] !== KIND_ICE && w.kind[i] !== KIND_GAS && w.noCatch[i]! <= 0) {
+        if (!hunting && w.kind[i] !== KIND_ROCKY && w.kind[i] !== KIND_ICE && w.kind[i] !== KIND_GAS && w.noCatch[i]! <= 0
+            && w.radius[i] <= c.rockHitSize && w.vx[i] * w.vx[i] + w.vy[i] * w.vy[i] <= c.rockHitSpeed * c.rockHitSpeed) {   // los que te golpean, no: pasan derecho
           const ex = s.x - x, ey = s.y - y, e2 = ex * ex + ey * ey, R = captureR * c.starPullReach;
           if (e2 < R * R && e2 > 1e-6) {
             const e = Math.sqrt(e2), a = c.starPullAccel * (1 - e / R) * DT / e;
