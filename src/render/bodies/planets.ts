@@ -158,7 +158,7 @@ void main(){
 #elif SHADE == 7
   {
     // Nubes espesas en remolino: no se ve la superficie.
-    float sw = lat*3. + fbm(p*2.+uTime*.006, 4)*1.2;
+    float sw = lat*3. + fbm(p*2.+uTime*.02, 4)*1.2;   // las bandas de los gaseosos se mueven
     vec3 w = vec3(p.x*cos(sw) - p.z*sin(sw), lat*2.2, p.x*sin(sw) + p.z*cos(sw));
     float c = fbm(w*2.2 + vSeed + vec3(uTime*.01,0.,0.), 6)*.5+.5;
     alb = mix(uA, uB, smoothstep(.3, .75, c)); alb = mix(alb, uC, smoothstep(.72, .9, c)*.7);
@@ -192,7 +192,7 @@ void main(){
 
 const CLOUD_FRAG = /* glsl */ `uniform float uTime; uniform vec3 uSunPos; uniform vec3 uLight; uniform float uCover; varying vec3 vN; varying vec3 vP; varying vec3 vO; varying mat3 vM; varying float vSeed;
 void main(){ vec3 p = normalize(vO); float ndl = dot(normalize(vN), normalize(uSunPos - vP));
-  vec3 w = p*2.3 + vec3(uTime*.012, 0., 0.) + .6*vec3(fbm(p*1.5+vSeed,4), fbm(p*1.5+4.,4), 0.);
+  vec3 w = p*2.3 + vec3(uTime*.03, 0., 0.) + .6*vec3(fbm(p*1.5+vSeed,4), fbm(p*1.5+4.,4), 0.);
   float c = smoothstep(uCover, uCover + .26, fbm(w, 7)*.5+.5); float lit = max(ndl, 0.) * smoothstep(-.04, .12, ndl);
   gl_FragColor = vec4(uLight * .92 * lit, c * .92); }`;
 
@@ -300,8 +300,9 @@ export function createPlanetsLayer(world: World, segments: number, octaves: numb
     }
     const spin = new Float32Array(n), seed = new Float32Array(n);
     for (let s = 0; s < n; s++) {
-      spin[s] = rng.range(0.12, 0.35);
       seed[s] = rng.next();
+      // Cada planeta gira a su ritmo, a la vista; uno de cada seis, al revés (como Venus o Urano).
+      spin[s] = (0.3 + 0.6 * ((seed[s]! * 7.31) % 1)) * (((seed[s]! * 13.7) % 1) < 0.17 ? -1 : 1);
       seedCol.setRGB(seed[s]!, 0, 0);
       hi.setColorAt(s, seedCol); lo.setColorAt(s, seedCol); clouds?.setColorAt(s, seedCol); atmo?.setColorAt(s, seedCol);
     }
