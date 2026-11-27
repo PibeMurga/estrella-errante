@@ -78,6 +78,11 @@ function gatherOne(w: World): boolean {
   w.state[best] = GATHERING;
   w.orbitingCount--;
   w.gathered++;
+  // Desde donde está, gira alrededor del montón y se va acercando en espiral (posición polar relativa al montón).
+  const gr = starSize(w.star.mass) * 1.15 + w.config.boltGatherDist;
+  const px = w.star.x + Math.cos(w.boltAngle) * gr, py = w.star.y + Math.sin(w.boltAngle) * gr;
+  w.orbitAngle[best] = Math.atan2(w.y[best] - py, w.x[best] - px);
+  w.orbitR[best] = Math.hypot(w.x[best] - px, w.y[best] - py);
   return true;
 }
 
@@ -133,11 +138,15 @@ export function stepBolts(w: World): void {
   for (let i = 0; i < w.count; i++) {
     const st = w.state[i];
     if (st === GATHERING) {
-      // Cada uno tiene su lugarcito en el montón (según su índice), para que no queden encimados.
-      const off = ((i * 0.618034) % 1) * Math.PI * 2, rr = 0.6 + ((i * 0.381966) % 1) * 1.2;
-      const tx = px + Math.cos(off) * rr - w.x[i], ty = py + Math.sin(off) * rr - w.y[i];
-      const d = Math.hypot(tx, ty), mv = Math.min(d, 40 * DT);
-      if (d > 1e-6) { w.x[i] += (tx / d) * mv; w.y[i] += (ty / d) * mv; }
+      // Gira alrededor del montón y se acerca en espiral hasta su lugarcito (según su índice, para no quedar encimados);
+      // ya pegado, el montón entero sigue girando despacio, como una roca grande que se forma.
+      const rr = 0.6 + ((i * 0.381966) % 1) * (0.9 + 0.12 * Math.sqrt(w.gathered));
+      const r0 = w.orbitR[i];
+      const r1 = rr + (r0 - rr) * Math.exp(-4.5 * DT);
+      w.orbitR[i] = r1;
+      w.orbitAngle[i] += (1.2 + 9 * Math.min(1, (r1 - rr) / 6)) * DT;
+      w.x[i] = px + Math.cos(w.orbitAngle[i]) * r1;
+      w.y[i] = py + Math.sin(w.orbitAngle[i]) * r1;
       w.vx[i] = s.vx; w.vy[i] = s.vy;
     } else if (st === BOLT) {
       w.x[i] += w.vx[i] * DT; w.y[i] += w.vy[i] * DT;

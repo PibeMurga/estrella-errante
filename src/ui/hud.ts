@@ -1,4 +1,6 @@
 import { ABILITY_NAMES, planetsAlive } from '../sim/abilities';
+import { playerName } from './playerName';
+import { formatSolar } from './solarMass';
 import { rivalMass } from '../sim/phase';
 import { MAX_COMETS, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, type World } from '../sim/world';
 import { STAGE_HYPER, STAGES, stageFor, stageProgress } from '../sim/stages';
@@ -29,10 +31,10 @@ export function createHud(parent: HTMLElement): Hud {
   root.innerHTML = `
     <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
     <div class="stage"><span class="name"></span> · <span class="pct"></span><div class="seg">${'<i class="o"></i>'.repeat(SEGMENTS)}</div></div>
-    <div class="race"><span class="me">VOS <b class="mv">0000</b></span><div class="bar"><i class="mb"></i><i class="rb"></i></div><span class="rv"><b class="rvv">0000</b> RIVAL</span></div>
+    <div class="race"><span class="me"><span class="pname">TU ESTRELLA</span> <b class="mv">0000</b></span><div class="bar"><i class="mb"></i><i class="rb"></i></div><span class="rv"><b class="rvv">0000</b> RIVAL</span></div>
     <div class="note am"></div>
     <div class="banner"><b>SOS UN AGUJERO NEGRO</b><span>ATRAPÁ AL RIVAL ANTES DE QUE ESCAPE</span></div>
-    <div class="clock"><span class="time">00:00</span><br><span class="dim mass">MASA 0000</span></div>
+    <div class="clock"><span class="time">00:00</span><br><span class="dim mass">MASA 0 M☉</span></div>
     <div class="bhinfo">AGUJERO NEGRO<br><span class="bhdist"></span></div>
     <div class="bottom"><span class="sling">HONDA ●</span><span class="worlds">EN ÓRBITA 000</span><span class="sys">PLANETAS 00/00</span></div>
     <div class="log">${'<div></div>'.repeat(LOG_LINES)}</div>
@@ -50,6 +52,7 @@ export function createHud(parent: HTMLElement): Hud {
   const arrow = q<HTMLElement>('.arrow'), arrowSvg = q<SVGElement>('.arrow svg'), arrowDist = q<HTMLElement>('.adist');
   const brackets = q<HTMLElement>('.brackets');
   const sysEl = q<HTMLElement>('.sys');
+  q<HTMLElement>('.pname').textContent = playerName();
   const race = q<HTMLElement>('.race'), mvEl = q<HTMLElement>('.mv'), rvEl = q<HTMLElement>('.rvv');
   const mb = q<HTMLElement>('.mb'), rb = q<HTMLElement>('.rb'), note = q<HTMLElement>('.note');
   const banner = q<HTMLElement>('.banner');
@@ -129,14 +132,14 @@ export function createHud(parent: HTMLElement): Hud {
 
       const secs = w.tick / 60;
       timeEl.textContent = `${pad(secs / 60, 2)}:${pad(secs % 60, 2)}`;
-      massEl.textContent = `MASA ${pad(s.mass, 4)}`;
+      massEl.textContent = `MASA ${formatSolar(s.mass)}`;
 
       // La carrera: tu masa contra la del rival (en la caza, tu ventaja).
       race.style.display = bh.active || w.phase === PHASE_MERGE ? '' : 'none';
       const me = s.mass, rv = rivalMass(w);
       const f = Math.round((me / Math.max(1e-6, me + rv)) * 1000) / 10;
       if (f !== lastRace) { mb.style.width = `${f}%`; rb.style.width = `${100 - f}%`; lastRace = f; }
-      mvEl.textContent = pad(me, 4); rvEl.textContent = pad(rv, 4);
+      mvEl.textContent = formatSolar(me); rvEl.textContent = formatSolar(rv);
       let nt = '';
       if (w.phase === PHASE_HUNT) {
         const left = Math.max(0, w.config.huntTimeLimit - w.phaseTime);
