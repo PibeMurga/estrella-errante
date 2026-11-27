@@ -192,11 +192,9 @@ Cada entrega tiene su propio plan, se prueba y Lucas la juega antes de unirla a 
 - **Banco de rendimiento:** el p99 se mantiene dentro del objetivo (60 FPS en Steam Deck) con las capas nuevas.
 - **La última palabra es de Lucas**, jugando cada entrega.
 
-## 11. Supuestos a confirmar por Lucas
+## 11. Decisiones confirmadas por Lucas (26/11/2026)
 
-Estos puntos no se definieron en la conversación y los completé con lo que me pareció más coherente:
-
-1. **El colapso lo disparás vos.** Cuando se cumplen las condiciones, la barra avisa y apretás una tecla. Así podés seguir creciendo para entrar a la caza con ventaja. La alternativa es que ocurra solo.
-2. **La caza tiene tiempo límite.** Si no alcanzás al rival a tiempo, se escapa y perdés. Sin límite, la caza no tendría riesgo.
-3. **Los cortes de tamaño son 0,5·E, E y 1,5·E,** y el golpe grave te hace perder una etapa entera de masa.
-4. **Las habilidades se pierden** si bajás del umbral (por ejemplo, si un cometa te roba un planeta), y el juego se pausa para elegir la mejora.
+1. **El colapso lo disparás vos.** Cuando se cumplen las condiciones, la barra avisa y apretás una tecla. Podés seguir creciendo para entrar a la caza con más ventaja.
+2. **La caza tiene tiempo límite.** Si no alcanzás al rival a tiempo, se escapa y perdés.
+3. **Los cortes de tamaño son 0,5·E, E y 1,5·E.** El golpe grave te hace perder una etapa entera de masa.
+4. **Las habilidades se pierden** si bajás del umbral, y el juego se pausa para elegir la mejora.
