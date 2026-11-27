@@ -1,6 +1,7 @@
-import { AdditiveBlending, Group, Mesh, PlaneGeometry, PointLight, ShaderMaterial, SphereGeometry, Vector3 } from 'three';
-import { STAGE_HYPER } from '../../sim/stages';
-import { OVER_SWALLOWED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PHASE_PLAY, starSize } from '../../sim/world';
+import { AdditiveBlending, DirectionalLight, Group, Mesh, PlaneGeometry, PointLight, ShaderMaterial, SphereGeometry, Vector3 } from 'three';
+import { sceneLight } from '../lighting';
+import { STAGE_HYPER, STAGE_IGNITION } from '../../sim/stages';
+import { OVER_SWALLOWED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_IGNITION, PHASE_MERGE, PHASE_PLAY, starSize } from '../../sim/world';
 import { toWorld } from '../cameraRig';
 import type { Layer } from '../layer';
 import { NOISE_GLSL } from '../shaders/noise';
@@ -201,7 +202,11 @@ export function createSunLayer(sunPos: Vector3): Layer {
   let baseIntensity = 1.45, baseLight = 2.4;
   const light = new PointLight(0xffc890, 2.4, 0, 0);
   const group = new Group();
-  group.add(sun, halo, shell, front, light);
+  // Siendo planeta, la luz viene de una estrella lejana (tenue y de una dirección fija).
+  const far = new DirectionalLight(0xdfe6ff, 0);
+  group.add(sun, halo, shell, front, light, far, far.target);
+  const FAR = new Vector3(-620, 520, -740);   // dirección de la estrella lejana (relativa a vos)
+  const starAt = new Vector3();
   let shownR = -1;   // radio que se ve: sigue al radio real con una curva suave, sin saltos
 
   return {
@@ -209,12 +214,20 @@ export function createSunLayer(sunPos: Vector3): Layer {
     update(ctx) {
       toWorld(ctx.starX, ctx.starY, sunPos);
       const w = ctx.world;
+      // Encendido: 0 siendo planeta; en la ignición sube después del destello; 1 desde que nació tu estrella.
+      const ign = w.phase === PHASE_IGNITION ? smooth01((w.phaseTime - 1.2) / 1.8) : w.ignited ? 1 : 0;
+      starAt.copy(sunPos);
+      // La luz de los cuerpos sale de la estrella lejana y pasa a la tuya con el encendido.
+      sunPos.set(starAt.x + FAR.x * (1 - ign), starAt.y + FAR.y * (1 - ign), starAt.z + FAR.z * (1 - ign));
+      sceneLight.level = 0.38 + 0.62 * ign;
+      far.intensity = 1.1 * (1 - ign);
+      far.position.copy(starAt).add(FAR); far.target.position.copy(starAt);
       if (w !== lastWorld) { lastWorld = w; seed.value = Math.floor(Math.random() * 1000); }   // partida nueva: otra secuencia
       // Tragada por el agujero negro, o ya convertida en agujero negro: no hay estrella.
       const swallowed = w.over === OVER_SWALLOWED;
       const gone = w.phase === PHASE_HUNT || w.phase === PHASE_MERGE;
-      const target = swallowed || gone ? 0 : starRenderRadius(w.star.mass);
-      shownR = gone ? 0 : shownR < 0 ? target : smoothToward(shownR, target, swallowed ? 2.5 : 1.2, ctx.dt);
+      const target = swallowed || gone ? 0 : starRenderRadius(w.star.mass) * ign;
+      shownR = gone ? 0 : shownR < 0 ? target : smoothToward(shownR, target, swallowed ? 2.5 : w.phase === PHASE_IGNITION ? 4 : 1.2, ctx.dt);
       // La hipergigante late: se hincha y se contrae despacio, y el brillo acompaña cada pulso.
       const hyper = w.stage >= STAGE_HYPER && w.phase === PHASE_PLAY && w.over === 0;
       const pulse = hyper ? Math.sin(ctx.time * ((Math.PI * 2) / PULSE_PERIOD)) : 0;
@@ -227,20 +240,20 @@ export function createSunLayer(sunPos: Vector3): Layer {
       }
       const r = Math.max(shownR * k, 1e-3);
       sun.visible = halo.visible = shownR * k > 0.05;
-      sun.position.copy(sunPos); sun.scale.setScalar(r); sun.rotation.y = ctx.time * 0.09;   // gira a la vista
-      halo.position.copy(sunPos); halo.scale.setScalar(r); halo.quaternion.copy(ctx.camera.quaternion);
+      sun.position.copy(starAt); sun.scale.setScalar(r); sun.rotation.y = ctx.time * 0.09;   // gira a la vista
+      halo.position.copy(starAt); halo.scale.setScalar(r); halo.quaternion.copy(ctx.camera.quaternion);
       front.visible = sun.visible;
       // Un poco hacia la cámara, para que quede delante de la superficie.
-      camDir.copy(ctx.camera.position).sub(sunPos).normalize();
-      front.position.copy(sunPos).addScaledVector(camDir, r * 1.02); front.scale.setScalar(r); front.quaternion.copy(ctx.camera.quaternion);
+      camDir.copy(ctx.camera.position).sub(starAt).normalize();
+      front.position.copy(starAt).addScaledVector(camDir, r * 1.02); front.scale.setScalar(r); front.quaternion.copy(ctx.camera.quaternion);
       // Erupciones de la hipergigante: cada tanto sale una cáscara de gas.
       const et = ctx.time % ERUPTION_EVERY;
       shell.visible = hyper && et < ERUPTION_LAST;
-      if (shell.visible) { shell.position.copy(sunPos); shell.scale.setScalar(r); shell.quaternion.copy(ctx.camera.quaternion); shellMat.uniforms['uT']!.value = et; }
+      if (shell.visible) { shell.position.copy(starAt); shell.scale.setScalar(r); shell.quaternion.copy(ctx.camera.quaternion); shellMat.uniforms['uT']!.value = et; }
       sunMat.uniforms['uIntensity']!.value = baseIntensity * bright;
-      light.intensity = baseLight * (gone ? 0.35 : 1);
-      light.position.copy(sunPos);
-      const palTarget = PALETTES[Math.min(ctx.world.stage, PALETTES.length - 1)]!;
+      light.intensity = baseLight * (gone ? 0.35 : 1) * ign;
+      light.position.copy(starAt);
+      const palTarget = PALETTES[Math.min(Math.max(0, ctx.world.stage - STAGE_IGNITION), PALETTES.length - 1)]!;
       for (let k = 0; k < 9; k++) pal[k] = smoothToward(pal[k]!, palTarget[k]!, 0.8, ctx.dt);
       hot.set(pal[0]!, pal[1]!, pal[2]!); mid.set(pal[3]!, pal[4]!, pal[5]!); cool.set(pal[6]!, pal[7]!, pal[8]!);
       tint.set(pal[3]!, pal[4]!, pal[5]!).multiplyScalar(1.05);

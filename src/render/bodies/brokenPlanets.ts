@@ -1,6 +1,7 @@
 import { Color, DoubleSide, Frustum, Group, InstancedBufferAttribute, InstancedMesh, Matrix4, MeshBasicMaterial, Quaternion, ShaderMaterial, Sphere, SphereGeometry, Vector3 } from 'three';
 import { DEAD, KIND_ICE, KIND_ROCKY, type World } from '../../sim/world';
 import type { Layer } from '../layer';
+import { sceneLight } from '../lighting';
 import { NOISE_GLSL } from '../shaders/noise';
 import { capCentroid, capVolume, cutOffset, halfSeed } from '../../sim/halves';
 import { planetVisualFor, VISUALS } from './planets';
@@ -112,6 +113,7 @@ export function createBrokenPlanetsLayer(world: World, sunPos: Vector3): Layer {
   const n = Math.max(1, idx.length);
   const time = { value: 0 };
   const light = LIGHT_BASE.clone();
+  const lightBase = LIGHT_BASE.clone();   // la de los parámetros; la que se usa sale de multiplicarla por la luz de la escena
   const geo = new SphereGeometry(1, 64, 32);
   // Colores del tipo de cada planeta (los mismos de la capa de planetas), por instancia.
   const colA = new Float32Array(n * 3), colB = new Float32Array(n * 3), colC = new Float32Array(n * 3);
@@ -148,6 +150,7 @@ export function createBrokenPlanetsLayer(world: World, sunPos: Vector3): Layer {
   return {
     object: group,
     update(ctx) {
+      light.copy(lightBase).multiplyScalar(sceneLight.level);
       const w = ctx.world, a = ctx.alpha;
       frustum.setFromProjectionMatrix(projView.multiplyMatrices(ctx.camera.projectionMatrix, ctx.camera.matrixWorldInverse));
       time.value = ctx.time;
@@ -210,7 +213,7 @@ export function createBrokenPlanetsLayer(world: World, sunPos: Vector3): Layer {
       }
     },
     applyParams(p) {
-      light.copy(LIGHT_BASE).multiplyScalar(p.lightIntensity / 2.4);
+      lightBase.copy(LIGHT_BASE).multiplyScalar(p.lightIntensity / 2.4);
     },
   };
 }

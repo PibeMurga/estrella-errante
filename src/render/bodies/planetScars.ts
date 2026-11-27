@@ -2,6 +2,7 @@ import { Frustum, Group, InstancedBufferAttribute, InstancedMesh, Matrix4, Quate
 import { planetHp } from '../../sim/planetCapture';
 import { DEAD, KIND_GAS, KIND_ICE, KIND_ROCKY, MAX_IMPACTS, type World } from '../../sim/world';
 import type { Layer } from '../layer';
+import { sceneLight } from '../lighting';
 import { NOISE_GLSL } from '../shaders/noise';
 
 // Marcas de los golpes en los planetas. Cada golpe deja un cráter donde pegó (cuenca oscura, borde que recibe la luz
@@ -64,12 +65,13 @@ const bound = new Sphere();
 
 export function createPlanetScarsLayer(world: World, sunPos: Vector3, light: Vector3, spinOf: Float32Array): Layer {
   const geo = new SphereGeometry(1, 64, 32);
+  const lit = light.clone();
   const cAttr: InstancedBufferAttribute[] = [];
   for (let k = 0; k < SLOTS; k++) { const a = new InstancedBufferAttribute(new Float32Array(MAX * 4), 4); geo.setAttribute(`aC${k}`, a); cAttr.push(a); }
   const info = new InstancedBufferAttribute(new Float32Array(MAX * 3), 3);
   geo.setAttribute('aInfo', info);
   const mat = new ShaderMaterial({
-    uniforms: { uSunPos: { value: sunPos }, uLight: { value: light } }, vertexShader: VERT, fragmentShader: NOISE_GLSL + FRAG,
+    uniforms: { uSunPos: { value: sunPos }, uLight: { value: lit } }, vertexShader: VERT, fragmentShader: NOISE_GLSL + FRAG,
     transparent: true, depthWrite: false,
   });
   const mesh = new InstancedMesh(geo, mat, MAX);
@@ -85,6 +87,7 @@ export function createPlanetScarsLayer(world: World, sunPos: Vector3, light: Vec
     object: group,
     update(ctx) {
       const w = ctx.world, a = ctx.alpha;
+      lit.copy(light).multiplyScalar(sceneLight.level);
       if (w !== lastWorld) { lastWorld = w; seen = 0; craters.fill(0); count.fill(0); }
       if (w.impactCount < seen) seen = w.impactCount;
       for (let n = Math.max(seen, w.impactCount - MAX_IMPACTS); n < w.impactCount; n++) {

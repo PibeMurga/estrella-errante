@@ -2,6 +2,7 @@ import { Color, Frustum, Group, InstancedMesh, Matrix4, Quaternion, Euler, RingG
 import type { Rng } from '../../sim/rng';
 import { KIND_GAS, KIND_ICE, KIND_MOON, KIND_ROCKY, type World, DEAD } from '../../sim/world';
 import type { Layer } from '../layer';
+import { sceneLight } from '../lighting';
 import { NOISE_GLSL } from '../shaders/noise';
 
 // Modelos de sombreado: 0 rocoso con cráteres · 1 oceánico · 2 hielo · 3 gaseoso · 4 lava · 5 desierto · 7 nubes espesas · 8 mineral.
@@ -261,6 +262,7 @@ export function createPlanetsLayer(world: World, segments: number, octaves: numb
   const geoHi = new SphereGeometry(1, segments, Math.max(8, Math.floor(segments / 2)));
   const geoLo = new SphereGeometry(1, LOW_SEGMENTS, LOW_SEGMENTS / 2);
   const light = LIGHT_BASE.clone();
+  const lightBase = LIGHT_BASE.clone();   // la de los parámetros; la que se usa sale de multiplicarla por la luz de la escena
   const time = { value: 0 };
   const entries: Entry[] = [];
   const spinOf = new Float32Array(world.capacity);
@@ -346,6 +348,7 @@ export function createPlanetsLayer(world: World, segments: number, octaves: numb
     typesShown: entries.length,
     spinOf,
     update(ctx) {
+      light.copy(lightBase).multiplyScalar(sceneLight.level);
       const w = ctx.world, a = ctx.alpha, cam = ctx.camera.position;
       const pxPerUnit = (ctx.height / 2) / Math.tan((ctx.camera.fov * Math.PI) / 360);
       frustum.setFromProjectionMatrix(projView.multiplyMatrices(ctx.camera.projectionMatrix, ctx.camera.matrixWorldInverse));
@@ -418,7 +421,7 @@ export function createPlanetsLayer(world: World, segments: number, octaves: numb
       }
     },
     applyParams(p) {
-      light.copy(LIGHT_BASE).multiplyScalar(p.lightIntensity / 2.4);
+      lightBase.copy(LIGHT_BASE).multiplyScalar(p.lightIntensity / 2.4);
     },
     applyQuality(q) {
       for (const m of materials) m.uniforms['uOct']!.value = q.planetOctaves;

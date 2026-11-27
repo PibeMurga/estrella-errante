@@ -8,6 +8,8 @@ import { createBrokenPlanetsLayer } from './bodies/brokenPlanets';
 import { createPlanetsLayer } from './bodies/planets';
 import { createPlanetScarsLayer } from './bodies/planetScars';
 import { createSunLayer } from './bodies/sun';
+import { createPlayerPlanetLayer } from './bodies/playerPlanet';
+import { createIgnitionLayer } from './fx/ignition';
 import { createBoltLayer } from './fx/bolt';
 import { createCometsLayer } from './fx/comets';
 import { createDangerMarksLayer, type DangerMarksLayer } from './fx/dangerMarks';
@@ -31,6 +33,7 @@ export function buildLayers(deps: LayerDeps): BuiltLayers {
     layers: [
       createSky(deps.quality, deps.rng),
       createSunLayer(sunPos),
+      createPlayerPlanetLayer(sunPos, Math.floor(deps.rng.next() * 3)),
       planets,
       createPlanetScarsLayer(deps.world, sunPos, new Vector3(1.25, 1.02, 0.8), planets.spinOf),
       createBrokenPlanetsLayer(deps.world, sunPos),
@@ -43,6 +46,7 @@ export function buildLayers(deps: LayerDeps): BuiltLayers {
       createCometsLayer(),
       createImpactLayer(),
       createHitSparksLayer(),
+      createIgnitionLayer(),
       createBreakBurstLayer(),
       marks,
     ],
