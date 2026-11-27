@@ -241,8 +241,11 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     const px = rng.range(-hw, hw), py = rng.range(-hh, hh);
     if (Math.hypot(px, py) < config.spawnClearRadius) continue;
     if (rng.next() * 3 > density(px, py)) continue;
-    const ang = rng.range(0, Math.PI * 2), speed = rng.range(1, 4);
-    addBody(w, { x: px, y: py, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, radius: rng.range(0.35, 1.1), kind: KIND_ASTEROID });
+    // Tamaños y velocidades desparejos: muchas piedras chicas, pocas grandes; la mayoría lentas y algunas veloces
+    // (las chicas, en promedio, más rápidas).
+    const ang = rng.range(0, Math.PI * 2), u = rng.next(), radius = 0.25 + 1.2 * Math.pow(rng.next(), 2.2);
+    const speed = (0.4 + 6 * u * u) * (1.25 - 0.35 * (radius - 0.25) / 1.2);
+    addBody(w, { x: px, y: py, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, radius, kind: KIND_ASTEROID });
     placed++;
   }
 
@@ -250,7 +253,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
   for (let k = 0; k < config.planetCount; k++) {
     let px = 0, py = 0;
     do { px = rng.range(-hw, hw); py = rng.range(-hh, hh); } while (Math.hypot(px, py) < config.spawnClearRadius * 3);
-    const ang = rng.range(0, Math.PI * 2), speed = rng.range(1.2, 3);   // los planetas derivan: hay que esquivarlos
+    const ang = rng.range(0, Math.PI * 2), speed = 0.8 + 3.4 * Math.pow(rng.next(), 1.5);   // los planetas derivan, cada uno a su ritmo: hay que esquivarlos
     const r = rng.range(2.5, 7);
     const p = addBody(w, { x: px, y: py, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, radius: r, kind: KIND_ROCKY + Math.floor(rng.next() * 3) });
     if (p < 0) break;
