@@ -178,7 +178,7 @@ export function createHud(parent: HTMLElement): Hud {
       const bText = huntOn ? 1 : tipOn ? 2 : 0;
       if (bText !== bannerKind && bText > 0) {
         bannerB.textContent = bText === 1 ? 'SOS UN AGUJERO NEGRO' : 'YA PODÉS DISPARAR';
-        bannerS.textContent = bText === 1 ? 'ATRAPÁ AL RIVAL ANTES DE QUE ESCAPE' : 'MANTENÉ EL CLIC: JUNTÁS ASTEROIDES Y AL SOLTAR LOS LANZÁS · UN TOQUE: HONDA';
+        bannerS.textContent = bText === 1 ? 'ATRAPÁ AL RIVAL ANTES DE QUE ESCAPE' : 'CLIC DERECHO: UN TOQUE ES LA HONDA · MANTENELO PARA JUNTAR ASTEROIDES Y SOLTALO PARA LANZARLOS';
       }
       if (bText !== bannerKind) bannerKind = bText;
       const bOn = bText > 0;

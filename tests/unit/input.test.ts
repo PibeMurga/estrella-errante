@@ -40,13 +40,17 @@ describe('InputController', () => {
     expect(new InputController(el, toWorld).poll(0, 0).hasTarget).toBe(false);
   });
 
-  it('el mouse define el objetivo en coordenadas del mundo y lo mantiene si sale de la ventana', () => {
+  it('el mouse es la mira; con el izquierdo apretado también es hacia donde vas, y al soltar se sigue de largo', () => {
     vi.stubGlobal('navigator', { getGamepads: () => [] });
     const { el, listeners } = fakeElement();
     const input = new InputController(el, toWorld);
-    listeners['pointermove']!({ clientX: 100, clientY: 50 });
+    const ev = (t: string, e: Record<string, unknown>): void => (listeners[t] as unknown as (e: Record<string, unknown>) => void)(e);
+    ev('pointermove', { clientX: 100, clientY: 50 });
+    expect(input.poll(0, 0)).toMatchObject({ aimX: 10, aimY: -5, hasAim: true, hasTarget: false });
+    ev('pointerdown', { clientX: 100, clientY: 50, button: 0, buttons: 1, pointerId: 1 });
     expect(input.poll(0, 0)).toMatchObject({ targetX: 10, targetY: -5, hasTarget: true });
-    expect(input.poll(0, 0)).toMatchObject({ targetX: 10, targetY: -5, hasTarget: true });
+    ev('pointerup', { button: 0, buttons: 0 });
+    expect(input.poll(0, 0).hasTarget).toBe(false);
   });
 
   it('si el puntero apunta por encima del horizonte mantiene el objetivo anterior', () => {
@@ -54,10 +58,10 @@ describe('InputController', () => {
     const { el, listeners } = fakeElement();
     let ok = true;
     const input = new InputController(el, (sx, sy, out) => { if (!ok) return false; out.x = sx; out.y = sy; return true; });
-    listeners['pointermove']!({ clientX: 4, clientY: 6 });
+    (listeners['pointerdown'] as unknown as (e: Record<string, unknown>) => void)({ clientX: 4, clientY: 6, button: 0, buttons: 1, pointerId: 1 });
     expect(input.poll(0, 0)).toMatchObject({ targetX: 4, targetY: 6, hasTarget: true });
     ok = false;
-    listeners['pointermove']!({ clientX: 400, clientY: 600 });
+    (listeners['pointermove'] as unknown as (e: Record<string, unknown>) => void)({ clientX: 400, clientY: 600, buttons: 1 });
     expect(input.poll(0, 0)).toMatchObject({ targetX: 4, targetY: 6, hasTarget: true });
   });
 
@@ -90,7 +94,7 @@ describe('InputController', () => {
     expect(input.poll(7, 1)).toMatchObject({ targetX: 7, targetY: 1 });
   });
 
-  it('el clic es el botón de lanzar: cuenta aunque se suelte antes del poll, y mantenido sigue apretado', () => {
+  it('el clic derecho es el botón de lanzar: cuenta aunque se suelte antes del poll, y mantenido sigue apretado', () => {
     vi.stubGlobal('navigator', { getGamepads: () => [] });
     const { el, listeners } = fakeElement();
     const input = new InputController(el, toWorld);
@@ -98,13 +102,13 @@ describe('InputController', () => {
     expect(input.poll(0, 0).hold).toBe(false);
     const down = listeners['pointerdown'] as unknown as (e: { clientX: number; clientY: number; button: number; pointerId: number }) => void;
     const up = listeners['pointerup'] as unknown as (e: { button: number; type: string }) => void;
-    down({ clientX: 10, clientY: 20, button: 0, pointerId: 1 }); up({ button: 0, type: 'pointerup' });
+    down({ clientX: 10, clientY: 20, button: 2, pointerId: 1 }); up({ button: 2, type: 'pointerup' });
     expect(input.poll(0, 0).hold).toBe(true);    // clic más corto que un cuadro: igual cuenta una vez (toque)
     expect(input.poll(0, 0).hold).toBe(false);
-    down({ clientX: 10, clientY: 20, button: 0, pointerId: 1 });
+    down({ clientX: 10, clientY: 20, button: 2, pointerId: 1 });
     expect(input.poll(0, 0).hold).toBe(true);
     expect(input.poll(0, 0).hold).toBe(true);    // mantenido: carga el bólido
-    up({ button: 0, type: 'pointerup' });
+    up({ button: 2, type: 'pointerup' });
     expect(input.poll(0, 0).hold).toBe(false);
   });
 
@@ -113,11 +117,11 @@ describe('InputController', () => {
     const { el, listeners } = fakeElement();
     const input = new InputController(el, toWorld);
     const ev = (t: string, e: Record<string, unknown>): void => (listeners[t] as unknown as (e: Record<string, unknown>) => void)(e);
-    ev('pointerdown', { clientX: 10, clientY: 20, button: 0, buttons: 1, pointerId: 1 });
+    ev('pointerdown', { clientX: 10, clientY: 20, button: 2, buttons: 2, pointerId: 1 });
     input.poll(0, 0);
-    ev('pointermove', { clientX: 10, clientY: 20, buttons: 2 });   // soltó el izquierdo, el derecho sigue apretado
+    ev('pointermove', { clientX: 10, clientY: 20, buttons: 1 });   // soltó el derecho, el izquierdo sigue apretado
     expect(input.poll(0, 0).hold).toBe(false);
-    ev('pointerdown', { clientX: 10, clientY: 20, button: 0, buttons: 1, pointerId: 1 });
+    ev('pointerdown', { clientX: 10, clientY: 20, button: 2, buttons: 2, pointerId: 1 });
     input.poll(0, 0);
     ev('lostpointercapture', { pointerId: 1 });
     expect(input.poll(0, 0).hold).toBe(false);

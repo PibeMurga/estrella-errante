@@ -14,8 +14,10 @@ export class InputController {
   private pointerY = 0;
   private hasPointer = false;
   private usingGamepad = false;
-  private pointerHeld = false;    // clic izquierdo apretado ahora
-  private pressPending = false;   // hubo un clic desde el último poll (aunque ya se haya soltado)
+  private pointerHeld = false;    // clic derecho apretado ahora (disparo)
+  private pressPending = false;   // hubo un clic derecho desde el último poll (aunque ya se haya soltado)
+  private moveHeld = false;       // clic izquierdo apretado: tu cuerpo va hacia el mouse
+  private hadWorld = false;       // hubo al menos un punto válido del puntero
 
   constructor(el: HTMLElement, private readonly toWorld: ToWorld, private readonly reach = 40) {
     el.addEventListener('pointermove', (e: PointerEvent) => {
@@ -24,26 +26,30 @@ export class InputController {
       this.pointerY = e.clientY - r.top;
       this.hasPointer = true;
       this.usingGamepad = false;
-      // Si se soltó el izquierdo con otro botón apretado, no llega pointerup: se mira qué botones siguen abajo.
-      if (typeof e.buttons === 'number' && (e.buttons & 1) === 0) this.pointerHeld = false;
+      // Si se soltó un botón con otro apretado, no llega pointerup: se mira qué botones siguen abajo.
+      if (typeof e.buttons === 'number') { if ((e.buttons & 2) === 0) this.pointerHeld = false; if ((e.buttons & 1) === 0) this.moveHeld = false; }
     });
-    // Clic izquierdo: botón de lanzar. Un toque es la honda; mantenido carga el bólido (lo decide la simulación).
+    // Clic izquierdo mantenido: tu cuerpo va hacia el mouse (al soltar sigue con su inercia).
+    // Clic derecho: lanzar hacia el mouse. Un toque es la honda; mantenido carga el bólido (lo decide la simulación).
     // Se captura el puntero para que soltar fuera de la ventana también llegue y el botón no quede trabado.
     el.addEventListener('pointerdown', (e: PointerEvent) => {
-      if (e.button !== 0) return;
+      if (e.button !== 0 && e.button !== 2) return;
       const r = el.getBoundingClientRect();
       this.pointerX = e.clientX - r.left;
       this.pointerY = e.clientY - r.top;
       this.hasPointer = true;
-      this.pointerHeld = true;
-      this.pressPending = true;
+      this.usingGamepad = false;
+      if (e.button === 0) this.moveHeld = true;
+      else { this.pointerHeld = true; this.pressPending = true; }
       (el as { setPointerCapture?: (id: number) => void }).setPointerCapture?.(e.pointerId);
     });
+    el.addEventListener('contextmenu', (e) => e.preventDefault());   // el derecho es para disparar
     const release = (e: PointerEvent): void => {
-      if (typeof e.buttons === 'number') { if ((e.buttons & 1) === 0) this.pointerHeld = false; }
-      else if (e.button === 0) this.pointerHeld = false;
+      if (typeof e.buttons === 'number') { if ((e.buttons & 2) === 0) this.pointerHeld = false; if ((e.buttons & 1) === 0) this.moveHeld = false; }
+      else if (e.button === 2) this.pointerHeld = false;
+      else if (e.button === 0) this.moveHeld = false;
     };
-    const drop = (): void => { this.pointerHeld = false; };
+    const drop = (): void => { this.pointerHeld = false; this.moveHeld = false; };
     el.addEventListener('pointerup', release);
     el.addEventListener('pointercancel', drop);
     el.addEventListener('lostpointercapture', drop);
@@ -92,10 +98,17 @@ export class InputController {
       this.intent.hasTarget = true;
       return this.intent;
     }
-    if (this.hasPointer && this.toWorld(this.pointerX, this.pointerY, this.world)) {
-      this.intent.targetX = this.world.x;
-      this.intent.targetY = this.world.y;
-      this.intent.hasTarget = true;
+    this.intent.hasTarget = false;
+    // Si el puntero apunta por encima del horizonte se usa el último punto válido.
+    if (this.hasPointer && (this.toWorld(this.pointerX, this.pointerY, this.world) || this.hadWorld)) {
+      this.hadWorld = true;
+      // La mira es siempre el mouse; moverse, sólo con el izquierdo apretado.
+      if (!this.intent.hasAim) { this.intent.aimX = this.world.x; this.intent.aimY = this.world.y; this.intent.hasAim = true; }
+      if (this.moveHeld) {
+        this.intent.targetX = this.world.x;
+        this.intent.targetY = this.world.y;
+        this.intent.hasTarget = true;
+      }
     }
     return this.intent;
   }

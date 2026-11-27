@@ -25,6 +25,7 @@ test('dibuja varios tipos de planeta', async ({ page }) => {
 
 test('al mover el mouse la estrella captura asteroides', async ({ page }) => {
   await boot(page);
+  await page.mouse.move(640, 360); await page.mouse.down();   // izquierdo mantenido: mover
   for (let k = 0; k < 120; k++) {
     const a = k * 0.15;
     await page.mouse.move(640 + Math.cos(a) * 420, 360 + Math.sin(a) * 220);
@@ -33,8 +34,9 @@ test('al mover el mouse la estrella captura asteroides', async ({ page }) => {
   const orbiting = await page.evaluate(() => window.__GAME__!.diagnostics.orbiting);
   expect(orbiting).toBeGreaterThan(0);
   await page.screenshot({ path: 'artifacts/e2e/capturas.png' });
-  // Con mundos en órbita, el clic los lanza con la honda.
-  await page.mouse.click(900, 300);
+  // Con mundos en órbita, el clic derecho los lanza con la honda.
+  await page.mouse.up();
+  await page.mouse.click(900, 300, { button: 'right' });
   await page.waitForFunction(() => window.__GAME__!.world.shots > 0, undefined, { timeout: 5_000 });
 });
 
