@@ -1,4 +1,5 @@
 import { DT } from './config';
+import { hitPlanet } from './planetCapture';
 import { breakPlanet } from './tidal';
 import { DEAD, FREE, KIND_GAS, KIND_ICE, KIND_ROCKY, MAX_IMPACTS, starSize, type World } from './world';
 
@@ -134,9 +135,19 @@ export function stepStarFlybys(w: World): void {
     w.x[i] = s.x + nx * D; w.y[i] = s.y + ny * D;
     const rvx = w.vx[i]! - s.vx, rvy = w.vy[i]! - s.vy, vn = rvx * nx + rvy * ny;
     if (vn < 0) {
+      // Impacto seco, como un choque de autos: los dos pierden la velocidad con que se acercaban (se la reparten según su
+      // masa; la estrella pesa más), el planeta se marca con una explosión y un cráter, y el golpe lo daña.
+      // Masas comparables: la estrella pesa como una esfera de su tamaño.
+      const ms = size * size * size, mp = w.mass[i]!, m = ms + mp;
       const vt = rvx * -ny + rvy * nx;
-      w.vx[i] = s.vx + (-ny) * vt * 0.6; w.vy[i] = s.vy + nx * vt * 0.6;
-      if (-vn > 0.8) mark(w, i, Math.atan2(-ny, -nx), Math.min(1.2, 0.4 - vn / 5));
+      // Choque plástico en la normal: los dos terminan con la misma velocidad normal (la del centro de masa).
+      const dvS = vn * (mp / m), dvP = -vn * (ms / m);   // cambios de velocidad normal de cada uno
+      s.vx += nx * dvS; s.vy += ny * dvS;
+      w.vx[i] = w.vx[i]! + nx * dvP - (-ny) * vt * 0.4; w.vy[i] = w.vy[i]! + ny * dvP - nx * vt * 0.4;
+      if (-vn > 0.8) {
+        mark(w, i, Math.atan2(-ny, -nx), Math.min(1.6, 0.6 - vn / 4));
+        hitPlanet(w, i, Math.min(4, Math.floor(-vn / 4)));   // embestirlo fuerte lo va partiendo
+      }
     }
   }
 }

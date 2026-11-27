@@ -130,7 +130,7 @@ describe('correcciones de la revisión (lanzamiento)', () => {
     expect(w.orbitingCount).toBe(0);
     let g = -1;
     for (let i = 0; i < w.count; i++) if (w.state[i] === GATHERING) g = i;
-    const p = addBody(w, { x: w.star.x + 5, y: w.star.y, vx: 0, vy: 0, radius: 9, kind: KIND_ROCKY });
+    const p = addBody(w, { x: w.star.x + starSize(w.star.mass) + 8.6, y: w.star.y, vx: 0, vy: 0, radius: 9, kind: KIND_ROCKY });   // apenas tocándola
     expect(p).toBeGreaterThanOrEqual(0);
     step(w, hold());
     expect(w.over).toBe(0);

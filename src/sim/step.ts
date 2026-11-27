@@ -159,6 +159,22 @@ function rockHitsStar(w: World, i: number, dx: number, dy: number): void {
   }
 }
 
+// Los planetas más grandes que vos son sólidos: aunque estés en los segundos sin daño después de un golpe, tu estrella no
+// los atraviesa. Choca, pierde la velocidad con que se metía y queda apoyada.
+function solidBigPlanets(w: World): void {
+  const s = w.star, size = starSize(s.mass);
+  for (let q = 0; q < w.planets.length * 2; q++) {
+    const P = w.planets, p = q < P.length ? P[q]! : w.twin[P[q - P.length]!]!;
+    if (p < 0 || w.state[p] !== FREE || w.radius[p] <= size) continue;
+    const dx = s.x - w.x[p], dy = s.y - w.y[p], D = size + w.radius[p], d2 = dx * dx + dy * dy;
+    if (d2 >= D * D) continue;
+    const d = Math.sqrt(d2) || 1, nx = dx / d, ny = dy / d;
+    s.x = w.x[p] + nx * D; s.y = w.y[p] + ny * D;
+    const vn = (s.vx - w.vx[p]) * nx + (s.vy - w.vy[p]) * ny;
+    if (vn < 0) { s.vx -= vn * nx; s.vy -= vn * ny; }
+  }
+}
+
 // Disco de acreción del rival: meterse cuesta, aunque pases rápido. Cuanto más hondo, más: el gas te frena, la marea te
 // arranca cuerpos de la órbita (salen hacia el agujero, que se los come) y perdés masa.
 function crossDisk(w: World, dd: number): void {
@@ -532,6 +548,7 @@ export function step(w: World, intent: Intent): void {
   stepRockImpacts(w);
   if (!hunting) stepStarFlybys(w);
   if (hit >= 0) { if (planetTier(w.radius[hit], s.mass) === TIER_GRAVE) graveHit(w, hit); else hurt(w, hit); }
+  if (!hunting) solidBigPlanets(w);
   if (w.over !== OVER_NONE) { w.tick++; return; }   // se apagó en este paso: no pasa nada más
   if (!hunting) stepComets(w);
   if (!hunting) {
