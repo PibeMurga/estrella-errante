@@ -1,6 +1,6 @@
 import { DT } from './config';
 import type { Intent } from './step';
-import { BOLT, DEAD, massGain, FREE, GATHERING, KIND_ASTEROID, KIND_MOON, ORBITING, PROJECTILE, RETURNING, type World } from './world';
+import { BOLT, DEAD, massGain, FREE, GATHERING, KIND_ASTEROID, KIND_MOON, ORBITING, PROJECTILE, RETURNING, starSize, type World } from './world';
 
 // Lanzamiento con un solo botón. Un toque lanza un asteroide que vuelve (la honda).
 // Mantenido, junta asteroides de la órbita en un bólido adelante de la estrella; al soltar sale, y esos asteroides se pierden.
@@ -108,10 +108,13 @@ export function stepLaunch(w: World, intent: Intent): void {
 }
 
 // Lo que se junta se compacta adelante de la estrella; lo que vuela sigue derecho, le pega al agujero negro o se pierde.
-export function stepBolts(w: World, bandHi: number): void {
+export function stepBolts(w: World): void {
   const c = w.config, s = w.star, bh = w.bh;
-  const px = s.x + Math.cos(w.boltAngle) * (bandHi + c.boltGatherDist);
-  const py = s.y + Math.sin(w.boltAngle) * (bandHi + c.boltGatherDist);
+  // El montón se arma pegado a la estrella, justo por fuera de su superficie y hacia donde apuntás:
+  // así sale desde cerca y no queda del otro lado de un planeta que todavía no es tuyo.
+  const gr = starSize(s.mass) * 1.15 + c.boltGatherDist;
+  const px = s.x + Math.cos(w.boltAngle) * gr;
+  const py = s.y + Math.sin(w.boltAngle) * gr;
   for (let i = 0; i < w.count; i++) {
     const st = w.state[i];
     if (st === GATHERING) {

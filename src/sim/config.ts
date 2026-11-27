@@ -67,7 +67,7 @@ export interface SimConfig {
   boltLife: number;              // segundos de vuelo; después queda suelto
   boltLoseSlow: number;          // al terminar el vuelo conserva esta fracción de la velocidad
   boltNoCatch: number;           // segundos sin poder recapturar lo que quedó suelto
-  boltGatherDist: number;        // a cuánto por fuera de la órbita se arma el bólido
+  boltGatherDist: number;        // a cuánto por fuera de la superficie de la estrella se arma el bólido
   boltBhFeed: number;            // masa física que suma el agujero negro por unidad de masa del bólido
   boltBhSlow: number;            // segundos que lo frena un bólido
   boltBhSlowFactor: number;      // fracción de su velocidad mientras está frenado

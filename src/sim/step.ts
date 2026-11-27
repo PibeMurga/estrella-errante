@@ -404,7 +404,7 @@ export function step(w: World, intent: Intent): void {
   if (w.over !== OVER_NONE) { w.tick++; return; }   // se apagó en este paso: no pasa nada más
   if (!hunting) stepComets(w);
   if (!hunting) {
-    stepBolts(w, bandHi);
+    stepBolts(w);
     stepPlanetHits(w);
     if (intent.fire && w.slingCd <= 0 && w.orbitingCount > 0) {   // disparo directo (bot y pruebas)
       const a = slingAngle(w, intent);

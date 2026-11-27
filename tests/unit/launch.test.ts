@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG } from '../../src/sim/config';
 import { type Intent, step } from '../../src/sim/step';
 import { spawnComet } from '../../src/sim/comets';
-import { ABSORBING, addBody, BOLT, createWorld, FREE, GATHERING, KIND_ASTEROID, KIND_ROCKY, ORBITING, PROJECTILE, type World } from '../../src/sim/world';
+import { ABSORBING, addBody, BOLT, createWorld, FREE, GATHERING, KIND_ASTEROID, KIND_ROCKY, ORBITING, PROJECTILE, starSize, type World } from '../../src/sim/world';
 
 const cfg = { ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, cometFirst: 1e9, blackHole: false };
 const count = (w: World, st: number): number => { let n = 0; for (let i = 0; i < w.count; i++) if (w.state[i] === st) n++; return n; };
@@ -135,5 +135,17 @@ describe('correcciones de la revisión (lanzamiento)', () => {
     const a = addBody(w, { x: w.star.x - 8, y: w.star.y, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID });
     step(w, hold());
     expect(w.state[a]).toBe(ABSORBING);
+  });
+});
+
+describe('el bólido se arma cerca', () => {
+  it('el montón se forma pegado a la estrella, no en el borde exterior de la órbita', () => {
+    const w = orbitWorld(20);
+    w.star.mass = 400;   // estrella grande: franja de órbita ancha
+    run(w, 3.5, hold(100, 0));
+    const near = starSize(w.star.mass) * 1.15 + cfg.boltGatherDist + 2.5;
+    let n = 0;
+    for (let i = 0; i < w.count; i++) if (w.state[i] === GATHERING) { n++; expect(Math.hypot(w.x[i] - w.star.x, w.y[i] - w.star.y)).toBeLessThan(near); }
+    expect(n).toBeGreaterThan(0);
   });
 });
