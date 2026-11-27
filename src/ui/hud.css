@@ -57,3 +57,9 @@
 
 /* En la caza, las alertas del agujero negro rival pasan al fósforo: ahora el que persigue sos vos. */
 .hud.hunting { --bh: var(--ph); }
+.hud .res { display: inline-flex; align-items: center; gap: 8px; }
+.hud .res .rbar { display: inline-block; width: 90px; height: 6px; border: 1px solid #7af5c966; position: relative; }
+.hud .res .rfill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: #7af5c9; box-shadow: 0 0 6px #7af5c9aa; transition: width .15s linear; }
+.hud .res.low { color: #ff5a46; }
+.hud .res.low .rbar { border-color: #ff5a4699; }
+.hud .res.low .rfill { background: #ff5a46; box-shadow: 0 0 6px #ff5a46aa; }

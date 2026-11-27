@@ -1,4 +1,5 @@
 import { boltReach, returnGathered } from './launch';
+import { damageBody } from './integrity';
 import { STAGES, stageFor } from './stages';
 import { breakPlanet, spawnDebris } from './tidal';
 import { BOLT, DEAD, FREE, ORBITING, KIND_GAS, massGain, noteBreak, KIND_ROCKY, MAX_IMPACTS, OVER_DIMMED, PROJECTILE, RETURNING, starSize, type World } from './world';
@@ -30,6 +31,7 @@ export function graveHit(w: World, p: number): void {
   if (w.orbitingCount === 0) { w.over = OVER_DIMMED; return; }
   w.graveHits++;
   w.invuln = c.hurtInvuln;
+  damageBody(w, c.hitIntegrity * 2);
   const nx = s.x - w.x[p], ny = s.y - w.y[p];
   const nd = Math.hypot(nx, ny) || 1;
   s.vx = (nx / nd) * c.hurtBounce * 1.4; s.vy = (ny / nd) * c.hurtBounce * 1.4;

@@ -1,5 +1,6 @@
 import { stepComets } from './comets';
 import { breakPlanet } from './tidal';
+import { damageBody, stepIntegrity } from './integrity';
 import { stepRockImpacts } from './rockImpacts';
 import { stepEncounters, stepOwnPlanetRams, stepStarFlybys } from './encounters';
 import { DT, type SimConfig } from './config';
@@ -50,6 +51,8 @@ function hurt(w: World, p: number): void {
   if (w.orbitingCount === 0) { w.over = OVER_DIMMED; return; }
   w.hits++;
   w.invuln = c.hurtInvuln;
+  // El golpe baja tu resistencia (más si el planeta es grande o vos chico); en cero, te fracturás.
+  damageBody(w, c.hitIntegrity * (1 + clamp((w.radius[p] / starSize(s.mass) - 1) / 0.5, 0, 1) * 0.5) * smallness(w));
   let nx = s.x - w.x[p], ny = s.y - w.y[p];
   const nd = Math.hypot(nx, ny) || 1;
   nx /= nd; ny /= nd;
@@ -154,6 +157,7 @@ function rockHitsStar(w: World, i: number, dx: number, dy: number): void {
   const slot = (w.impactCount % MAX_IMPACTS) * 4;
   w.impacts[slot] = -1; w.impacts[slot + 1] = Math.atan2(dy, dx); w.impacts[slot + 2] = 0.5 + 0.5 * Math.min(1, w.radius[i]); w.impactCount++;
   w.rockHits++;
+  damageBody(w, c.rockIntegrity * smallness(w));
   let lose = Math.round((w.radius[i] > c.rockHitSize ? 2 : 1) * smallness(w));   // más si sos chico
   for (let j = 0; j < w.count && lose > 0; j++) {
     if (w.state[j] !== ORBITING || isPlanetKind(w.kind[j]!)) continue;
@@ -354,6 +358,7 @@ export function step(w: World, intent: Intent): void {
   const awake = bh.active && w.ignited;
   const hunting = w.phase === PHASE_HUNT;
   if (w.invuln > 0) w.invuln = Math.max(0, w.invuln - DT);
+  stepIntegrity(w, DT);
   if (w.slingCd > 0) w.slingCd = Math.max(0, w.slingCd - DT);
   if (w.bhSlow > 0) w.bhSlow = Math.max(0, w.bhSlow - DT);
 

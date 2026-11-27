@@ -90,7 +90,13 @@ export interface SimConfig {
   planetStart: boolean;          // la partida arranca como planeta (sin disparo, agujero dormido y sin cometas hasta la ignición)
   ignitionTime: number;
   planetPhaseGain: number;
-  planetPullMul: number;         // siendo planeta, tu gravedad atrae esto respecto de la de una estrella       // siendo planeta, la masa que suma (o resta) cada cuerpo se multiplica por esto          // segundos de la cinemática de la ignición
+  planetPullMul: number;
+  integrityRegen: number;        // resistencia que recuperás por segundo
+  integrityAfterFracture: number; // con cuánta resistencia quedás después de fracturarte
+  fractureMassLoss: number;      // fracción de la masa que perdés al fracturarte
+  fractureOrbitLoss: number;     // fracción de lo que tenés en órbita que sale despedido al fracturarte
+  hitIntegrity: number;          // resistencia que baja un choque contra un planeta (×1 a ×2 según su tamaño y el tuyo)
+  rockIntegrity: number;         // ídem un asteroide que te golpea         // siendo planeta, tu gravedad atrae esto respecto de la de una estrella       // siendo planeta, la masa que suma (o resta) cada cuerpo se multiplica por esto          // segundos de la cinemática de la ignición
   halfSplitSpeed: number;
   splitNoCatch: number;          // segundos que derivan los pedazos de un planeta recién partido antes de poder entrar a tu órbita
   bhDiskR: number;
@@ -236,6 +242,12 @@ export const DEFAULT_CONFIG: SimConfig = {
   ignitionTime: 4,
   planetPhaseGain: 0.45,
   planetPullMul: 0.35,
+  integrityRegen: 0.045,
+  integrityAfterFracture: 0.35,
+  fractureMassLoss: 0.3,
+  fractureOrbitLoss: 0.5,
+  hitIntegrity: 0.32,
+  rockIntegrity: 0.1,
   halfSplitSpeed: 0.3,
   splitNoCatch: 3.5,
   bhDiskR: 4.5,
