@@ -32,7 +32,7 @@ void main(){
   float fine = fbm(p*60. + vec3(t*.7, -t*.5, t*.4), 3)*.5+.5;
   float sg = fbm(p*3.2 + vec3(t*.05, t*.03, -t*.04), 5)*.5+.5;   // supergranos que respiran
   // Manchas y fáculas: giran despacio con la estrella (más rápido en el ecuador, como el Sol) y cambian de forma de a poco.
-  float wr = t*.035*(1. - .25*p.y*p.y);
+  float wr = t*.06*(1. - .35*p.y*p.y);   // y el ecuador, más rápido que los polos
   vec3 pr = vec3(p.x*cos(wr) - p.z*sin(wr), p.y, p.x*sin(wr) + p.z*cos(wr));
   float sp = fbm(pr*2.6 + 11.3 + vec3(0., t*.006, t*.018), 5)*.5+.5;
   float spot = smoothstep(.73, .78, sp);
@@ -215,7 +215,7 @@ export function createSunLayer(sunPos: Vector3): Layer {
       }
       const r = Math.max(shownR * k, 1e-3);
       sun.visible = halo.visible = shownR * k > 0.05;
-      sun.position.copy(sunPos); sun.scale.setScalar(r); sun.rotation.y = ctx.time * 0.03;
+      sun.position.copy(sunPos); sun.scale.setScalar(r); sun.rotation.y = ctx.time * 0.09;   // gira a la vista
       halo.position.copy(sunPos); halo.scale.setScalar(r); halo.quaternion.copy(ctx.camera.quaternion);
       front.visible = sun.visible;
       // Un poco hacia la cámara, para que quede delante de la superficie.
