@@ -15,6 +15,7 @@ export interface Hud {
   update(world: World, view: HudView, dt: number, width: number, height: number): void;
   reset(world: World): void;
   setVisible(on: boolean): void;
+  setName(name: string): void;
 }
 
 const SEGMENTS = 24;
@@ -52,7 +53,8 @@ export function createHud(parent: HTMLElement): Hud {
   const arrow = q<HTMLElement>('.arrow'), arrowSvg = q<SVGElement>('.arrow svg'), arrowDist = q<HTMLElement>('.adist');
   const brackets = q<HTMLElement>('.brackets');
   const sysEl = q<HTMLElement>('.sys');
-  q<HTMLElement>('.pname').textContent = playerName();
+  const pnameEl = q<HTMLElement>('.pname');
+  pnameEl.textContent = playerName();
   const race = q<HTMLElement>('.race'), mvEl = q<HTMLElement>('.mv'), rvEl = q<HTMLElement>('.rvv');
   const mb = q<HTMLElement>('.mb'), rb = q<HTMLElement>('.rb'), note = q<HTMLElement>('.note');
   const banner = q<HTMLElement>('.banner');
@@ -65,7 +67,7 @@ export function createHud(parent: HTMLElement): Hud {
   let shownMode = -1, lastTx = NaN, lastTy = NaN, lastHalf = NaN, lastAng = NaN, visible = true;
   let acc = 1, lastSeg = -1, lastBhDist = Infinity, lastOrbit = 0;
   let lastFlip = false;
-  let seen = { stageUps: 0, bolts: 0, bh: 0, pcap: 0, pbrk: 0, grave: 0, aup: 0, adn: 0, steals: 0, kills: 0, hits: 0, comets: 0, tidal: 0, crashes: 0, phase: 0 };
+  let seen = { ign: 0, stageUps: 0, bolts: 0, bh: 0, pcap: 0, pbrk: 0, grave: 0, aup: 0, adn: 0, steals: 0, kills: 0, hits: 0, comets: 0, tidal: 0, crashes: 0, phase: 0 };
 
   const log = (text: string): void => {
     logText.unshift(text); logAge.unshift(0);
@@ -76,8 +78,9 @@ export function createHud(parent: HTMLElement): Hud {
 
   const hud: Hud = {
     root,
+    setName(name) { pnameEl.textContent = name; },
     reset(w) {
-      seen = { stageUps: w.stageUps, bolts: w.bolts, bh: w.boltHitsBh, pcap: w.planetCaptures, pbrk: w.planetBreaks, grave: w.graveHits, aup: w.abilityUps, adn: w.abilityDowns, steals: w.cometSteals, kills: w.cometKills, hits: w.hits, comets: activeComets(w), tidal: w.tidalBreaks, crashes: w.planetCrashes, phase: w.phase };
+      seen = { ign: w.ignitions, stageUps: w.stageUps, bolts: w.bolts, bh: w.boltHitsBh, pcap: w.planetCaptures, pbrk: w.planetBreaks, grave: w.graveHits, aup: w.abilityUps, adn: w.abilityDowns, steals: w.cometSteals, kills: w.cometKills, hits: w.hits, comets: activeComets(w), tidal: w.tidalBreaks, crashes: w.planetCrashes, phase: w.phase };
       logText.length = 0; logAge.length = 0;
       lastSeg = -1; acc = 1; lastBhDist = Infinity; lastOrbit = w.orbitingCount;
     },
@@ -164,7 +167,7 @@ export function createHud(parent: HTMLElement): Hud {
         lastBhDist = d;
       } else bhInfo.style.display = 'none';
 
-      slingEl.textContent = w.charge >= w.config.tapTime ? `BÓLIDO ×${w.gathered}` : w.slingCd > 0 ? 'HONDA ○' : 'HONDA ●';
+      slingEl.textContent = !w.ignited ? 'HONDA · SE ENCIENDE CON LA IGNICIÓN' : w.charge >= w.config.tapTime ? `BÓLIDO ×${w.gathered}` : w.slingCd > 0 ? 'HONDA ○' : 'HONDA ●';
       slingEl.className = w.orbitingCount > 0 ? 'sling' : 'sling off';
       worldsEl.textContent = `EN ÓRBITA ${pad(w.orbitingCount, 3)}`;
       // Tu sistema: planetas en órbita contra el próximo umbral de habilidad, y la habilidad activa.
@@ -174,6 +177,7 @@ export function createHud(parent: HTMLElement): Hud {
       sysEl.textContent = `PLANETAS ${pad(w.planetsHeld, 2)}/${next}${w.ability > 0 ? ` · ${ABILITY_NAMES[w.ability]}` : ''}`;
 
       // Registro de sucesos.
+      if (w.ignitions > seen.ign) log(`IGNICIÓN · NACE ${pnameEl.textContent ?? ''}`);
       if (w.stageUps > seen.stageUps) log(`ETAPA: ${STAGES[w.stage]!.name}`);
       if (w.cometSteals > seen.steals) log(`UN COMETA SE LLEVÓ ${w.lastStealCount} CUERPOS DE TU ÓRBITA`);
       if (w.planetCaptures > seen.pcap) log('PLANETA CAPTURADO: ENTRÓ A TU ÓRBITA');
@@ -197,7 +201,7 @@ export function createHud(parent: HTMLElement): Hud {
         seen.phase = w.phase;
       }
       seen.bolts = w.bolts; seen.bh = w.boltHitsBh;
-      seen.stageUps = w.stageUps; seen.steals = w.cometSteals;
+      seen.stageUps = w.stageUps; seen.ign = w.ignitions; seen.steals = w.cometSteals;
       lastOrbit = w.orbitingCount;
       seen.kills = w.cometKills; seen.hits = w.hits; seen.tidal = w.tidalBreaks; seen.crashes = w.planetCrashes; seen.comets = ac;
       for (let k = 0; k < LOG_LINES; k++) {

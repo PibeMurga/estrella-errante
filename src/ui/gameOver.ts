@@ -1,3 +1,4 @@
+import { playerName } from './playerName';
 import { OVER_ESCAPED, OVER_SWALLOWED, OVER_WON, type World } from '../sim/world';
 import { STAGES } from '../sim/stages';
 import './gameOver.css';
@@ -56,7 +57,7 @@ export function createGameOver(parent: HTMLElement, onRestart: () => void): Game
         [OVER_WON]: ['FUSIÓN', 'TE COMISTE AL AGUJERO NEGRO RIVAL · GANASTE LA PANTALLA'],
       };
       const [tt, wy] = titles[w.over] ?? ['ESTRELLA APAGADA', 'CHOCASTE CONTRA UN PLANETA SIN NADA EN ÓRBITA QUE TE PROTEJA'];
-      title.textContent = tt; why.textContent = wy;
+      title.textContent = tt; why.textContent = `${playerName()} · ${wy}`;
       root.classList.toggle('won', w.over === OVER_WON);
       const secs = w.tick / 60;
       stats.innerHTML = `

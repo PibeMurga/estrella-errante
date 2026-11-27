@@ -3,6 +3,7 @@ import { QualityGovernor } from '../perf/qualityGovernor';
 import { showFatal } from '../render/context';
 import { createSpaceView } from '../render/spaceView';
 import { GAME_CONFIG } from '../sim/config';
+import { createNameScreen } from '../ui/nameScreen';
 import { FixedStepper } from '../sim/loop';
 import { step } from '../sim/step';
 import { createWorld, PHASE_COLLAPSE, PHASE_MERGE } from '../sim/world';
@@ -31,10 +32,10 @@ if (!view.ok) {
   const cine = createCinematic(document.body);
   hud.reset(world);
   // Nueva partida: se recarga con otra semilla (mapa nuevo). Las capas del dibujo arman sus índices al empezar.
-  const restart = (): void => location.replace(`${location.pathname}?seed=${1 + Math.floor(Math.random() * (2 ** 31 - 2))}`);
+  const restart = (): void => location.replace(`${location.pathname}?seed=${1 + Math.floor(Math.random() * (2 ** 31 - 2))}&n=1`);   // n=1: no vuelve a preguntar el nombre
   const gameOver = createGameOver(document.body, restart);
   // Pausa con ESC (o Start): sólo mientras se juega, no en las cinemáticas ni en el cartel final.
-  const canPause = (): boolean => world.over === 0 && world.phase !== PHASE_COLLAPSE && world.phase !== PHASE_MERGE;
+  const canPause = (): boolean => named && world.over === 0 && world.phase !== PHASE_COLLAPSE && world.phase !== PHASE_MERGE;
   const pause = createPause(document.body, {
     canPause, onRestart: restart,
     onChange: (on) => { if (!on) input.poll(world.star.x, world.star.y); },   // al retomar se descarta lo apretado durante la pausa
@@ -50,13 +51,17 @@ if (!view.ok) {
       if (p.buttons[5]?.pressed) view.rig.nudgeZoom(dt * 6);
     }
   };
+  // Antes de jugar se elige el nombre (salvo al reiniciar o en las pruebas que arrancan como estrella).
+  const params = new URLSearchParams(location.search);
+  let named = asStar || params.get('n') === '1';
+  if (!named) createNameScreen(document.body, (name) => { named = true; hud.setName(name); last = performance.now(); });
   let last = performance.now();
   const frame = (now: number): void => {
     const elapsed = (now - last) / 1000;
     last = now;
     pause.pollPad(canPause());
     if (!pause.paused) pollZoomPad(elapsed);
-    const steps = pause.paused ? 0 : stepper.advance(elapsed);
+    const steps = pause.paused || !named ? 0 : stepper.advance(elapsed);
     // El control se lee sólo en los cuadros que avanzan la simulación: así un clic muy corto no se pierde
     // en un cuadro sin pasos (a más de 60 cuadros por segundo los hay).
     if (steps > 0) {

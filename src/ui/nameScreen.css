@@ -1,0 +1,20 @@
+/* Pantalla del nombre: el fósforo del visor sobre negro, como la pausa. */
+.namescreen {
+  position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at center, #020605cc 0%, #000000ee 75%);
+  font-family: 'Cascadia Mono', 'Consolas', 'DejaVu Sans Mono', 'Liberation Mono', monospace;
+  color: #7af5c9; text-shadow: 0 0 4px #7af5c9cc, 0 0 12px #7af5c944; letter-spacing: 3px;
+}
+.namescreen.off { display: none; }
+.namescreen .panel { min-width: 460px; padding: 34px 46px; text-align: center; background: #000000b3; border: 1.5px solid #7af5c966; box-shadow: 0 0 18px #7af5c922, inset 0 0 30px #7af5c90d; }
+.namescreen .title { font-size: 26px; font-weight: 700; letter-spacing: 9px; }
+.namescreen .sub { margin-top: 10px; font-size: 11px; opacity: .7; letter-spacing: 2px; }
+.namescreen input {
+  margin-top: 24px; width: 100%; box-sizing: border-box; padding: 10px 12px; font: inherit; font-size: 22px; letter-spacing: 6px; text-align: center;
+  color: #c8fff0; background: #021410; border: 1.5px solid #7af5c988; outline: none; text-transform: uppercase; caret-color: #7af5c9;
+}
+.namescreen input:focus { border-color: #7af5c9; box-shadow: 0 0 10px #7af5c955; }
+.namescreen .row { margin-top: 20px; display: flex; gap: 18px; justify-content: center; }
+.namescreen button { font: inherit; font-size: 12px; letter-spacing: 3px; color: #7af5c9; background: transparent; border: 1px solid #7af5c977; padding: 8px 16px; cursor: pointer; }
+.namescreen button:hover { background: #7af5c91a; }
+.namescreen .keys { margin-top: 18px; font-size: 11px; opacity: .6; }
