@@ -47,7 +47,7 @@ function closestTo(w: World, aim: number): number {
 // Disparar frena a la estrella: pierde parte de su velocidad y la recupera de a poco (ver el movimiento en step).
 function brakeOnFire(w: World, k: number): void {
   w.star.vx *= 1 - k; w.star.vy *= 1 - k;
-  w.fireSlow = w.config.fireRecover; w.fireSlowK = k;
+  w.fireSlow = w.fireSlowT = w.config.fireRecover; w.fireSlowK = k;
 }
 
 // Honda: lanza el cuerpo más cercano a la mira; vuelve a la órbita después del vuelo.

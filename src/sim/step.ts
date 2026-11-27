@@ -7,7 +7,7 @@ import { stepAbilities } from './abilities';
 import { graveHit, isPlanetKind, joinsOrbit, stepPlanetHits, planetTier, TIER_GRAVE, TIER_HURT } from './planetCapture';
 import { returnGathered, sling, slingAngle, stepBolts, stepLaunch } from './launch';
 import { canCollapse, playerHoleRadius, startCollapse, startHunt, startMerge, stepMerge } from './phase';
-import { ABSORBING, BOLT, CARRIED, captureRadiusFor, DEAD, massGain, FREE, GATHERING, KIND_GAS, KIND_ICE, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_DIMMED, OVER_ESCAPED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
+import { ABSORBING, BOLT, CARRIED, captureRadiusFor, DEAD, massGain, FREE, GATHERING, KIND_GAS, KIND_ICE, KIND_ROCKY, MAX_IMPACTS, ORBIT_PLANET, ORBITING, OVER_DIMMED, OVER_ESCAPED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
 
 // target: hacia dónde ir. aim: hacia dónde apuntar la honda (stick derecho); sin aim se apunta al objetivo.
 export interface Intent {
@@ -52,8 +52,17 @@ function hurt(w: World, p: number): void {
   let nx = s.x - w.x[p], ny = s.y - w.y[p];
   const nd = Math.hypot(nx, ny) || 1;
   nx /= nd; ny /= nd;
-  s.vx = nx * c.hurtBounce;
-  s.vy = ny * c.hurtBounce;
+  // Choque pesado, no una pelota: pierde casi toda la velocidad contra el planeta, conserva un poco del roce de costado
+  // y se separa apenas (más despacio cuanto más grande el planeta). Después queda aturdida un momento.
+  const big = clamp((w.radius[p] / starSize(s.mass) - 1) / 0.5, 0, 1);
+  const rvx = s.vx - w.vx[p], rvy = s.vy - w.vy[p];
+  const vt = rvx * -ny + rvy * nx;
+  s.vx = w.vx[p] + nx * c.hurtBounce * (1 - 0.4 * big) + -ny * vt * 0.3;
+  s.vy = w.vy[p] + ny * c.hurtBounce * (1 - 0.4 * big) + nx * vt * 0.3;
+  w.fireSlow = w.fireSlowT = c.hurtStun; w.fireSlowK = c.hurtStunK;
+  // El golpe se ve: explosión en el punto de contacto y un cráter en el planeta.
+  const slot = (w.impactCount % MAX_IMPACTS) * 4;
+  w.impacts[slot] = p; w.impacts[slot + 1] = Math.atan2(ny, nx); w.impacts[slot + 2] = 1.6; w.impactCount++;
   // Escudo de órbita: se pierde el planeta más exterior (queda suelto, se puede recuperar) en lugar de asteroides.
   if (w.ability >= 2) {
     let out = -1;
@@ -286,7 +295,7 @@ export function step(w: World, intent: Intent): void {
       // Siendo agujero negro en la caza no frenás al acercarte: vas a fondo hacia lo que apuntás.
       const speed = hunting ? (dist > 1 ? c.starMaxSpeed : 0) : Math.min(c.starMaxSpeed, Math.sqrt(2 * acc * 0.8 * dist), (c.starMaxSpeed * dist) / c.starSlowRadius);
       // Recién disparaste: la marcha deseada vuelve de a poco a la normal.
-      const slow = w.fireSlow > 0 ? 1 - w.fireSlowK * (w.fireSlow / c.fireRecover) : 1;
+      const slow = w.fireSlow > 0 ? 1 - w.fireSlowK * (w.fireSlow / w.fireSlowT) : 1;
       desX = (dx / dist) * speed * slow;
       desY = (dy / dist) * speed * slow;
     }

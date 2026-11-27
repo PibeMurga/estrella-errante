@@ -113,6 +113,8 @@ export interface SimConfig {
   hurtLossMax: number;           // …hasta esta (planeta 1,5 veces tu tamaño)
   hurtMassMin: number;           // y de tu masa, entre esto…
   hurtMassMax: number;           // …y esto
+  hurtStun: number;              // segundos que quedás aturdido después del choque (marcha reducida)
+  hurtStunK: number;             // cuánto se reduce la marcha al principio del aturdimiento
   autoCollapse: boolean;         // colapsar solo al superar al rival siendo hipergigante (las pruebas lo pueden apagar)
   rivalMassScale: number;        // masa del rival en la carrera = esto × la masa física del agujero negro
   collapseTime: number;          // segundos de la cinemática del colapso (supernova y nacimiento)
@@ -158,7 +160,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   bhStarPull: 0.6,
   hurtWorldsLost: 3,
   hurtInvuln: 1.5,
-  hurtBounce: 24,
+  hurtBounce: 7,
   lostSpeed: 18,
   noCatchTime: 1.5,
   slingCooldown: 0.35,
@@ -238,9 +240,11 @@ export const DEFAULT_CONFIG: SimConfig = {
   bodyJoinTime: 0.7,
   planetInfallSpeed: 5,
   huntOrbitFall: 1.6,
-  hurtLossMin: 0.15,
-  hurtLossMax: 0.4,
-  hurtMassMin: 0.05,
-  hurtMassMax: 0.15,
+  hurtLossMin: 0.25,
+  hurtLossMax: 0.55,
+  hurtMassMin: 0.08,
+  hurtMassMax: 0.22,
+  hurtStun: 1.5,
+  hurtStunK: 0.55,
   autoCollapse: true,
 };

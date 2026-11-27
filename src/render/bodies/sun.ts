@@ -76,9 +76,9 @@ void main(){
   if (r < .985) discard;
   float h = r - 1.;
   vec3 ring = uTint * vec3(1.,.55,.4) * exp(-h*55.) * 1.8;
-  float flow = fbm(vec3(cos(a)*3. + uTime*.015, sin(a)*3. - uTime*.01, h*3.5 - uTime*.12), 5)*.5+.5;   // deriva lenta, no manchas fijas
+  float flow = fbm(vec3(cos(a)*3. + uTime*.06, sin(a)*3. - uTime*.045, h*3.5 - uTime*.45), 5)*.5+.5;   // el plasma del borde fluye y sube
   float loops = smoothstep(.6, .8, flow) * exp(-h*9.) * smoothstep(0., .03, h);
-  float spikes = smoothstep(.55, .9, fbm(vec3(cos(a)*7., sin(a)*7., uTime*.05), 4)*.5+.5);
+  float spikes = smoothstep(.55, .9, fbm(vec3(cos(a)*7., sin(a)*7., uTime*.2), 4)*.5+.5);
   vec3 prom = uTint * vec3(1.,.7,.55) * loops * (1.2 + spikes) * 1.4;
   // Eyecciones del borde: cada una distinta. Según su tipo es un arco de plasma con los dos pies en el borde, un chorro
   // fino que se inclina, una columna ancha que se dobla o una nube de gas; cambian la altura, el grosor, la inclinación y el color.
@@ -116,7 +116,15 @@ void main(){
   }
   // La corona respira y titila: zonas que se encienden y se apagan, nunca quieta.
   float breathe = .78 + .32*(fbm(vec3(cos(a)*1.5 + uTime*.05, sin(a)*1.5, uTime*.22), 3)*.5+.5) + .05*sin(uTime*2.1 + a*3.);
-  vec3 cor = uTint * exp(-h*2.2) * .28 * breathe;
+  // Corona: corrientes suaves que salen hacia afuera, giran despacio y cambian de forma; nunca quieta.
+  float ang = a + uTime*.025;
+  // Más irregular: el contorno de la corona se deforma (lóbulos que crecen y se achican) y las corrientes se cortan.
+  float lobe = fbm(vec3(cos(ang)*1.4 + 7., sin(ang)*1.4, uTime*.05), 3);
+  float hh = h * (1. - .45*lobe);
+  float streams = fbm(vec3(cos(ang)*2.2, sin(ang)*2.2, hh*1.2 - uTime*.18), 4)*.5+.5;
+  float rays = .55 + .9*smoothstep(.3, .9, fbm(vec3(cos(ang)*5., sin(ang)*5., uTime*.07 + hh*.6), 3)*.5+.5);
+  float clumps = .7 + .6*(fbm(vec3(d*1.6, uTime*.12), 3)*.5+.5);
+  vec3 cor = uTint * exp(-hh*2.2) * .28 * breathe * (.45 + .9*streams) * rays * clumps;
   gl_FragColor = vec4((ring + prom + cor) * (1. - smoothstep(1.8, 3.3, r)), 1.);
 }`;
 
@@ -140,12 +148,8 @@ void main(){
     float e = length(vec2(along/stretch, side));
     float n = fbm(vec3(q*18., id + uTime*.7), 3)*.5+.5;
     float kind = h1(id*13.7 + fi*6.1), body;
-    if (kind < .4) body = 1. - smoothstep(R*.4, R*(1. + .5*n), e);                              // estallido
-    else if (kind < .75) {                                                                    // dos cintas paralelas que se separan
-      float rot = h1(id*4.4) * 3.1416, u = q.x*cos(rot) + q.y*sin(rot), v = -q.x*sin(rot) + q.y*cos(rot);
-      float gap = .01 + .07*ph;
-      body = (exp(-pow((abs(v) - gap)/.012, 2.)) * (1. - smoothstep(R*.6, R*1.4, abs(u)))) * (.5 + n);
-    } else body = (1. - smoothstep(R*.2, R*(.8 + .6*n), e)) * (.3 + .8*n);                        // mancha difusa que se hincha
+    if (kind < .55) body = 1. - smoothstep(R*.4, R*(1. + .5*n), e);                             // estallido
+    else body = (1. - smoothstep(R*.2, R*(.8 + .6*n), e)) * (.3 + .8*n);                        // mancha difusa que se hincha
     float env = smoothstep(0., .06, ph) * (1. - smoothstep(.45, 1., ph));
     float fil = smoothstep(.55, .75, n) * body;        // filamentos más brillantes
     vec3 tcol = mix(vec3(1.2,.85,.55), vec3(1.35,1.15,.95), h1(id*2.9 + fi));
