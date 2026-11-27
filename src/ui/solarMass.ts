@@ -1,20 +1,32 @@
-// La masa del juego, en masas solares (M☉), con valores reales para cada etapa: una enana roja ronda los 0,1-0,5 M☉,
-// una amarilla 1 M☉, una gigante azul 10-20, una supergigante 25 y una hipergigante 100 o más. Tramos lineales entre
-// los umbrales de las etapas; más allá, crece en proporción.
-const AT = [0, 40, 90, 145, 205, 280];
+// La masa del juego en unidades reales. Siendo planeta, en masas de Júpiter (M♃): un gaseoso chico ronda 0,3 M♃, un
+// gigante gaseoso unas pocas, la enana marrón empieza en 13 M♃ y la fusión se enciende en unas 80 M♃ (0,08 M☉).
+// Desde la ignición, en masas solares (M☉): enana amarilla 0,8-1, estrella blanca 1,4, gigante azul 10-20,
+// supergigante 25 y hipergigante 100 o más. Tramos lineales entre los umbrales de las etapas; más allá, crece en proporción.
+const IGN = 30;
+const AT_P = [0, 8, 18, 30], JUP = [0.3, 4, 13, 80];
+const AT = [30, 70, 120, 175, 235, 310];
 const SUN = [0.08, 0.8, 1.4, 10, 25, 100];
 
+const lerp = (at: readonly number[], val: readonly number[], m: number): number => {
+  for (let k = 1; k < at.length; k++) {
+    if (m <= at[k]!) { const t = (m - at[k - 1]!) / (at[k]! - at[k - 1]!); return val[k - 1]! + (val[k]! - val[k - 1]!) * t; }
+  }
+  return val[val.length - 1]! * (m / at[at.length - 1]!);
+};
+
+// Masas de Júpiter (para la etapa de planeta).
+export function jupiterMasses(mass: number): number { return lerp(AT_P, JUP, Math.max(0, mass)); }
+
+// Masas solares (desde la ignición; antes, la equivalencia de las masas de Júpiter).
 export function solarMasses(mass: number): number {
   const m = Math.max(0, mass);
-  for (let k = 1; k < AT.length; k++) {
-    if (m <= AT[k]!) { const t = (m - AT[k - 1]!) / (AT[k]! - AT[k - 1]!); return SUN[k - 1]! + (SUN[k]! - SUN[k - 1]!) * t; }
-  }
-  return SUN[SUN.length - 1]! * (m / AT[AT.length - 1]!);
+  return m < IGN ? jupiterMasses(m) / 1000 : lerp(AT, SUN, m);
 }
 
-// Con decimales cuando es chica (0,45), sin decimales cuando es grande (120). Coma decimal.
+// Con decimales cuando es chica, sin decimales cuando es grande. Coma decimal y su unidad.
 export function formatSolar(mass: number): string {
-  const v = solarMasses(mass);
-  const txt = v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : Math.round(v).toString();
-  return `${txt.replace('.', ',')} M☉`;
+  const planet = mass < IGN;
+  const v = planet ? jupiterMasses(mass) : solarMasses(mass);
+  const txt = planet ? (v < 10 ? v.toFixed(1) : Math.round(v).toString()) : v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : Math.round(v).toString();
+  return `${txt.replace('.', ',')} ${planet ? 'M♃' : 'M☉'}`;
 }

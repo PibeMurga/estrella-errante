@@ -89,8 +89,9 @@ describe('encuentros entre planetas', () => {
 
   it('un planeta más chico que la estrella que la choca se parte, y sus pedazos se desintegran: nada la atraviesa', () => {
     const w = createWorld(cfg(), 5, 80);
+    w.star.mass = 40;
     const size = starSize(w.star.mass);
-    const p = addBody(w, { x: -60, y: 0.5, vx: 9, vy: 0, radius: 3, kind: KIND_ROCKY });
+    const p = addBody(w, { x: -60, y: 0.5, vx: 9, vy: 0, radius: size * 0.7, kind: KIND_ROCKY });
     let inside = 0;
     run(w, 14, () => {
       for (const b of [p, w.twin[p]!]) {

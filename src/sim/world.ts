@@ -140,8 +140,11 @@ export function massGain(w: World, i: number): number {
 }
 
 // Tamaño (radio) de la estrella según su masa. Lo usan la simulación y el dibujo.
+// Tamaño del cuerpo del jugador. Antes de la ignición (masa 30) es un planeta gaseoso: arranca más chico que los planetas
+// comunes y crece hasta ser como los grandes; desde la ignición, el tamaño de una estrella (que sigue creciendo).
 export function starSize(mass: number): number {
-  return 4 + 0.55 * Math.sqrt(mass);
+  const m = Math.max(0, mass);
+  return m < 30 ? 1.6 + 0.8 * Math.sqrt(m) : 4 + 0.55 * Math.sqrt(m);
 }
 
 export function captureRadiusFor(config: SimConfig, mass: number): number {
