@@ -37,8 +37,14 @@ export class InputController {
       this.firePending = true;
     });
     // ESPACIO o C: colapsar (sólo hace algo cuando se puede; la simulación lo decide).
+    // Se ignoran la autorrepetición (mantener apretado no decide por vos), los atajos con Ctrl/Alt/Cmd
+    // y lo que se escribe en campos de texto (el laboratorio).
     if (typeof window !== 'undefined') window.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.key === ' ' || e.key === 'c' || e.key === 'C') { this.collapsePending = true; e.preventDefault(); }
+      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target as { tagName?: string; isContentEditable?: boolean } | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+      if (e.key === ' ') { this.collapsePending = true; e.preventDefault(); }   // que el espacio no desplace la página
+      else if (e.key === 'c' || e.key === 'C') this.collapsePending = true;
     });
   }
 

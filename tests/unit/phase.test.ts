@@ -136,3 +136,32 @@ describe('fases de la partida', () => {
     expect(play()).toBe(play());
   });
 });
+
+describe('correcciones de la revisión', () => {
+  it('en la caza el rival no rebota de un borde al otro del mapa', () => {
+    const w = huntWorld();
+    let rx = w.bh.x - w.star.x, ry = w.bh.y - w.star.y, maxD = 0;
+    for (let k = 0; k < 60 * 50; k++) {
+      step(w, idle);
+      if (w.over !== OVER_NONE) break;
+      const nx = w.bh.x - w.star.x, ny = w.bh.y - w.star.y;
+      expect(Math.hypot(nx - rx, ny - ry)).toBeLessThan(1);   // sin saltos de un borde al otro
+      rx = nx; ry = ny;
+      maxD = Math.max(maxD, Math.hypot(w.bh.x - w.star.x, w.bh.y - w.star.y));
+    }
+    expect(maxD).toBeLessThan(Math.min(cfg.arenaHalfWidth, cfg.arenaHalfHeight));
+  });
+  it('al colapsar se apaga el rayo del eclipse', () => {
+    const w = hyperWorld();
+    w.beamTime = 0.5;
+    step(w, press);
+    expect(w.beamTime).toBe(0);
+  });
+  it('al ganar, la masa máxima incluye al rival', () => {
+    const w = huntWorld();
+    w.bh.x = w.bh.prevX = w.star.x + 1; w.bh.y = w.bh.prevY = w.star.y;
+    run(w, cfg.mergeTime + 0.2);
+    expect(w.over).toBe(OVER_WON);
+    expect(w.maxMass).toBe(w.star.mass);
+  });
+});

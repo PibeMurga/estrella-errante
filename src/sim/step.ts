@@ -236,7 +236,12 @@ export function step(w: World, intent: Intent): void {
     const d = Math.hypot(dx, dy);
     if (hunting) {
       // En la caza huye de vos, a velocidad fija.
-      if (d > 1e-6) { bh.vx = (-dx / d) * c.huntFleeSpeed; bh.vy = (-dy / d) * c.huntFleeSpeed; }
+      // Cerca del borde del mapa (que da la vuelta alrededor tuyo) no puede alejarse más: huye de costado.
+      if (d > 1e-6) {
+        const ux = -dx / d, uy = -dy / d;
+        const edge = d >= Math.min(hw, hh) * 0.8;
+        bh.vx = (edge ? -uy : ux) * c.huntFleeSpeed; bh.vy = (edge ? ux : uy) * c.huntFleeSpeed;
+      }
     } else {
       bh.speed = Math.min(c.bhMaxSpeed, bh.speed + c.bhAccel * DT);
       if (d > 1e-6) { bh.vx = (dx / d) * bh.speed; bh.vy = (dy / d) * bh.speed; }

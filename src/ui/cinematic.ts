@@ -14,7 +14,16 @@ export function createCinematic(parent: HTMLElement): Cinematic {
   parent.appendChild(root);
   const flash = root.querySelector('.flash') as HTMLElement, nova = root.querySelector('.nova') as HTMLElement, gw = root.querySelector('.gw') as HTMLElement;
   let wonT = -1, lastOn = false;
-  const set = (el: HTMLElement, op: number, sc: number): void => { el.style.opacity = op.toFixed(3); el.style.transform = `scale(${sc.toFixed(3)})`; };
+  // Último valor escrito de cada elemento (opacidad, escala): sólo se toca el DOM, y se arman cadenas, si cambió.
+  const last = new Float64Array(6).fill(-1);
+  const slot = (el: HTMLElement): number => (el === flash ? 0 : el === nova ? 2 : 4);
+  const set = (el: HTMLElement, op: number, sc: number): void => {
+    const k = slot(el);
+    const o = Math.round(op * 1000) / 1000, s = Math.round(sc * 1000) / 1000;
+    if (o === last[k] && s === last[k + 1]) return;
+    last[k] = o; last[k + 1] = s;
+    el.style.opacity = String(o); el.style.transform = `scale(${s})`;
+  };
   return {
     update(w, dt) {
       const t = w.phaseTime;

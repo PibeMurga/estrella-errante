@@ -37,3 +37,15 @@ test('supernova, caza, fusión y cartel de victoria', async ({ page }) => {
   await page.screenshot({ path: 'artifacts/e2e/victoria.png' });
   expect(errors).toEqual([]);
 });
+
+test('en la partida normal la capa de cinemática no toca la página en cada cuadro', async ({ page }) => {
+  await page.goto('/?seed=20261124');
+  await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
+  const writes = await page.evaluate(() => new Promise<number>((resolve) => {
+    let n = 0;
+    const obs = new MutationObserver((list) => { n += list.length; });
+    obs.observe(document.querySelector('.cine')!, { attributes: true, subtree: true });
+    setTimeout(() => { obs.disconnect(); resolve(n); }, 1500);
+  }));
+  expect(writes).toBe(0);
+});
