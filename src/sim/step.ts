@@ -3,6 +3,7 @@ import { breakPlanet } from './tidal';
 import { stepEncounters, stepStarFlybys } from './encounters';
 import { DT } from './config';
 import { stageFor } from './stages';
+import { stepAbilities } from './abilities';
 import { graveHit, isPlanetKind, stepPlanetHits, planetTier, TIER_CAPTURE, TIER_GRAVE, TIER_HURT } from './planetCapture';
 import { returnGathered, sling, slingAngle, stepBolts, stepLaunch } from './launch';
 import { canCollapse, playerHoleRadius, startCollapse, startHunt, startMerge, stepMerge } from './phase';
@@ -48,6 +49,20 @@ function hurt(w: World, p: number): void {
   nx /= nd; ny /= nd;
   s.vx = nx * c.hurtBounce;
   s.vy = ny * c.hurtBounce;
+  // Escudo de órbita: se pierde el planeta más exterior (queda suelto, se puede recuperar) en lugar de asteroides.
+  if (w.ability >= 2) {
+    let out = -1;
+    for (let i = 0; i < w.planets.length; i++) { const q = w.planets[i]!; if (w.state[q] === ORBITING && (out < 0 || w.orbitR[q] > w.orbitR[out])) out = q; }
+    if (out >= 0) {
+      const a = w.orbitAngle[out];
+      w.state[out] = FREE;
+      w.vx[out] = Math.cos(a) * c.lostSpeed + s.vx * 0.3; w.vy[out] = Math.sin(a) * c.lostSpeed + s.vy * 0.3;
+      w.noCatch[out] = c.noCatchTime;
+      w.orbitingCount--;
+      s.mass = Math.max(c.starStartMass, s.mass - w.mass[out]);
+      return;
+    }
+  }
   let lost = 0;
   for (let i = 0; i < w.count && lost < c.hurtWorldsLost; i++) {
     if (w.state[i] !== ORBITING || isPlanetKind(w.kind[i]!)) continue;   // se pierden asteroides y lunas, no planetas
@@ -344,7 +359,8 @@ export function step(w: World, intent: Intent): void {
     stepLaunch(w, intent);
   }
   bh.radius = c.bhStartRadius * Math.cbrt(bh.mass);
-  s.captureRadius = captureRadiusFor(c, s.mass);
+  stepAbilities(w);
+  s.captureRadius = captureRadiusFor(c, s.mass) * (w.ability >= 1 ? c.abilityGravityMul : 1);   // gravedad ampliada
   if (s.mass > w.maxMass) w.maxMass = s.mass;
   const st = stageFor(s.mass);
   if (st > w.stage) { w.stage = st; w.stageUps++; }

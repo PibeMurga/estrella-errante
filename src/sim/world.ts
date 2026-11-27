@@ -101,6 +101,9 @@ export interface World {
   planetCaptures: number;          // planetas que entraron a tu órbita (evento)
   graveHits: number;               // golpes graves (evento)
   planetBreaks: number;            // planetas partidos a golpes (evento)
+  ability: number;                 // habilidad activa (0 a 3), según los planetas en órbita
+  planetsHeld: number;             // planetas en tu órbita
+  abilityUps: number; abilityDowns: number;   // habilidades ganadas y perdidas (eventos)
   readonly captured: Int32Array;   // índices capturados en el último paso
   capturedCount: number;
 }
@@ -203,7 +206,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     state: new Uint8Array(capacity), kind: new Uint8Array(capacity), noCatch: new Float32Array(capacity), life: new Float32Array(capacity),
     broken: new Float32Array(capacity), breakAx: new Float32Array(capacity), breakAy: new Float32Array(capacity), tidalBreaks: 0, planetCrashes: 0, crashX: 0, crashY: 0, crashR: 0,
     orbitingCount: 0, stage: 0, stageUps: 0, maxMass: config.starStartMass, absorbed: 0, captured: new Int32Array(capacity), capturedCount: 0,
-    planets: new Int32Array(0), planetDmg: new Float32Array(capacity), planetCaptures: 0, graveHits: 0, planetBreaks: 0,
+    planets: new Int32Array(0), planetDmg: new Float32Array(capacity), planetCaptures: 0, graveHits: 0, planetBreaks: 0, ability: 0, planetsHeld: 0, abilityUps: 0, abilityDowns: 0,
   };
   const rng = createRng(seed);
   const hw = config.arenaHalfWidth, hh = config.arenaHalfHeight;

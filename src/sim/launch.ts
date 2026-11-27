@@ -94,7 +94,8 @@ export function stepLaunch(w: World, intent: Intent): void {
     const a = slingAngle(w, intent);
     if (Number.isFinite(a)) w.boltAngle = a;
     if (w.charge >= c.tapTime) {
-      const want = Math.min(c.boltMax, 1 + Math.floor((w.charge - c.tapTime) * c.boltGatherRate));
+      const max = c.boltMax + (w.ability >= 3 ? c.abilityBoltBonus : 0);   // bólido mayor
+      const want = Math.min(max, 1 + Math.floor((w.charge - c.tapTime) * c.boltGatherRate));
       while (w.gathered < want && gatherOne(w)) { /* suma de a uno */ }
     }
     return;
