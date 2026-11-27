@@ -229,3 +229,4 @@ Lucas jugó las Entregas 1 a 3 y ganó en 2:50, 3:11 y 2:42. Con eso quedó deci
 - **Lo que se suma a tu órbita se imanta:** conserva el giro con que venía y se acopla de a poco (2,5 s un planeta, 0,7 s un asteroide), bajando más despacio.
 - **Balance:** con el planeta partido entrando entero, Lucas ganó en 1:55; un planeta pasa a sumar el 3 % de su masa (antes 10 %). Bot: 3 de 5 victorias, entre 5,7 y 7 minutos.
 - **Tu sistema cae a tu agujero negro:** en la caza, lo que tenías en órbita cae de a poco, en espiral y cada vez más rápido, cada cuerpo a su ritmo (los planetas, más lento). Su masa ya estaba contada.
+- **Planetas partidos reconocibles:** cada mitad conserva los colores de su tipo (desierto, oceánico, lava, hielo, mineral…). Los gaseosos (como los de anillo) conservan su tamaño y su aspecto al partirse; sueltan escombros y entran a tu órbita.

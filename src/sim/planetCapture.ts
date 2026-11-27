@@ -55,8 +55,8 @@ export function hitPlanet(w: World, p: number, dmg: number): boolean {
   // Además de los escombros, fragmentos rocosos más grandes que un asteroide, que se pueden sumar a tu órbita.
   spawnDebris(w, w.x[p], w.y[p], w.vx[p], w.vy[p], R * 0.7, -ay, ax, c.breakFragments, 1.15, c.maxCaptureSize);
   // Un rocoso o helado sigue siendo el mismo planeta, colapsado y en dos mitades (breakPlanet ya le deja casi todo su tamaño).
-  // Un gaseoso no tiene corteza que partir: pierde su envoltura y se achica.
-  if (w.kind[p] === KIND_GAS) { w.radius[p] = R * c.planetBreakKeep; w.mass[p] = w.radius[p] ** 3; }
+  // Un gaseoso conserva su tamaño y su aspecto (no tiene corteza que partir): sólo queda marcado como partido, y es tuyo.
+  if (w.kind[p] === KIND_GAS) { w.broken[p] = 1e-6; w.breakAx[p] = ax; w.breakAy[p] = ay; }
   w.planetDmg[p] = 0;
   w.planetBreaks++;
   return true;

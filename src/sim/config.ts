@@ -74,7 +74,6 @@ export interface SimConfig {
   planetOrbitGap: number;        // la órbita de los planetas empieza esto por fuera de la de los asteroides
   planetOrbitSpan: number;       // ancho de la franja de órbitas de los planetas
   planetHpPerRadius: number;     // golpes para partir un planeta = esto × su radio
-  planetBreakKeep: number;       // al partirlo, el pedazo que queda mide esto de su radio (entra solo)
   ability1: number;              // fracción de los planetas de la pantalla en órbita para la habilidad 1
   ability2: number;
   ability3: number;
@@ -186,7 +185,6 @@ export const DEFAULT_CONFIG: SimConfig = {
   planetOrbitGap: 6,
   planetOrbitSpan: 14,
   planetHpPerRadius: 2.5,
-  planetBreakKeep: 0.5,
   ability1: 0.15,
   ability2: 0.30,
   ability3: 0.45,

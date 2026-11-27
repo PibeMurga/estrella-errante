@@ -1,17 +1,20 @@
-import { Color, DoubleSide, Frustum, Group, InstancedMesh, Matrix4, MeshBasicMaterial, Quaternion, ShaderMaterial, Sphere, SphereGeometry, Vector3 } from 'three';
+import { Color, DoubleSide, Frustum, Group, InstancedBufferAttribute, InstancedMesh, Matrix4, MeshBasicMaterial, Quaternion, ShaderMaterial, Sphere, SphereGeometry, Vector3 } from 'three';
 import { DEAD, KIND_ICE, KIND_ROCKY, type World } from '../../sim/world';
 import type { Layer } from '../layer';
 import { NOISE_GLSL } from '../shaders/noise';
+import { planetVisualFor, VISUALS } from './planets';
 
 // Planetas partidos: dos pedazos de corteza, no necesariamente iguales (el corte cae en cualquier altura),
 // que se separan y vuelcan de a poco. La cara del corte es plana: se dibuja con las caras traseras de la esfera,
 // pero la textura y el calor se calculan sobre el plano del corte (intersección del rayo de la cámara con ese plano),
 // así se ve roca maciza y no una cáscara hueca. Los escombros son asteroides de la simulación.
-// Cada instancia tiene su eje local Y alineado con el eje de la ruptura.
+// Cada instancia tiene su eje local Y alineado con el eje de la ruptura. Cada planeta partido conserva los colores
+// de su tipo (desierto, oceánico, lava, hielo…): se reconoce qué planeta era.
 
-const VERT = /* glsl */ `uniform float uSide; varying vec3 vN; varying vec3 vP; varying vec3 vO; varying vec3 vCut; varying vec3 vCamO; varying float vSeed; varying float vHeat; varying float vIce;
+const VERT = /* glsl */ `uniform float uSide; attribute vec3 aA; attribute vec3 aB; attribute vec3 aC; varying vec3 vA; varying vec3 vB; varying vec3 vC; varying vec3 vN; varying vec3 vP; varying vec3 vO; varying vec3 vCut; varying vec3 vCamO; varying float vSeed; varying float vHeat; varying float vIce;
 void main(){
   mat4 m = modelMatrix * instanceMatrix;
+  vA = aA; vB = aB; vC = aC;
   vSeed = instanceColor.r * 97.0; vHeat = instanceColor.g; vIce = instanceColor.b;
   vO = position; vec4 w = m*vec4(position,1.); vP = w.xyz; vN = normalize(mat3(m)*normal);
   vCut = normalize(mat3(m)*vec3(0., -uSide, 0.));   // normal de la cara del corte: al volcar, el sol la ilumina distinto
@@ -20,7 +23,7 @@ void main(){
 }`;
 
 const FRAG = /* glsl */ `uniform vec3 uSunPos; uniform vec3 uLight; uniform float uSide; uniform float uTime;
-varying vec3 vN; varying vec3 vP; varying vec3 vO; varying vec3 vCut; varying vec3 vCamO; varying float vSeed; varying float vHeat; varying float vIce;
+varying vec3 vA; varying vec3 vB; varying vec3 vC; varying vec3 vN; varying vec3 vP; varying vec3 vO; varying vec3 vCut; varying vec3 vCamO; varying float vSeed; varying float vHeat; varying float vIce;
 void main(){
   vec3 p = normalize(vO);
   vec3 L = normalize(uSunPos - vP);
@@ -36,7 +39,9 @@ void main(){
     float rr = length(P.xz);
     float n1 = fbm(P*5.+vSeed, 4)*.5+.5, n2 = fbm(P*19.+vSeed*1.7, 3)*.5+.5;
     float strata = smoothstep(.4, .6, sin(rr*16. + n1*5.)*.5+.5) * .18;   // capas del manto, insinuadas
-    vec3 rockIn = mix(mix(vec3(.15,.13,.11), vec3(.30,.27,.23), n1), mix(vec3(.30,.36,.43), vec3(.55,.62,.70), n1), vIce);
+    // El interior sale de los colores del planeta, más oscuros y apagados: la roca de adentro de ese mismo mundo.
+    vec3 deep = mix(vA, vC, .5) * .42 + vec3(.03);
+    vec3 rockIn = mix(deep * .7, mix(vA, vB, .5) * .55, n1);
     rockIn *= (.7 + .55*n2) * (1. - strata);
     float ndc = max(dot(vCut, L), 0.);
     float crack = smoothstep(.86, .97, 1. - abs(snoise(P*3.5 + vSeed + vec3(0., uTime*.02, 0.))));
@@ -47,7 +52,10 @@ void main(){
   float ndl = dot(normalize(vN), L);
   float lit = max(ndl, 0.) * smoothstep(-.04, .12, ndl);
   float f = fbm(p*4.+vSeed, 5)*.5+.5, g = fbm(p*15.+vSeed*1.3, 3)*.5+.5;
-  vec3 alb = mix(mix(vec3(.29,.27,.25), vec3(.16,.15,.14), f), mix(vec3(.40,.46,.53), vec3(.80,.85,.90), f), vIce);
+  // La superficie conserva los colores de su tipo: mezcla de sus tonos A y B, y manchas del tercero (mares, vetas, hielo).
+  float g2 = fbm(p*2.6 + vSeed*.7, 4)*.5+.5;
+  vec3 alb = mix(vA, vB, f);
+  alb = mix(alb, vC, smoothstep(.56, .72, g2) * .55);
   alb *= .78 + .4*g;                                  // grano de superficie: que no se vea liso
   float vein = smoothstep(.93, .99, 1. - abs(snoise(p*7.+vSeed))) * (1. - smoothstep(.05, .16, cut));
   vec3 col = alb * uLight * lit + alb*.004;
@@ -114,6 +122,17 @@ export function createBrokenPlanetsLayer(world: World, sunPos: Vector3): Layer {
   const time = { value: 0 };
   const light = LIGHT_BASE.clone();
   const geo = new SphereGeometry(1, 64, 32);
+  // Colores del tipo de cada planeta (los mismos de la capa de planetas), por instancia.
+  const colA = new Float32Array(n * 3), colB = new Float32Array(n * 3), colC = new Float32Array(n * 3);
+  const attrA = new InstancedBufferAttribute(colA, 3), attrB = new InstancedBufferAttribute(colB, 3), attrC = new InstancedBufferAttribute(colC, 3);
+  geo.setAttribute('aA', attrA); geo.setAttribute('aB', attrB); geo.setAttribute('aC', attrC);
+  const palette = new Float32Array(world.capacity * 9);   // A, B y C de cada planeta, armados una sola vez
+  const tmpC = new Color();
+  for (let s = 0; s < idx.length; s++) {
+    const i = idx[s]!, v = VISUALS[planetVisualFor(world.kind[i]!, i)]!;
+    const hexes = [v.A, v.B ?? v.A, v.C ?? v.B ?? v.A];
+    for (let h = 0; h < 3; h++) { tmpC.set(hexes[h]!); palette[i * 9 + h * 3] = tmpC.r; palette[i * 9 + h * 3 + 1] = tmpC.g; palette[i * 9 + h * 3 + 2] = tmpC.b; }
+  }
   const halves: InstancedMesh[] = [];
   for (const side of [1, -1]) {
     const mat = new ShaderMaterial({
@@ -156,6 +175,7 @@ export function createBrokenPlanetsLayer(world: World, sunPos: Vector3): Layer {
         q.multiplyQuaternions(qAlign, qSpin);
         const sep = halfSeparation(t) * r, heat = breakHeat(t);   // sep: lo que se aleja cada pedazo si fueran iguales
         const seed = (i * 0.6180339) % 1;
+        for (let h = 0; h < 3; h++) { colA[k * 3 + h] = palette[i * 9 + h]!; colB[k * 3 + h] = palette[i * 9 + 3 + h]!; colC[k * 3 + h] = palette[i * 9 + 6 + h]!; }
         col.setRGB(seed, heat, w.kind[i] === KIND_ICE ? 1 : 0);
         scl.setScalar(r);
         // Cada pedazo vuelca sobre su centro de masa. El chico se aleja y gira más que el grande
@@ -181,6 +201,7 @@ export function createBrokenPlanetsLayer(world: World, sunPos: Vector3): Layer {
         core.setColorAt(k, col.setRGB(2.2 * heat, 0.7 * heat, 0.15 * heat));
         k++;
       }
+      attrA.needsUpdate = attrB.needsUpdate = attrC.needsUpdate = true;
       for (let j = 0; j < meshes.length; j++) {
         const m = meshes[j]!;
         m.count = k;

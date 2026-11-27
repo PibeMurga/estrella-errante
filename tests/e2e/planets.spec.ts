@@ -14,3 +14,28 @@ test('marcas de peligro alrededor de los planetas cercanos, y el visor del siste
   expect(await page.evaluate(() => window.__GAME__!.diagnostics.dangerMarks)).toBeGreaterThanOrEqual(3);   // puede haber otro planeta cerca en el mapa
   await page.screenshot({ path: 'artifacts/e2e/marcas-de-peligro.png' });
 });
+
+test('los planetas partidos conservan el aspecto de su tipo', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  await page.goto('/?seed=20261124');
+  await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
+  await page.evaluate(() => {
+    const w = window.__GAME__!.world; const s = w.star;
+    // Partir cuatro planetas rocosos o helados y ponerlos a la vista (sin tocar la estrella).
+    let n = 0;
+    for (let q = 0; q < w.planets.length && n < 4; q++) {
+      const p = w.planets[q]!;
+      if (w.kind[p] !== 1 && w.kind[p] !== 2) continue;
+      const a = n * 1.6;
+      w.x[p] = w.prevX[p] = s.x + Math.cos(a) * 24; w.y[p] = w.prevY[p] = s.y + Math.sin(a) * 24;
+      w.vx[p] = 0; w.vy[p] = 0; w.radius[p] = 4; w.mass[p] = 64;
+      w.broken[p] = 40; w.breakAx[p] = 1; w.breakAy[p] = 0.3;
+      n++;
+    }
+  });
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: 'artifacts/e2e/planetas-partidos.png' });
+  expect(errors).toEqual([]);
+});

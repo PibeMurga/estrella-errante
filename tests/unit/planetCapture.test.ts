@@ -100,15 +100,15 @@ describe('partir planetas a golpes', () => {
     for (let k = 0; k < 100; k++) hitPlanet(w, p, 1);
     expect(w.planetBreaks).toBe(0);
   });
-  it('un gaseoso partido se achica y suelta escombros, pero no desaparece', () => {
+  it('un gaseoso partido conserva su tamaño, suelta escombros y no desaparece', () => {
     const w = guarded(100);
     const E = starSize(w.star.mass);
     const p = addBody(w, { x: 40, y: 0, vx: 0, vy: 0, radius: E * 0.8, kind: KIND_GAS });
     for (let i = 0; i < 20; i++) { const d = addBody(w, { x: 0, y: 0, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID }); w.state[d] = 3; }   // reserva de escombros
     hitPlanet(w, p, 1000);
     expect(w.state[p]).toBe(FREE);
-    expect(w.broken[p]).toBe(0);
-    expect(w.radius[p]).toBeCloseTo(E * 0.8 * cfg.planetBreakKeep, 6);
+    expect(w.radius[p]).toBeCloseTo(E * 0.8, 6);        // conserva su tamaño y su aspecto (pedido de Lucas)
+    expect(w.broken[p]).toBeGreaterThan(0);             // queda marcado como partido: entra a tu órbita
   });
   it('la honda golpea y rebota; el bólido golpea y queda suelto', () => {
     const w = guarded(100);
