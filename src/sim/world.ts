@@ -278,7 +278,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
   for (let k = 0; k < config.planetCount; k++) {
     let px = 0, py = 0;
     do { px = rng.range(-hw, hw); py = rng.range(-hh, hh); } while (Math.hypot(px, py) < config.spawnClearRadius * 3);
-    const ang = rng.range(0, Math.PI * 2), speed = 0.8 + 3.4 * Math.pow(rng.next(), 1.5);   // los planetas derivan, cada uno a su ritmo: hay que esquivarlos
+    const ang = rng.range(0, Math.PI * 2), speed = 0.5 + 2.6 * Math.pow(rng.next(), 1.7);   // derivan pesados, cada uno a su ritmo
     // Tamaños muy desparejos: muchos medianos y chicos, pocos inmensos (hasta 16).
     const r = 2 + 14 * Math.pow(rng.next(), 2.4);
     const p = addBody(w, { x: px, y: py, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, radius: r, kind: KIND_ROCKY + Math.floor(rng.next() * 3) });
@@ -326,10 +326,26 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
 // pedazo con su masa y su centro de masa, alejándose del otro por el eje del corte (el chico, más rápido, como en un
 // empujón que conserva el momento). Desde ahí cada uno sigue por su cuenta: deriva, se captura o se pierde solo.
 // `apart` = segundos de separación ya recorridos. Sin pedazo de reserva, queda como un cuerpo (el render lo dibuja igual).
+// Onda de una explosión de tamaño R en (x, y): empuja hacia afuera a tu estrella y a lo suelto, más cuanto más cerca.
+export function explosionPush(w: World, x: number, y: number, R: number): void {
+  const reach = R * 8, s = w.star;
+  const dx = s.x - x, dy = s.y - y, d = Math.hypot(dx, dy);
+  if (d < reach && d > 1e-6) { const k = 2.2 * R / Math.max(d, R * 1.5) * (1 - d / reach); s.vx += (dx / d) * k; s.vy += (dy / d) * k; }
+  for (let j = 0; j < w.count; j++) {
+    if (w.state[j] !== FREE || w.kind[j] !== KIND_ASTEROID) continue;
+    const ex = w.x[j] - x, ey = w.y[j] - y, e2 = ex * ex + ey * ey;
+    if (e2 > reach * reach || e2 < 1e-6) continue;
+    const e = Math.sqrt(e2), k = 3 * R / Math.max(e, R) * (1 - e / reach);
+    w.vx[j] += (ex / e) * k; w.vy[j] += (ey / e) * k;
+  }
+}
+
 // Anota una ruptura para que el render dibuje su explosión.
 export function noteBreak(w: World, i: number, ax: number, ay: number): void {
   w.breakFxCount++; w.breakFxX = w.x[i]; w.breakFxY = w.y[i]; w.breakFxR = w.radius[i];
   w.breakFxKind = w.kind[i]!; w.breakFxAx = ax; w.breakFxAy = ay;
+  // La explosión empuja: a tu estrella (si está cerca) y a lo suelto de alrededor, según su tamaño y la distancia.
+  explosionPush(w, w.x[i], w.y[i], w.radius[i]);
 }
 
 export function splitHalves(w: World, i: number, apart = 0): void {

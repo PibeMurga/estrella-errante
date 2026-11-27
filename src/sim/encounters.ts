@@ -1,5 +1,5 @@
 import { DT } from './config';
-import { hitPlanet } from './planetCapture';
+import { hitPlanet, joinsOrbit, planetTier, TIER_BREAK } from './planetCapture';
 import { breakPlanet, spawnDebris } from './tidal';
 import { DEAD, FREE, ORBITING, KIND_GAS, KIND_ICE, KIND_ROCKY, massGain, MAX_IMPACTS, noteBreak, starSize, type World } from './world';
 
@@ -141,6 +141,19 @@ export function stepOwnPlanetRams(w: World): void {
       const dx = w.x[f]! - w.x[o]!, dy = w.y[f]! - w.y[o]!, D = w.radius[f]! + w.radius[o]!, d2 = dx * dx + dy * dy;
       if (d2 >= D * D) continue;
       const d = Math.sqrt(d2) || 1, nx = dx / d, ny = dy / d;
+      // Se alinea, no rebota: lo chico o partido entra a tu órbita; lo que se puede partir se parte y sus pedazos entran.
+      const t = planetTier(w.radius[f]!, s.mass);
+      if (joinsOrbit(w, f) || t === TIER_BREAK) {
+        if (t === TIER_BREAK && w.broken[f]! === 0) {
+          mark(w, f, Math.atan2(-ny, -nx), 1.2);
+          hitPlanet(w, f, 1e6);
+          const tw = w.twin[f]!;
+          if (tw >= 0) w.noCatch[tw] = 0;
+        }
+        w.noCatch[f] = 0;
+        w.vx[f] = s.vx; w.vy[f] = s.vy;   // queda con tu movimiento: la captura lo toma enseguida, sin rebote
+        continue;
+      }
       w.x[f] = w.x[o]! + nx * D; w.y[f] = w.y[o]! + ny * D;
       const vn = (w.vx[f]! - s.vx) * nx + (w.vy[f]! - s.vy) * ny;
       if (vn >= 0) continue;

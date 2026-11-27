@@ -262,7 +262,8 @@ function moveOrbiting(w: World, i: number, absorbing: boolean, size: number, hol
   const r = Math.max(absorbing ? 0 : size * 1.2, w.orbitR[i] + (k >= 1 || absorbing ? settle : (1 - k) * w.life[i]! * DT + k * settle));
   w.orbitR[i] = r;
   if (absorbing && r <= size * 0.8) { w.state[i] = DEAD; return; }
-  const wOrbit = c.orbitSpeedK * Math.pow(c.orbitMin / Math.max(r, 1e-6), 1.5);
+  // Cuanto más crecés, más fuerte gira tu sistema: todo lo que te orbita va un poco más rápido.
+  const wOrbit = c.orbitSpeedK * Math.pow(c.orbitMin / Math.max(r, 1e-6), 1.5) * (1 + c.orbitSpinGrowth * Math.min(1, Math.sqrt(Math.max(0, s.mass) / 310)));
   // Al entrar se frena (gira más lento) y recupera el ritmo de la órbita al acoplarse.
   const a = w.orbitAngle[i] + (k >= 1 ? wOrbit : w.orbitW[i] + (wOrbit - w.orbitW[i]) * k) * DT;
   w.orbitAngle[i] = a;
@@ -398,6 +399,18 @@ export function step(w: World, intent: Intent): void {
   }
 
   if (w.fireSlow > 0) w.fireSlow = Math.max(0, w.fireSlow - DT);
+  // Los planetas sueltos también te tiran, según su tamaño (los inmensos se sienten; los chicos, casi nada).
+  if (!hunting) {
+    const P = w.planets, me = starSize(s.mass);
+    for (let q = 0; q < P.length; q++) {
+      const p = P[q]!;
+      if (w.state[p] !== FREE) continue;
+      const r = w.radius[p], gx = w.x[p] - s.x, gy = w.y[p] - s.y, g2 = gx * gx + gy * gy, reach = r * 7 + me;
+      if (g2 > reach * reach || g2 < 1e-6) continue;
+      const g = Math.sqrt(g2), a = Math.min(6, c.planetGravity * r * r * r / Math.max(g2, (r + me) * (r + me))) * (1 - g / reach);
+      s.vx += (gx / g) * a * DT; s.vy += (gy / g) * a * DT;
+    }
+  }
   // Movimiento con inercia: acelera hacia una velocidad deseada y frena para llegar sin pasarse.
   const acc = hunting ? c.starAccel : c.starAccel / (1 + c.starMassInertia * s.mass);   // siendo agujero negro ya no cargás con la inercia de la estrella
   let desX = 0;
