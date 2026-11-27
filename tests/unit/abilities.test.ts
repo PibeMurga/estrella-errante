@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG } from '../../src/sim/config';
 import { abilityLevel, planetsInOrbit } from '../../src/sim/abilities';
+import { spawnComet } from '../../src/sim/comets';
 import { type Intent, step } from '../../src/sim/step';
-import { addBody, captureRadiusFor, createWorld, FREE, GATHERING, KIND_ASTEROID, KIND_ROCKY, ORBITING, type World } from '../../src/sim/world';
+import { addBody, BOLT, CARRIED, captureRadiusFor, createWorld, FREE, GATHERING, KIND_ASTEROID, KIND_ROCKY, ORBITING, type World } from '../../src/sim/world';
 
 const idle: Intent = { targetX: 0, targetY: 0, hasTarget: false };
 // Mundo con 20 planetas lejanos (la pantalla) y N de ellos en tu órbita.
@@ -60,5 +61,20 @@ describe('habilidades por cantidad de planetas', () => {
     step(w, idle);
     expect(w.ability).toBe(0);
     expect(w.abilityDowns).toBe(1);
+  });
+  it('desde el segundo escalón, un cometa también puede llevarse un planeta, y al morir suelta todo', () => {
+    let stolePlanet = false;
+    for (let seed = 1; seed <= 6 && !stolePlanet; seed++) {
+      const w = system(6);
+      const k = spawnComet(w, w.star.x + 2, w.star.y);
+      step(w, idle);
+      for (let i = 0; i < w.count; i++) if (w.state[i] === CARRIED && w.kind[i] === KIND_ROCKY) stolePlanet = true;
+      w.comets.hp[k] = 0.5;
+      const b = addBody(w, { x: w.comets.x[k]!, y: w.comets.y[k]!, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID }); w.state[b] = BOLT; w.life[b] = 1;
+      step(w, idle);
+      for (let i = 0; i < w.count; i++) expect(w.state[i]).not.toBe(CARRIED);
+      w.rng.next(); // otra tirada en la próxima vuelta
+    }
+    expect(stolePlanet).toBe(true);
   });
 });

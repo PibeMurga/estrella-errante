@@ -80,10 +80,13 @@ describe('fases de la partida', () => {
     const p = addBody(w, { x: 30, y: 0, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID });
     w.state[p] = PROJECTILE; w.life[p] = 2;
     const c = addBody(w, { x: 60, y: 0, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID });
-    w.state[c] = CARRIED; w.comets.mode[0] = 1; w.comets.carry[0] = c;
+    w.state[c] = CARRIED; w.parent[c] = 0; w.comets.mode[0] = 1; w.comets.carry[0] = 1;
+    const c2 = addBody(w, { x: 62, y: 0, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID });
+    const c3 = addBody(w, { x: 64, y: 0, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID });
+    w.state[c2] = CARRIED; w.parent[c2] = 0; w.state[c3] = CARRIED; w.parent[c3] = 0; w.comets.carry[0] = 3;
     step(w, press);
     expect(w.state[p]).toBe(FREE);
-    expect(w.state[c]).toBe(FREE);
+    expect(w.state[c]).toBe(FREE); expect(w.state[c2]).toBe(FREE); expect(w.state[c3]).toBe(FREE);   // suelta todo lo que llevaba
     expect(w.comets.mode[0]).toBe(0);
     const ang = w.orbitAngle[a];
     run(w, 1);

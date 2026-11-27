@@ -46,7 +46,7 @@ export interface Comets {
   readonly hp: Float32Array;
   readonly mode: Uint8Array;     // 0 apagado, 1 caza, 2 huye
   readonly timer: Float32Array;  // segundos de huida que quedan
-  readonly carry: Int32Array;    // mundo robado, o -1
+  readonly carry: Int32Array;    // cuántos cuerpos lleva robados (cada uno tiene parent = índice del cometa)
 }
 
 export interface World {
@@ -101,6 +101,7 @@ export interface World {
   planetCaptures: number;          // planetas que entraron a tu órbita (evento)
   graveHits: number;               // golpes graves (evento)
   planetBreaks: number;            // planetas partidos a golpes (evento)
+  lastStealCount: number;          // cuántos cuerpos se llevó el último cometa
   ability: number;                 // habilidad activa (0 a 3), según los planetas en órbita
   planetsHeld: number;             // planetas en tu órbita
   abilityUps: number; abilityDowns: number;   // habilidades ganadas y perdidas (eventos)
@@ -196,7 +197,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     comets: {
       x: new Float64Array(MAX_COMETS), y: new Float64Array(MAX_COMETS), prevX: new Float64Array(MAX_COMETS), prevY: new Float64Array(MAX_COMETS),
       vx: new Float64Array(MAX_COMETS), vy: new Float64Array(MAX_COMETS), hp: new Float32Array(MAX_COMETS), mode: new Uint8Array(MAX_COMETS),
-      timer: new Float32Array(MAX_COMETS), carry: new Int32Array(MAX_COMETS).fill(-1),
+      timer: new Float32Array(MAX_COMETS), carry: new Int32Array(MAX_COMETS),
     },
     cometClock: config.cometFirst, cometSteals: 0, cometKills: 0, rng: createRng(seed ^ 0x9e3779b9),
     over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
@@ -206,7 +207,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     state: new Uint8Array(capacity), kind: new Uint8Array(capacity), noCatch: new Float32Array(capacity), life: new Float32Array(capacity),
     broken: new Float32Array(capacity), breakAx: new Float32Array(capacity), breakAy: new Float32Array(capacity), tidalBreaks: 0, planetCrashes: 0, crashX: 0, crashY: 0, crashR: 0,
     orbitingCount: 0, stage: 0, stageUps: 0, maxMass: config.starStartMass, absorbed: 0, captured: new Int32Array(capacity), capturedCount: 0,
-    planets: new Int32Array(0), planetDmg: new Float32Array(capacity), planetCaptures: 0, graveHits: 0, planetBreaks: 0, ability: 0, planetsHeld: 0, abilityUps: 0, abilityDowns: 0,
+    planets: new Int32Array(0), planetDmg: new Float32Array(capacity), planetCaptures: 0, graveHits: 0, planetBreaks: 0, lastStealCount: 0, ability: 0, planetsHeld: 0, abilityUps: 0, abilityDowns: 0,
   };
   const rng = createRng(seed);
   const hw = config.arenaHalfWidth, hh = config.arenaHalfHeight;

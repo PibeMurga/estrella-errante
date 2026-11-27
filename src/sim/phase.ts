@@ -24,10 +24,10 @@ export function startCollapse(w: World): void {
   w.phase = PHASE_COLLAPSE; w.phaseTime = 0;
   w.star.vx = 0; w.star.vy = 0;
   const cm = w.comets;
-  for (let k = 0; k < cm.mode.length; k++) {
-    const c = cm.carry[k]!;
-    if (c >= 0 && w.state[c] === CARRIED) { w.state[c] = FREE; w.vx[c] = 0; w.vy[c] = 0; w.noCatch[c] = 0; }
-    cm.carry[k] = -1; cm.mode[k] = 0;
+  for (let k = 0; k < cm.mode.length; k++) { cm.carry[k] = 0; cm.mode[k] = 0; }
+  for (let i = 0; i < w.count; i++) {
+    if (w.state[i] !== CARRIED) continue;
+    w.state[i] = FREE; w.parent[i] = -1; w.vx[i] = 0; w.vy[i] = 0; w.noCatch[i] = 0;
   }
   releaseLaunch(w);   // lo que se juntaba vuelve a la órbita y lo que vuela queda suelto
 }

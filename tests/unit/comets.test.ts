@@ -39,19 +39,19 @@ describe('cometa cazador', () => {
     expect(Math.hypot(w.comets.x[k]! - w.star.x, w.comets.y[k]! - w.star.y)).toBeLessThan(d0 - 20);
   });
 
-  it('al tocarla le roba un mundo, lo arrastra y huye; después vuelve a cazar', () => {
-    const w = createWorld(cfg(), 2, 10);
-    withOrbit(w, 2);
+  it('al tocarla le roba de 3 a 5 cuerpos, los arrastra en fila y huye; después vuelve a cazar', () => {
+    const w = createWorld(cfg(), 2, 20);
+    withOrbit(w, 8);
     const k = spawnComet(w, 3, 0);
     step(w, IDLE);
-    expect(w.orbitingCount).toBe(1);
+    const n = w.comets.carry[k]!;
+    expect(n).toBeGreaterThanOrEqual(3); expect(n).toBeLessThanOrEqual(5);
+    expect(w.lastStealCount).toBe(n);
+    expect(w.orbitingCount).toBe(8 - n);
     expect(w.cometSteals).toBe(1);
-    const c = w.comets.carry[k]!;
-    expect(c).toBeGreaterThanOrEqual(0);
-    expect(w.state[c]).toBe(CARRIED);
     expect(w.comets.mode[k]).toBe(2);
     for (let s = 0; s < 60; s++) step(w, IDLE);
-    expect(Math.hypot(w.x[c] - w.comets.x[k]!, w.y[c] - w.comets.y[k]!)).toBeLessThan(6);
+    for (let i = 0; i < w.count; i++) if (w.state[i] === CARRIED) expect(Math.hypot(w.x[i] - w.comets.x[k]!, w.y[i] - w.comets.y[k]!)).toBeLessThan(14);
     for (let s = 0; s < DEFAULT_CONFIG.cometFleeTime * 60; s++) step(w, IDLE);
     expect(w.comets.mode[k]).toBe(1);
   });
@@ -73,6 +73,7 @@ describe('cometa cazador', () => {
     step(w, { targetX: 0, targetY: 0, hasTarget: false });
     expect(w.comets.mode[k]).toBe(0);
     expect(w.cometKills).toBe(1);
+    for (let i = 0; i < w.count; i++) expect(w.state[i]).not.toBe(CARRIED);
   });
 
   it('nunca hay más cometas que el tamaño de la reserva', () => {

@@ -1,5 +1,6 @@
 import { DT } from './config';
 import { returnGathered } from './launch';
+import { isPlanetKind } from './planetCapture';
 import { BOLT, CARRIED, DEAD, FREE, KIND_ASTEROID, MAX_COMETS, ORBITING, PROJECTILE, RETURNING, starSize, type World } from './world';
 
 export const COMET_OFF = 0;
@@ -19,7 +20,7 @@ export function spawnComet(w: World, x: number, y: number): number {
     cm.vx[k] = (dx / d) * w.config.cometSpeed; cm.vy[k] = (dy / d) * w.config.cometSpeed;
     cm.hp[k] = w.config.cometHp;
     cm.timer[k] = 0;
-    cm.carry[k] = -1;
+    cm.carry[k] = 0;
     return k;
   }
   return -1;
@@ -59,17 +60,28 @@ function damage(w: World, k: number, amount: number): void {
   if (cm.hp[k]! > 0) return;
   cm.mode[k] = COMET_OFF;
   w.cometKills++;
-  const c = cm.carry[k]!;
-  if (c >= 0) {
-    w.state[c] = FREE;
-    w.vx[c] = cm.vx[k]! * 0.4; w.vy[c] = cm.vy[k]! * 0.4;
-    w.noCatch[c] = 0.3;
-    cm.carry[k] = -1;
+  // Suelta todo lo que robó: queda flotando para recuperarlo.
+  if (cm.carry[k]! > 0) {
+    for (let i = 0; i < w.count; i++) {
+      if (w.state[i] !== CARRIED || w.parent[i] !== k) continue;
+      w.state[i] = FREE; w.parent[i] = -1;
+      w.vx[i] = cm.vx[k]! * 0.4; w.vy[i] = cm.vy[k]! * 0.4;
+      w.noCatch[i] = 0.3;
+    }
+    cm.carry[k] = 0;
   }
   scatterDebris(w, cm.x[k]!, cm.y[k]!, w.config.cometDebris);
 }
 
-// Cometas cazadores: aparecen por los bordes, persiguen a la estrella, le roban un mundo y huyen.
+// El cometa k se lleva el cuerpo i de tu órbita.
+function steal(w: World, k: number, i: number): void {
+  w.state[i] = CARRIED;
+  w.parent[i] = k;
+  w.orbitingCount--;
+  w.star.mass = Math.max(w.config.starStartMass, w.star.mass - w.mass[i]);
+}
+
+// Cometas cazadores: aparecen por los bordes, persiguen a la estrella, le roban cuerpos y huyen.
 export function stepComets(w: World): void {
   const c = w.config, s = w.star, cm = w.comets;
   w.cometClock -= DT;
@@ -104,37 +116,50 @@ export function stepComets(w: World): void {
       cm.timer[k] = cm.timer[k]! - DT;
       if (cm.timer[k]! <= 0) cm.mode[k] = COMET_HUNT;
     } else if (d < size + c.cometRadius) {
-      // Toca la estrella: le roba el mundo en órbita más cercano (si no lleva uno) y huye.
+      // Toca la estrella: le roba de 3 a 5 cuerpos de la órbita (los más cercanos) y, desde el segundo escalón
+      // de planetas, a veces también el planeta más chico de tu sistema. Después huye.
       returnGathered(w);   // te toca: se desarma el montón y puede robar igual
-      if (cm.carry[k]! < 0 && w.orbitingCount > 0) {
-        let best = -1, bestD = Infinity;
-        for (let i = 0; i < w.count; i++) {
-          if (w.state[i] !== ORBITING) continue;
-          const e = (w.x[i] - x) ** 2 + (w.y[i] - y) ** 2;
-          if (e < bestD) { bestD = e; best = i; }
+      if (cm.carry[k] === 0 && w.orbitingCount > 0) {
+        const want = c.cometStealMin + Math.floor(w.rng.next() * (c.cometStealMax - c.cometStealMin + 1));
+        let got = 0;
+        while (got < want) {
+          let best = -1, bestD = Infinity;
+          for (let i = 0; i < w.count; i++) {
+            if (w.state[i] !== ORBITING || isPlanetKind(w.kind[i]!)) continue;
+            const e = (w.x[i] - x) ** 2 + (w.y[i] - y) ** 2;
+            if (e < bestD) { bestD = e; best = i; }
+          }
+          if (best < 0) break;
+          steal(w, k, best); got++;
         }
-        if (best >= 0) {
-          w.state[best] = CARRIED;
-          w.orbitingCount--;
-          s.mass = Math.max(c.starStartMass, s.mass - w.mass[best]);
-          cm.carry[k] = best;
-          w.cometSteals++;
+        if (w.ability >= 2 && w.rng.next() < 0.5) {
+          let small = -1;
+          for (let q = 0; q < w.planets.length; q++) { const p = w.planets[q]!; if (w.state[p] === ORBITING && (small < 0 || w.radius[p] < w.radius[small])) small = p; }
+          if (small >= 0) { steal(w, k, small); got++; }
         }
+        cm.carry[k] = got;
+        if (got > 0) { w.lastStealCount = got; w.cometSteals++; }
       }
       cm.mode[k] = COMET_FLEE;
       cm.timer[k] = c.cometFleeTime;
     }
 
-    // Lo robado va arrastrado detrás del cometa.
-    const carried = cm.carry[k]!;
-    if (carried >= 0) {
+    // Lo robado va arrastrado en fila detrás del cometa.
+    if (cm.carry[k]! > 0) {
       const v = Math.hypot(cm.vx[k]!, cm.vy[k]!) || 1;
-      w.x[carried] = x - (cm.vx[k]! / v) * 4;
-      w.y[carried] = y - (cm.vy[k]! / v) * 4;
-      // Si el cometa dio la vuelta, lo arrastrado acompaña el salto también en su posición anterior.
+      const dx = cm.vx[k]! / v, dy = cm.vy[k]! / v;
       const hw = c.arenaHalfWidth, hh = c.arenaHalfHeight;
-      if (w.x[carried] - w.prevX[carried] > hw) w.prevX[carried] += 2 * hw; else if (w.prevX[carried] - w.x[carried] > hw) w.prevX[carried] -= 2 * hw;
-      if (w.y[carried] - w.prevY[carried] > hh) w.prevY[carried] += 2 * hh; else if (w.prevY[carried] - w.y[carried] > hh) w.prevY[carried] -= 2 * hh;
+      let j = 0;
+      for (let i = 0; i < w.count; i++) {
+        if (w.state[i] !== CARRIED || w.parent[i] !== k) continue;
+        const back = 4 + 1.6 * j, side = (j % 2 ? 1 : -1) * 0.6;
+        w.x[i] = x - dx * back - dy * side;
+        w.y[i] = y - dy * back + dx * side;
+        // Si el cometa dio la vuelta, lo arrastrado acompaña el salto también en su posición anterior.
+        if (w.x[i] - w.prevX[i] > hw) w.prevX[i] += 2 * hw; else if (w.prevX[i] - w.x[i] > hw) w.prevX[i] -= 2 * hw;
+        if (w.y[i] - w.prevY[i] > hh) w.prevY[i] += 2 * hh; else if (w.prevY[i] - w.y[i] > hh) w.prevY[i] -= 2 * hh;
+        j++;
+      }
     }
   }
 
