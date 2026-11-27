@@ -20,7 +20,7 @@ function worldWithOrbit(worlds: number): World {
 describe('planetas que dañan', () => {
   it('chocar con un planeta más grande hace perder mundos y rebotar', () => {
     const w = worldWithOrbit(5);
-    addBody(w, { x: 5.5, y: 0, vx: 0, vy: 0, radius: 3.4, kind: KIND_GAS });
+    addBody(w, { x: 4.4, y: 0, vx: 0, vy: 0, radius: 2.6, kind: KIND_GAS });
     step(w, NO_INPUT);
     const left = w.orbitingCount;
     expect(left).toBeLessThanOrEqual(2);   // siendo chica, pierde más
@@ -34,7 +34,7 @@ describe('planetas que dañan', () => {
 
   it('los mundos perdidos no se vuelven a capturar enseguida', () => {
     const w = worldWithOrbit(5);
-    addBody(w, { x: 5.5, y: 0, vx: 0, vy: 0, radius: 3.4, kind: KIND_GAS });
+    addBody(w, { x: 4.4, y: 0, vx: 0, vy: 0, radius: 2.6, kind: KIND_GAS });
     step(w, NO_INPUT);
     const left = w.orbitingCount;
     for (let k = 0; k < 9; k++) step(w, NO_INPUT);
@@ -43,10 +43,10 @@ describe('planetas que dañan', () => {
 
   it('mientras dura la invulnerabilidad no vuelve a dañar', () => {
     const w = worldWithOrbit(5);
-    const p = addBody(w, { x: 5.5, y: 0, vx: 0, vy: 0, radius: 3.4, kind: KIND_GAS });
+    const p = addBody(w, { x: 4.4, y: 0, vx: 0, vy: 0, radius: 2.6, kind: KIND_GAS });
     step(w, NO_INPUT);
     const left = w.orbitingCount;
-    w.x[p] = w.star.x + 5.2; w.y[p] = w.star.y;
+    w.x[p] = w.star.x + 4.2; w.y[p] = w.star.y;
     step(w, NO_INPUT);
     expect(w.orbitingCount).toBe(left);
     expect(w.hits).toBe(1);
@@ -54,7 +54,7 @@ describe('planetas que dañan', () => {
 
   it('sin mundos que la protejan, la estrella se apaga y termina la partida', () => {
     const w = worldWithOrbit(0);
-    addBody(w, { x: 5.5, y: 0, vx: 0, vy: 0, radius: 3.4, kind: KIND_GAS });
+    addBody(w, { x: 4.0, y: 0, vx: 0, vy: 0, radius: 2.6, kind: KIND_GAS });
     step(w, NO_INPUT);
     expect(w.over).toBe(OVER_DIMMED);
   });

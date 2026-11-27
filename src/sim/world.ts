@@ -153,7 +153,7 @@ export function massGain(w: World, i: number): number {
 // comunes y crece hasta ser como los grandes; desde la ignición, el tamaño de una estrella (que sigue creciendo).
 export function starSize(mass: number): number {
   const m = Math.max(0, mass);
-  return m < 30 ? 1.6 + 0.8 * Math.sqrt(m) : 4 + 0.55 * Math.sqrt(m);
+  return m < 30 ? 0.8 + 0.85 * Math.sqrt(m) : 4 + 0.55 * Math.sqrt(m);
 }
 
 export function captureRadiusFor(config: SimConfig, mass: number): number {
@@ -279,7 +279,8 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     let px = 0, py = 0;
     do { px = rng.range(-hw, hw); py = rng.range(-hh, hh); } while (Math.hypot(px, py) < config.spawnClearRadius * 3);
     const ang = rng.range(0, Math.PI * 2), speed = 0.8 + 3.4 * Math.pow(rng.next(), 1.5);   // los planetas derivan, cada uno a su ritmo: hay que esquivarlos
-    const r = rng.range(2.5, 7);
+    // Tamaños muy desparejos: muchos medianos y chicos, pocos inmensos (hasta 16).
+    const r = 2 + 14 * Math.pow(rng.next(), 2.4);
     const p = addBody(w, { x: px, y: py, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, radius: r, kind: KIND_ROCKY + Math.floor(rng.next() * 3) });
     if (p < 0) break;
     if (rng.next() < 0.45) {
