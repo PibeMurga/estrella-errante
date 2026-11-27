@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG, type SimConfig } from '../../src/sim/config';
 import { type Intent, step } from '../../src/sim/step';
-import { addBody, createWorld, KIND_ASTEROID, OVER_NONE, OVER_SWALLOWED, ORBITING, type World } from '../../src/sim/world';
+import { addBody, createWorld, KIND_ASTEROID, KIND_ROCKY, OVER_NONE, OVER_SWALLOWED, ORBITING, type World } from '../../src/sim/world';
 
 const cfg = (o: Partial<SimConfig> = {}): SimConfig => ({ ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, cometFirst: 1e9, bhStartSpeed: 0, bhAccel: 0, ...o });
 const idle: Intent = { targetX: 0, targetY: 0, hasTarget: false };
@@ -56,5 +56,22 @@ describe('marea del agujero negro', () => {
     expect(w.over).toBe(OVER_SWALLOWED);
     expect(t).toBeGreaterThan(60 * 3);        // no es instantáneo
     expect(maxDrop).toBeLessThan(1);          // sin saltos: se va deshaciendo
+  });
+});
+
+describe('planetas grandes de cerca', () => {
+  it('te roban de a poco lo que tenés en órbita (más suave que el agujero negro)', () => {
+    const w = createWorld(cfg({ blackHole: false }), 4, 80);
+    w.star.mass = 20;
+    for (let k = 0; k < 30; k++) {
+      const a = (k / 30) * Math.PI * 2;
+      const i = addBody(w, { x: Math.cos(a) * 7, y: Math.sin(a) * 7, vx: 0, vy: 0, radius: 0.4, kind: KIND_ASTEROID });
+      w.state[i] = ORBITING; w.orbitR[i] = 7; w.orbitTarget[i] = 7; w.orbitAngle[i] = a; w.orbitingCount++;
+    }
+    const p = addBody(w, { x: 22, y: 0, vx: 0, vy: 0, radius: 12, kind: KIND_ROCKY });
+    w.invuln = 99;
+    for (let k = 0; k < 180; k++) { step(w, idle); w.star.x = 0; w.star.y = 0; w.star.vx = w.star.vy = 0; w.x[p] = 22; w.y[p] = 0; }
+    expect(w.planetSteals).toBeGreaterThan(0);
+    expect(w.orbitingCount).toBeGreaterThan(10);   // suave: no se lleva todo
   });
 });

@@ -93,7 +93,8 @@ export interface SimConfig {
   planetPhaseGain: number;
   planetPullMul: number;
   orbitSpinGrowth: number;
-  planetGravity: number;         // cuánto te tira un planeta suelto: a = esto × radio³ / distancia²       // cuánto más rápido gira tu sistema siendo hipergigante (0,8 = 80 % más)
+  planetGravity: number;
+  planetStrip: number;           // cuerpos por segundo que te roba un planeta grande de cerca (escala con √ de tu órbita)         // cuánto te tira un planeta suelto: a = esto × radio³ / distancia²       // cuánto más rápido gira tu sistema siendo hipergigante (0,8 = 80 % más)
   integrityRegen: number;        // resistencia que recuperás por segundo
   integrityAfterFracture: number; // con cuánta resistencia quedás después de fracturarte
   fractureMassLoss: number;      // fracción de la masa que perdés al fracturarte
@@ -248,6 +249,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   planetPullMul: 0.35,
   orbitSpinGrowth: 0.8,
   planetGravity: 1.5,
+  planetStrip: 1.4,
   integrityRegen: 0.045,
   integrityAfterFracture: 0.35,
   fractureMassLoss: 0.3,

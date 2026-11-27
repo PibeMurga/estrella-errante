@@ -410,6 +410,28 @@ export function step(w: World, intent: Intent): void {
       if (g2 > reach * reach || g2 < 1e-6) continue;
       const g = Math.sqrt(g2), a = Math.min(6, c.planetGravity * r * r * r / Math.max(g2, (r + me) * (r + me))) * (1 - g / reach);
       s.vx += (gx / g) * a * DT; s.vy += (gy / g) * a * DT;
+      // Un planeta bastante más grande que vos, de cerca, te roba de a poco lo que tenés en órbita (más suave que el
+      // agujero negro): conviene alejarse.
+      const strip = r > me * 1.3 ? Math.max(0, 1 - (g - r - me) / (r * 1.6)) : 0;
+      if (strip > 0 && w.orbitingCount > 0) {
+        w.planetStripAcc += c.planetStrip * strip * strip * Math.min(2, r / me - 1) * DT * Math.sqrt(w.orbitingCount);
+        while (w.planetStripAcc >= 1 && w.orbitingCount > 0) {
+          w.planetStripAcc -= 1;
+          let best = -1, bestD = Infinity;
+          for (let i = 0; i < w.count; i++) {
+            if (w.state[i] !== ORBITING || isPlanetKind(w.kind[i]!)) continue;
+            const e = (w.x[i] - w.x[p]) ** 2 + (w.y[i] - w.y[p]) ** 2;
+            if (e < bestD) { bestD = e; best = i; }
+          }
+          if (best < 0) break;
+          const bx = w.x[p] - w.x[best], by = w.y[p] - w.y[best], bd = Math.hypot(bx, by) || 1;
+          w.state[best] = FREE; w.orbitingCount--;
+          w.vx[best] = s.vx + (bx / bd) * 6; w.vy[best] = s.vy + (by / bd) * 6;
+          w.noCatch[best] = 2.5;
+          s.mass = Math.max(c.starStartMass, s.mass - massGain(w, best));
+          w.planetSteals++;
+        }
+      }
     }
   }
   // Movimiento con inercia: acelera hacia una velocidad deseada y frena para llegar sin pasarse.

@@ -229,6 +229,18 @@ void main(){ float r = length(vL.xy); float t = (r - 1.35) / (2.3 - 1.35); if (t
 
 const LIGHT_BASE = new Vector3(1.25, 1.02, 0.8);
 const m4 = new Matrix4();
+// Compresión en el golpe: el planeta se aplasta en la dirección del impacto y vuelve con un temblor que se apaga.
+const sqR = new Matrix4(), sqD = new Matrix4(), sqRi = new Matrix4(), sqM = new Matrix4(), zero = new Vector3();
+function squash(out: Matrix4, p: Vector3, q: Quaternion, s: Vector3, ang: number, f: number): void {
+  out.compose(zero, q, s);
+  if (f !== 0) {
+    sqR.makeRotationY(ang); sqRi.makeRotationY(-ang);
+    sqD.makeScale(1 - f, 1 + f * 0.5, 1 + f * 0.5);
+    sqM.multiplyMatrices(sqR, sqD).multiply(sqRi);
+    out.premultiply(sqM);
+  }
+  out.setPosition(p);
+}
 const q = new Quaternion();
 const qRing = new Quaternion();
 const pos = new Vector3();
@@ -266,6 +278,8 @@ export function createPlanetsLayer(world: World, segments: number, octaves: numb
   const time = { value: 0 };
   const entries: Entry[] = [];
   const spinOf = new Float32Array(world.capacity);
+  const hitAt = new Float32Array(world.capacity).fill(-99), hitAng = new Float32Array(world.capacity), hitAmp = new Float32Array(world.capacity);
+  let seenImp = 0;
   const materials: ShaderMaterial[] = [];
   const sun = { value: sunPos };
   const C = (h: string | undefined): Color => new Color(h ?? '#808080');
@@ -353,6 +367,14 @@ export function createPlanetsLayer(world: World, segments: number, octaves: numb
       const pxPerUnit = (ctx.height / 2) / Math.tan((ctx.camera.fov * Math.PI) / 360);
       frustum.setFromProjectionMatrix(projView.multiplyMatrices(ctx.camera.projectionMatrix, ctx.camera.matrixWorldInverse));
       time.value = ctx.time;
+      // Golpes nuevos: se anota cuándo, de qué lado y qué tan fuerte, para comprimir al que lo recibe.
+      if (w.impactCount < seenImp) seenImp = w.impactCount;
+      for (let n = Math.max(seenImp, w.impactCount - 16); n < w.impactCount; n++) {
+        const o = (n % 16) * 4, p = w.impacts[o]!;
+        if (p < 0 || p >= world.capacity) continue;
+        hitAt[p] = ctx.time; hitAng[p] = w.impacts[o + 1]!; hitAmp[p] = Math.min(1.6, w.impacts[o + 2]!);
+      }
+      seenImp = w.impactCount;
       for (let k = 0; k < entries.length; k++) {
         const en = entries[k]!;
         let nHi = 0, nLo = 0;
@@ -369,19 +391,23 @@ export function createPlanetsLayer(world: World, segments: number, octaves: numb
           const detailed = (r / dist) * pxPerUnit >= LOD_PX;
           q.setFromAxisAngle(yAxis, ctx.time * en.spin[s]!);
           scl.setScalar(r);
-          m4.compose(pos, q, scl);
+          const ht = ctx.time - hitAt[i]!;
+          // Más fuerte cuanto más chico: un gigante casi no se inmuta.
+          const f = ht >= 0 && ht < 1.2 ? 0.16 * hitAmp[i]! / Math.max(1, Math.sqrt(r / 3)) * Math.exp(-ht * 5) * Math.cos(ht * 16) : 0;
+          const ang = hitAng[i]!;
+          squash(m4, pos, q, scl, ang, f);
           seedCol.setRGB(en.seed[s]!, 0, 0);
           if (detailed) {
             en.hi.setMatrixAt(nHi, m4); en.hi.setColorAt(nHi, seedCol);
             if (en.atmo) {
               scl.setScalar(r * 1.03);
-              m4.compose(pos, q, scl);
+              squash(m4, pos, q, scl, ang, f);
               en.atmo.setMatrixAt(nHi, m4); en.atmo.setColorAt(nHi, seedCol);
             }
             if (en.clouds) {
               q.setFromAxisAngle(yAxis, ctx.time * en.spin[s]! * 1.15);
               scl.setScalar(r * 1.015);
-              m4.compose(pos, q, scl);
+              squash(m4, pos, q, scl, ang, f);
               en.clouds.setMatrixAt(nHi, m4); en.clouds.setColorAt(nHi, seedCol);
             }
             nHi++;
