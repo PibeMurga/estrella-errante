@@ -15,6 +15,8 @@ export interface SimConfig {
   starBrake: number;             // fracción de la aceleración para frenar cuando no hay objetivo
   starBaseCaptureRadius: number;
   captureRadiusPerSqrtMass: number;
+  starPullReach: number;         // tu gravedad atrae lo suelto hasta esta cantidad de radios de captura
+  starPullAccel: number;         // aceleración con que lo atrae (en el borde es cero, crece hacia vos)
   maxCaptureSize: number;        // radio máximo que se puede capturar
   stealSizeRatio: number;        // la estrella tiene que medir esto veces el planeta para robarle lunas y escombros
   orbitMin: number;
@@ -145,7 +147,9 @@ export const DEFAULT_CONFIG: SimConfig = {
   starSlowRadius: 30,
   starBrake: 0.5,
   starBaseCaptureRadius: 6,
-  captureRadiusPerSqrtMass: 1.2,
+  captureRadiusPerSqrtMass: 1.45,
+  starPullReach: 2.4,
+  starPullAccel: 16,
   maxCaptureSize: 1.5,
   stealSizeRatio: 1.5,
   orbitMin: 4,
@@ -160,11 +164,11 @@ export const DEFAULT_CONFIG: SimConfig = {
   bhStartSpeed: 1.5,
   bhAccel: 0.08,
   bhMaxSpeed: 16,
-  bhPull: 9000,
-  bhMaxAccel: 130,
-  bhRange: 170,
+  bhPull: 22000,
+  bhMaxAccel: 160,
+  bhRange: 200,
   bhMassGain: 0.003,
-  bhStarPull: 1.15,
+  bhStarPull: 1.3,
   hurtWorldsLost: 3,
   hurtInvuln: 1.5,
   hurtBounce: 7,
@@ -233,8 +237,8 @@ export const DEFAULT_CONFIG: SimConfig = {
   bhDiskDrag: 1.6,
   rockHitSpeed: 6,
   rockHitSize: 1.15,
-  rockBounceChance: 0.15,
-  rockShatterChance: 0.75,
+  rockBounceChance: 0.05,
+  rockShatterChance: 0.9,
   rockRestitution: 0.18,
   rockFriction: 0.45,
   slingBrake: 0.2,

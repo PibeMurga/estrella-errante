@@ -8,7 +8,7 @@ const idle: Intent = { targetX: 0, targetY: 0, hasTarget: false };
 
 // Una estrella con 30 asteroides en órbita, lanzada a fondo hacia +x; el agujero negro quieto adelante, corrido `off` en y.
 function flyBy(off: number, bh = true): World {
-  const w = createWorld(cfg({ blackHole: bh }), 4, 60);
+  const w = createWorld(cfg({ blackHole: bh, bhPull: 9000, bhStarPull: 0.9 }), 4, 60);   // tirón moderado: se mide el disco
   w.star.mass = 30;
   for (let k = 0; k < 30; k++) {
     const a = (k / 30) * Math.PI * 2;
