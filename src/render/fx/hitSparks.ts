@@ -1,5 +1,5 @@
 import { AdditiveBlending, Group, Mesh, PlaneGeometry, ShaderMaterial } from 'three';
-import { MAX_IMPACTS } from '../../sim/world';
+import { MAX_IMPACTS, starSize } from '../../sim/world';
 import type { Layer } from '../layer';
 import { NOISE_GLSL } from '../shaders/noise';
 
@@ -9,12 +9,12 @@ import { NOISE_GLSL } from '../shaders/noise';
 // La explosión acompaña al planeta (se ancla a su superficie, en el ángulo del golpe).
 
 const VERT = /* glsl */ `varying vec2 vUv; void main(){ vUv = uv*2. - 1.; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }`;
-const FRAG = /* glsl */ `uniform float uT; uniform float uSeed; uniform vec2 uOut; uniform vec3 uDust; varying vec2 vUv;
+const FRAG = /* glsl */ `uniform float uSize; uniform float uT; uniform float uSeed; uniform vec2 uOut; uniform vec3 uDust; varying vec2 vUv;
 void main(){
   vec2 q = vUv * 4.;                       // el cuadro mide 8 unidades de explosión de lado
   float r = length(q), t = uT;
   // Destello: un parpadeo blanco.
-  float flash = exp(-t*30.) * exp(-r*r*9.) * 4.;
+  float flash = exp(-t*30.) * exp(-r*r*9.) * 1.6 * uSize;   // breve y contenido
   // Bocanada: roca vaporizada que crece, sale hacia afuera del planeta y se enfría a polvo.
   vec2 c = q - uOut * (.9*(1. - exp(-t*5.)));
   float R = .5 + 1.1*(1. - exp(-t*4.));
@@ -32,7 +32,7 @@ void main(){
   float S = .4 + 1.8*(1. - exp(-t*3.));
   float ring = exp(-pow((r - S)/.3, 2.)) * exp(-t*4.5) * .18 * smoothstep(-.3, .5, along) * (.6 + .8*(n*.5+.5));   // polvo hacia afuera, irregular
   float fade = 1. - smoothstep(.8, 1.2, t);
-  vec3 col = vec3(1., .92, .8)*flash + fire + vec3(1.8,.8,.3)*spark + uDust*ring*2.;
+  vec3 col = vec3(1., .92, .8)*flash + fire + uDust*ring*2.;   // sin chispas en estrella: parecían fuegos artificiales
   gl_FragColor = vec4(col * fade, 1.);
 }`;
 
@@ -48,7 +48,7 @@ export function createHitSparksLayer(): HitSparksLayer {
   const planet = new Int32Array(MAX_IMPACTS), angle = new Float32Array(MAX_IMPACTS), size = new Float32Array(MAX_IMPACTS), start = new Float32Array(MAX_IMPACTS).fill(-99);
   for (let k = 0; k < MAX_IMPACTS; k++) {
     const mat = new ShaderMaterial({
-      uniforms: { uT: { value: 99 }, uSeed: { value: k * 3.7 }, uOut: { value: { x: 1, y: 0 } }, uDust: { value: { x: 0.6, y: 0.45, z: 0.32 } } },
+      uniforms: { uSize: { value: 1 }, uT: { value: 99 }, uSeed: { value: k * 3.7 }, uOut: { value: { x: 1, y: 0 } }, uDust: { value: { x: 0.6, y: 0.45, z: 0.32 } } },
       vertexShader: VERT, fragmentShader: NOISE_GLSL + FRAG,
       transparent: true, depthWrite: false, depthTest: false, blending: AdditiveBlending,
     });
@@ -76,14 +76,16 @@ export function createHitSparksLayer(): HitSparksLayer {
         const t = ctx.time - start[k]!, m = meshes[k]!;
         if (t >= LIFE || t < 0) { m.visible = false; continue; }
         const p = planet[k]!;
-        const px = w.prevX[p] + (w.x[p] - w.prevX[p]) * a, py = w.prevY[p] + (w.y[p] - w.prevY[p]) * a;
-        const ca = Math.cos(angle[k]!), sa = Math.sin(angle[k]!), r = w.radius[p];
+        // p = -1: el golpe fue contra tu estrella.
+        const px = p < 0 ? ctx.starX : w.prevX[p] + (w.x[p] - w.prevX[p]) * a, py = p < 0 ? ctx.starY : w.prevY[p] + (w.y[p] - w.prevY[p]) * a;
+        const ca = Math.cos(angle[k]!), sa = Math.sin(angle[k]!), r = p < 0 ? starSize(w.star.mass) : w.radius[p];
         m.visible = true;
         m.position.set(px + ca * r, 0.6, -(py + sa * r));
         m.scale.setScalar((0.7 + 1.8 * size[k]!) * SPAN * 0.5);
         m.quaternion.copy(ctx.camera.quaternion);
         const u = mats[k]!.uniforms;
         u['uT']!.value = t;
+        u['uSize']!.value = Math.min(1, size[k]!);
         // Hacia afuera del planeta, visto en pantalla (la cámara mira inclinada pero sin girar: el eje y del mundo es -z).
         (u['uOut']!.value as { x: number; y: number }).x = ca; (u['uOut']!.value as { x: number; y: number }).y = sa;
         active++;

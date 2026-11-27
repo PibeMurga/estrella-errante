@@ -1,5 +1,6 @@
 import { stepComets } from './comets';
 import { breakPlanet } from './tidal';
+import { stepRockImpacts } from './rockImpacts';
 import { stepEncounters, stepStarFlybys } from './encounters';
 import { DT, type SimConfig } from './config';
 import { stageFor } from './stages';
@@ -7,7 +8,7 @@ import { stepAbilities } from './abilities';
 import { graveHit, isPlanetKind, joinsOrbit, stepPlanetHits, planetTier, TIER_GRAVE, TIER_HURT } from './planetCapture';
 import { returnGathered, sling, slingAngle, stepBolts, stepLaunch } from './launch';
 import { canCollapse, playerHoleRadius, startCollapse, startHunt, startMerge, stepMerge } from './phase';
-import { ABSORBING, BOLT, CARRIED, captureRadiusFor, DEAD, massGain, FREE, GATHERING, KIND_GAS, KIND_ICE, KIND_ROCKY, MAX_IMPACTS, ORBIT_PLANET, ORBITING, OVER_DIMMED, OVER_ESCAPED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
+import { ABSORBING, BOLT, KIND_ASTEROID, CARRIED, captureRadiusFor, DEAD, massGain, FREE, GATHERING, KIND_GAS, KIND_ICE, KIND_ROCKY, MAX_IMPACTS, ORBIT_PLANET, ORBITING, OVER_DIMMED, OVER_ESCAPED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
 
 // target: hacia dónde ir. aim: hacia dónde apuntar la honda (stick derecho); sin aim se apunta al objetivo.
 export interface Intent {
@@ -131,6 +132,30 @@ function flight(w: World, i: number, st: number): void {
   }
   w.x[i] += w.vx[i] * DT;
   w.y[i] += w.vy[i] * DT;
+}
+
+// Un asteroide veloz o grande golpea la estrella: se funde en ella (suma su masa), la empuja un poco y le arranca uno o
+// dos cuerpos de la órbita (dos si es grande). Destello en la superficie, en el punto del golpe.
+function rockHitsStar(w: World, i: number, dx: number, dy: number): void {
+  const c = w.config, s = w.star;
+  const kick = Math.min(6, (w.radius[i] ** 3) * 4 / Math.sqrt(Math.max(s.mass, 1)));
+  s.vx += (w.vx[i] - s.vx) * 0.04 + (-dx / (Math.hypot(dx, dy) || 1)) * kick;
+  s.vy += (w.vy[i] - s.vy) * 0.04 + (-dy / (Math.hypot(dx, dy) || 1)) * kick;
+  w.state[i] = DEAD;
+  s.mass += massGain(w, i);
+  const slot = (w.impactCount % MAX_IMPACTS) * 4;
+  w.impacts[slot] = -1; w.impacts[slot + 1] = Math.atan2(dy, dx); w.impacts[slot + 2] = 0.5 + 0.5 * Math.min(1, w.radius[i]); w.impactCount++;
+  w.rockHits++;
+  let lose = w.radius[i] > c.rockHitSize ? 2 : 1;
+  for (let j = 0; j < w.count && lose > 0; j++) {
+    if (w.state[j] !== ORBITING || isPlanetKind(w.kind[j]!)) continue;
+    const a = w.orbitAngle[j];
+    w.state[j] = FREE; w.orbitingCount--;
+    w.vx[j] = s.vx + Math.cos(a) * c.lostSpeed; w.vy[j] = s.vy + Math.sin(a) * c.lostSpeed;
+    w.noCatch[j] = c.noCatchTime;
+    s.mass = Math.max(c.starStartMass, s.mass - massGain(w, j));
+    lose--;
+  }
 }
 
 // Disco de acreción del rival: meterse cuesta, aunque pases rápido. Cuanto más hondo, más: el gas te frena, la marea te
@@ -417,6 +442,11 @@ export function step(w: World, intent: Intent): void {
       const tier = st === FREE && w.parent[i] === -1 && isPlanetKind(k) ? planetTier(w.radius[i], s.mass) : -1;
       if (tier >= TIER_HURT && d < size + w.radius[i] && hit < 0 && w.invuln <= 0) hit = i;
       if (w.noCatch[i]! > 0) { w.noCatch[i] = w.noCatch[i]! - DT; continue; }
+      // Los asteroides veloces o grandes no se suman: si te tocan, te golpean.
+      if (st === FREE && k === KIND_ASTEROID && (w.radius[i] > c.rockHitSize || Math.hypot(w.vx[i], w.vy[i]) > c.rockHitSpeed)) {
+        if (d < size + w.radius[i]) rockHitsStar(w, i, x - s.x, y - s.y);
+        continue;
+      }
       // Para robarle algo a un planeta, la estrella tiene que ser claramente más grande que él.
       const canSteal = st === FREE || starSize(s.mass) >= w.radius[w.parent[i]!] * c.stealSizeRatio;
       const joins = tier >= 0 && joinsOrbit(w, i);   // planetas chicos, o medianos ya partidos: entran solos
@@ -448,6 +478,7 @@ export function step(w: World, intent: Intent): void {
   }
 
   stepEncounters(w);
+  stepRockImpacts(w);
   if (!hunting) stepStarFlybys(w);
   if (hit >= 0) { if (planetTier(w.radius[hit], s.mass) === TIER_GRAVE) graveHit(w, hit); else hurt(w, hit); }
   if (w.over !== OVER_NONE) { w.tick++; return; }   // se apagó en este paso: no pasa nada más

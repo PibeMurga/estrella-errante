@@ -122,7 +122,7 @@ void main(){
   float lobe = fbm(vec3(cos(ang)*1.4 + 7., sin(ang)*1.4, uTime*.05), 3);
   float hh = h * (1. - .45*lobe);
   float streams = fbm(vec3(cos(ang)*2.2, sin(ang)*2.2, hh*1.2 - uTime*.18), 4)*.5+.5;
-  float rays = .55 + .9*smoothstep(.3, .9, fbm(vec3(cos(ang)*5., sin(ang)*5., uTime*.07 + hh*.6), 3)*.5+.5);
+  float rays = .8 + .3*(fbm(vec3(cos(ang)*2.5, sin(ang)*2.5, uTime*.07 + hh*.6), 3)*.5+.5);   // suave: sin rayos marcados
   float clumps = .7 + .6*(fbm(vec3(d*1.6, uTime*.12), 3)*.5+.5);
   vec3 cor = uTint * exp(-hh*2.2) * .28 * breathe * (.45 + .9*streams) * rays * clumps;
   gl_FragColor = vec4((ring + prom + cor) * (1. - smoothstep(1.8, 3.3, r)), 1.);

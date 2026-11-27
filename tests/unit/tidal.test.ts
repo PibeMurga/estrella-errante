@@ -14,7 +14,7 @@ function worldWithBh(): World {
   w.bh.speed = 0;
   return w;
 }
-const freeAsteroids = (w: World): number => { let n = 0; for (let i = 0; i < w.count; i++) if (w.kind[i] === KIND_ASTEROID && w.state[i] === FREE) n++; return n; };
+const freeAsteroids = (w: World): number => { let n = 0; for (let i = 0; i < w.count; i++) if (w.kind[i] === KIND_ASTEROID && w.state[i] === FREE && w.radius[i] > 0.3) n++; return n; };   // sin las esquirlas de los choques
 const rocheFor = (w: World, i: number): number => w.bh.radius * DEFAULT_CONFIG.rocheFactor + w.radius[i]!;
 
 describe('ruptura por marea', () => {

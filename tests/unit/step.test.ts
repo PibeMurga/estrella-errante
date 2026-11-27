@@ -110,12 +110,21 @@ describe('captura', () => {
     expect(w.star.captureRadius).toBeCloseTo(captureRadiusFor(w.config, w.star.mass), 12);
   });
 
-  it('no captura cuerpos más grandes que el límite', () => {
+  it('no captura cuerpos más grandes que el límite: si la tocan, la golpean y se funden en ella', () => {
     const w = emptyWorld();
+    const m0 = w.star.mass;
     const i = addBody(w, rock(3, 0, 3));
     step(w, NO_INPUT);
-    expect(w.state[i]).toBe(FREE);
+    expect(w.state[i]).toBe(DEAD);
     expect(w.orbitingCount).toBe(0);
+    expect(w.rockHits).toBe(1);
+    expect(w.star.mass).toBeGreaterThan(m0);
+  });
+  it('un asteroide veloz tampoco se suma: pasa de largo si no te toca', () => {
+    const w = emptyWorld();
+    const i = addBody(w, { ...rock(9, 0, 0.5), vx: 0, vy: 8 });
+    step(w, NO_INPUT);
+    expect(w.state[i]).toBe(FREE);
   });
 
   it('con la órbita llena, la estrella absorbe el resto: suma su masa, cae en espiral y desaparece', () => {
