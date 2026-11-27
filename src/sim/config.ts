@@ -95,6 +95,7 @@ export interface SimConfig {
   planetJoinTime: number;        // segundos en que un planeta capturado acomoda su giro al de la órbita (se imanta)
   bodyJoinTime: number;          // lo mismo para asteroides y lunas
   planetInfallSpeed: number;     // velocidad radial máxima de un planeta al acomodarse en su órbita
+  huntOrbitFall: number;         // en la caza, lo que tenías en órbita cae hacia tu agujero negro a esta velocidad (radial, media)
   autoCollapse: boolean;         // colapsar solo al superar al rival siendo hipergigante (las pruebas lo pueden apagar)
   rivalMassScale: number;        // masa del rival en la carrera = esto × la masa física del agujero negro
   collapseTime: number;          // segundos de la cinemática del colapso (supernova y nacimiento)
@@ -206,5 +207,6 @@ export const DEFAULT_CONFIG: SimConfig = {
   planetJoinTime: 2.5,
   bodyJoinTime: 0.7,
   planetInfallSpeed: 5,
+  huntOrbitFall: 1.6,
   autoCollapse: true,
 };

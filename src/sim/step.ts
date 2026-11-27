@@ -122,8 +122,20 @@ function flight(w: World, i: number, st: number): void {
 
 // Se acomoda en su órbita (o cae a la estrella si la está absorbiendo) a velocidad limitada:
 // se lo ve acercarse e imantarse, no saltar. La franja sigue el tamaño de la estrella.
-function moveOrbiting(w: World, i: number, absorbing: boolean, size: number): void {
+function moveOrbiting(w: World, i: number, absorbing: boolean, size: number, holeR = 0): void {
   const c = w.config, s = w.star;
+  if (holeR > 0) {
+    // Siendo agujero negro, tu sistema cae de a poco al centro, en espiral y cada vez más rápido.
+    // Cada cuerpo a su ritmo (los planetas, más lento). Su masa ya estaba contada: no se suma otra vez.
+    const pace = (0.5 + ((i * 0.618034) % 1)) * (isPlanetKind(w.kind[i]!) ? 0.6 : 1);
+    const r = w.orbitR[i] - c.huntOrbitFall * pace * (1 + 8 / Math.max(w.orbitR[i], 1)) * DT;
+    w.orbitR[i] = r;
+    if (r <= holeR * 0.9) { w.state[i] = DEAD; w.orbitingCount--; return; }
+    const a = w.orbitAngle[i] + c.orbitSpeedK * Math.pow(c.orbitMin / Math.max(r, 1e-6), 1.5) * DT;
+    w.orbitAngle[i] = a;
+    w.x[i] = s.x + Math.cos(a) * r; w.y[i] = s.y + Math.sin(a) * r;
+    return;
+  }
   // Los planetas van en una franja propia, más afuera y más lenta que la de los asteroides.
   const planet = isPlanetKind(w.kind[i]!);
   const lo = planet ? bandHi + c.planetOrbitGap : bandLo, hi = planet ? lo + c.planetOrbitSpan : bandHi;
@@ -383,7 +395,7 @@ export function step(w: World, intent: Intent): void {
         s.mass += massGain(w, i);
         w.captured[w.capturedCount++] = i;
       }
-    } else moveOrbiting(w, i, st === ABSORBING, size);
+    } else moveOrbiting(w, i, st === ABSORBING, size, hunting && st === ORBITING ? holeR : 0);
   }
 
   stepEncounters(w);

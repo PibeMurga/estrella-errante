@@ -67,3 +67,28 @@ describe('un planeta que se suma se imanta', () => {
     expect((w.orbitAngle[p] - a1) * 60).toBeCloseTo(wOrbit, 3);       // ya acoplado a la órbita
   });
 });
+
+describe('tu sistema cae a tu agujero negro', () => {
+  it('lo que tenías en órbita se aspira de a poco al centro, sin sumar la masa dos veces', () => {
+    const w = createWorld({ ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, cometFirst: 1e9, huntTimeLimit: 1e9 }, 3, 60);
+    w.star.mass = 600; w.bh.mass = 2;
+    w.bh.x = w.bh.prevX = 250; w.bh.y = w.bh.prevY = 0;
+    const ids: number[] = [];
+    for (let k = 0; k < 12; k++) { const a = (k / 12) * Math.PI * 2; ids.push(addBody(w, { x: Math.cos(a) * 30, y: Math.sin(a) * 30, vx: 0, vy: 0, radius: 0.6, kind: KIND_ASTEROID })); }
+    w.bh.mass = 100;                 // primero captura (con el rival más pesado no colapsa todavía)
+    run(w, 1);
+    expect(ids.every((i) => w.state[i] === ORBITING)).toBe(true);
+    w.bh.mass = 2;                   // ahora lo supera: colapsa solo
+    run(w, w.config.collapseTime + 0.2);
+    expect(w.phase).toBe(PHASE_HUNT);
+    const m0 = w.star.mass;
+    const alive = (): number => ids.filter((i) => w.state[i] === ORBITING).length;
+    const r0 = w.orbitR[ids[0]!]!;
+    run(w, 2);
+    expect(alive()).toBeGreaterThan(6);                 // de a poco: no desaparecen todos juntos
+    expect(w.orbitR[ids[0]!]!).toBeLessThan(r0);       // van cayendo
+    run(w, 40);
+    expect(alive()).toBe(0);                            // al final se los tragó a todos
+    expect(w.star.mass).toBeCloseTo(m0, 6);             // ya estaban contados en tu masa
+  });
+});

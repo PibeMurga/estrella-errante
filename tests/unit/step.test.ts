@@ -156,7 +156,7 @@ describe('captura', () => {
     const w = emptyWorld();
     const i = addBody(w, rock(3, 0, 0.5));
     step(w, NO_INPUT);
-    w.star.mass = 300;   // supergigante
+    w.star.mass = 250;   // supergigante (con 300 ya sería hipergigante y colapsaría sola)
     for (let k = 0; k < 600; k++) step(w, NO_INPUT);
     const d = Math.hypot(w.x[i] - w.star.x, w.y[i] - w.star.y);
     expect(d).toBeGreaterThanOrEqual(starSize(w.star.mass) * DEFAULT_CONFIG.orbitClearance - 1e-6);
