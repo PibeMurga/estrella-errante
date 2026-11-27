@@ -168,6 +168,16 @@ export function stepComets(w: World): void {
   let any = false;
   for (let k = 0; k < MAX_COMETS; k++) if (cm.mode[k] !== COMET_OFF) any = true;
   if (!any) return;
+  // Un cometa que toca uno de tus planetas en órbita se destroza contra él.
+  for (let q = 0; q < w.planets.length; q++) {
+    const p = w.planets[q]!;
+    if (w.state[p] !== ORBITING) continue;
+    for (let k = 0; k < MAX_COMETS; k++) {
+      if (cm.mode[k] === COMET_OFF) continue;
+      const r = c.cometRadius + w.radius[p];
+      if ((w.x[p] - cm.x[k]!) ** 2 + (w.y[p] - cm.y[k]!) ** 2 < r * r) damage(w, k, c.cometHp);
+    }
+  }
   for (let i = 0; i < w.count; i++) {
     if (w.state[i] !== PROJECTILE && w.state[i] !== BOLT) continue;
     for (let k = 0; k < MAX_COMETS; k++) {

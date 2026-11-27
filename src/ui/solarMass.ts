@@ -23,6 +23,13 @@ export function solarMasses(mass: number): number {
   return m < IGN ? jupiterMasses(m) / 1000 : lerp(AT, SUN, m);
 }
 
+// La masa de otro cuerpo (el rival) en la misma unidad que la tuya: siendo planeta, en masas de Júpiter (1 M☉ = 1.000 M♃).
+export function formatLike(mass: number, yourMass: number): string {
+  if (yourMass >= IGN) return formatSolar(mass);
+  const v = solarMasses(mass) * 1000;
+  return `${(v < 10 ? v.toFixed(1) : Math.round(v).toLocaleString('es-AR')).replace('.', ',')} M♃`;
+}
+
 // Con decimales cuando es chica, sin decimales cuando es grande. Coma decimal y su unidad.
 export function formatSolar(mass: number): string {
   const planet = mass < IGN;

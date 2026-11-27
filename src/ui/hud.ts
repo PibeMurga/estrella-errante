@@ -1,6 +1,6 @@
 import { ABILITY_NAMES, planetsAlive } from '../sim/abilities';
 import { playerName } from './playerName';
-import { formatSolar } from './solarMass';
+import { formatLike, formatSolar } from './solarMass';
 import { rivalMass } from '../sim/phase';
 import { MAX_COMETS, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, type World } from '../sim/world';
 import { STAGE_HYPER, STAGES, stageFor, stageProgress } from '../sim/stages';
@@ -142,7 +142,7 @@ export function createHud(parent: HTMLElement): Hud {
       const me = s.mass, rv = rivalMass(w);
       const f = Math.round((me / Math.max(1e-6, me + rv)) * 1000) / 10;
       if (f !== lastRace) { mb.style.width = `${f}%`; rb.style.width = `${100 - f}%`; lastRace = f; }
-      mvEl.textContent = formatSolar(me); rvEl.textContent = formatSolar(rv);
+      mvEl.textContent = formatSolar(me); rvEl.textContent = formatLike(rv, me);   // las dos en la misma unidad
       let nt = '';
       if (w.phase === PHASE_HUNT) {
         const left = Math.max(0, w.config.huntTimeLimit - w.phaseTime);

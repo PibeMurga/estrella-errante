@@ -1,7 +1,7 @@
 import { DT } from './config';
 import { hitPlanet } from './planetCapture';
 import { breakPlanet, spawnDebris } from './tidal';
-import { DEAD, FREE, KIND_GAS, KIND_ICE, KIND_ROCKY, massGain, MAX_IMPACTS, noteBreak, starSize, type World } from './world';
+import { DEAD, FREE, ORBITING, KIND_GAS, KIND_ICE, KIND_ROCKY, massGain, MAX_IMPACTS, noteBreak, starSize, type World } from './world';
 
 // Encuentros entre planetas libres. Dos planetas no se atraviesan: el más chico bordea al más grande por fuera,
 // en arco, y sigue con la misma dirección y velocidad que traía (sólo se corre su posición, nunca su velocidad).
@@ -124,6 +124,32 @@ export function stepEncounters(w: World): void {
         continue;
       }
       if (d < sum) heavyContact(w, big, small, d > 1e-6 ? dx / d : 1, d > 1e-6 ? dy / d : 0, sum - d);
+    }
+  }
+}
+
+// Tus planetas en órbita también chocan: un planeta suelto que se les cruza recibe el golpe (pesado, sin rebote) y se
+// daña; el tuyo sigue en su órbita (lo sostiene tu estrella). Queda la marca en los dos.
+export function stepOwnPlanetRams(w: World): void {
+  const P = w.planets, s = w.star;
+  for (let a = 0; a < P.length * 2; a++) {
+    const o = a < P.length ? P[a]! : w.twin[P[a - P.length]!]!;
+    if (o < 0 || w.state[o] !== ORBITING) continue;
+    for (let b = 0; b < P.length * 2; b++) {
+      const f = b < P.length ? P[b]! : w.twin[P[b - P.length]!]!;
+      if (f < 0 || f === o || w.state[f] !== FREE || w.parent[f] !== -1) continue;
+      const dx = w.x[f]! - w.x[o]!, dy = w.y[f]! - w.y[o]!, D = w.radius[f]! + w.radius[o]!, d2 = dx * dx + dy * dy;
+      if (d2 >= D * D) continue;
+      const d = Math.sqrt(d2) || 1, nx = dx / d, ny = dy / d;
+      w.x[f] = w.x[o]! + nx * D; w.y[f] = w.y[o]! + ny * D;
+      const vn = (w.vx[f]! - s.vx) * nx + (w.vy[f]! - s.vy) * ny;
+      if (vn >= 0) continue;
+      w.vx[f] = w.vx[f]! - nx * vn; w.vy[f] = w.vy[f]! - ny * vn;
+      if (-vn > 0.6) {
+        mark(w, f, Math.atan2(-ny, -nx), Math.min(1.4, 0.5 - vn / 5));
+        mark(w, o, Math.atan2(ny, nx), Math.min(1.2, 0.4 - vn / 6));
+        hitPlanet(w, f, Math.max(1, Math.round(-vn / 3)));
+      }
     }
   }
 }

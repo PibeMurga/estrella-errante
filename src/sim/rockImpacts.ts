@@ -1,5 +1,5 @@
 import { spawnDebris } from './tidal';
-import { DEAD, FREE, KIND_ASTEROID, MAX_IMPACTS, type World } from './world';
+import { DEAD, FREE, KIND_ASTEROID, MAX_IMPACTS, ORBITING, type World } from './world';
 
 // Asteroides sueltos contra planetas sueltos: ya no se atraviesan. Algunos rebotan, pesados; otros se deshacen contra el
 // terreno (unas esquirlas chicas). Siempre queda una pequeña explosión con su cráter, y el planeta no se inmuta. Sólo cerca de la estrella, donde
@@ -13,7 +13,7 @@ export function stepRockImpacts(w: World): void {
   let n = 0;
   for (let k = 0; k < P.length * 2; k++) {
     const p = k < P.length ? P[k]! : w.twin[P[k - P.length]!]!;
-    if (p < 0 || w.state[p] !== FREE) continue;
+    if (p < 0 || (w.state[p] !== FREE && w.state[p] !== ORBITING)) continue;   // también tus planetas: hacen pedazos lo que se les cruza
     if (Math.abs(w.x[p] - s.x) > VIEW_X || Math.abs(w.y[p] - s.y) > VIEW_Y) continue;
     near[n++] = p;
   }
@@ -25,11 +25,12 @@ export function stepRockImpacts(w: World): void {
     for (let k = 0; k < n; k++) {
       const p = near[k]!, dx = x - w.x[p], dy = y - w.y[p], r = w.radius[p] + w.radius[i];
       if (dx * dx + dy * dy >= r * r) continue;
-      if (dx * (w.vx[i] - w.vx[p]) + dy * (w.vy[i] - w.vy[p]) >= 0) continue;   // sólo si se acerca (los escombros que salen, no)
+      const own = w.state[p] === ORBITING, pvx = own ? s.vx : w.vx[p], pvy = own ? s.vy : w.vy[p];
+      if (!own && dx * (w.vx[i] - pvx) + dy * (w.vy[i] - pvy) >= 0) continue;   // sólo si se acerca (los escombros que salen, no)
       const d = Math.hypot(dx, dy) || 1, nx = dx / d, ny = dy / d;
       const slot = (w.impactCount % MAX_IMPACTS) * 4;
       w.impacts[slot] = p; w.impacts[slot + 1] = Math.atan2(dy, dx); w.impacts[slot + 2] = 0.25 + 0.4 * Math.min(1, w.radius[i]); w.impactCount++;
-      if (w.rng.next() < w.config.rockBounceChance) {
+      if (!own && w.rng.next() < w.config.rockBounceChance) {
         // Rebota, como algo pesado: casi sin rebote en la normal, mucho roce en la tangente; queda apoyado afuera.
         const rvx = w.vx[i] - w.vx[p], rvy = w.vy[i] - w.vy[p];
         const vn = rvx * nx + rvy * ny, vt = rvx * -ny + rvy * nx;
@@ -40,7 +41,7 @@ export function stepRockImpacts(w: World): void {
         break;
       }
       w.state[i] = DEAD;
-      spawnDebris(w, w.x[p] + (dx / d) * w.radius[p], w.y[p] + (dy / d) * w.radius[p], w.vx[p], w.vy[p], w.radius[i] * 1.5, dx / d, dy / d, 2, 0.1, 0.25);
+      spawnDebris(w, w.x[p] + (dx / d) * w.radius[p], w.y[p] + (dy / d) * w.radius[p], pvx, pvy, w.radius[i] * 1.5, dx / d, dy / d, 2, 0.1, 0.25);
       break;
     }
   }

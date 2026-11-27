@@ -59,3 +59,21 @@ describe('lo que hay en el camino del disparo', () => {
     expect(w.state[rock]).toBe(FREE);
   });
 });
+
+describe('lo que tenés en órbita choca', () => {
+  it('un asteroide suelto que cruza uno de tus planetas se hace pedazos', () => {
+    const { w, p } = withOwnPlanet();
+    const a = addBody(w, { x: w.x[p] - 3.4, y: w.y[p], vx: 2, vy: 0, radius: 0.6, kind: KIND_ASTEROID });
+    w.noCatch[a] = 5;   // que no lo capture la estrella antes
+    step(w, idle);
+    expect(w.state[a]).toBe(DEAD);
+  });
+  it('un planeta suelto que choca con uno tuyo recibe el golpe y se daña; el tuyo sigue en órbita', () => {
+    const { w, p } = withOwnPlanet();
+    const f = addBody(w, { x: w.x[p] + 9.8, y: w.y[p], vx: -6, vy: 0, radius: 7, kind: KIND_ROCKY });   // de los que se pueden partir
+    w.noCatch[f] = 5;
+    for (let k = 0; k < 10; k++) step(w, idle);
+    expect(w.state[p]).toBe(ORBITING);
+    expect(w.planetDmg[f] + (w.broken[f] > 0 ? 1 : 0)).toBeGreaterThan(0);
+  });
+});

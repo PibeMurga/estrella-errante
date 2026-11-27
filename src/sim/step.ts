@@ -1,7 +1,7 @@
 import { stepComets } from './comets';
 import { breakPlanet } from './tidal';
 import { stepRockImpacts } from './rockImpacts';
-import { stepEncounters, stepStarFlybys } from './encounters';
+import { stepEncounters, stepOwnPlanetRams, stepStarFlybys } from './encounters';
 import { DT, type SimConfig } from './config';
 import { IGNITION_MASS, stageFor } from './stages';
 import { stepAbilities } from './abilities';
@@ -453,7 +453,8 @@ export function step(w: World, intent: Intent): void {
             && w.radius[i] <= c.rockHitSize && w.vx[i] * w.vx[i] + w.vy[i] * w.vy[i] <= c.rockHitSpeed * c.rockHitSpeed) {   // los que te golpean, no: pasan derecho
           const ex = s.x - x, ey = s.y - y, e2 = ex * ex + ey * ey, R = captureR * c.starPullReach;
           if (e2 < R * R && e2 > 1e-6) {
-            const e = Math.sqrt(e2), a = c.starPullAccel * (pieceOfPlanet ? 0.35 : 1) * (1 - e / R) * DT / e;
+            // Siendo planeta tu gravedad es mucho más débil: atrae poco y de cerca.
+            const e = Math.sqrt(e2), a = c.starPullAccel * (pieceOfPlanet ? 0.35 : 1) * (w.ignited ? 1 : c.planetPullMul) * (1 - e / R) * DT / e;
             w.vx[i] += ex * a; w.vy[i] += ey * a;
           }
         }
@@ -570,6 +571,7 @@ export function step(w: World, intent: Intent): void {
 
   separateOwnPlanets(w);
   stepEncounters(w);
+  stepOwnPlanetRams(w);
   stepRockImpacts(w);
   if (!hunting) stepStarFlybys(w);
   if (hit >= 0) { if (planetTier(w.radius[hit], s.mass) === TIER_GRAVE) graveHit(w, hit); else hurt(w, hit); }

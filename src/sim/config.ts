@@ -89,7 +89,8 @@ export interface SimConfig {
   cometPlanetChance: number;
   planetStart: boolean;          // la partida arranca como planeta (sin disparo, agujero dormido y sin cometas hasta la ignición)
   ignitionTime: number;
-  planetPhaseGain: number;       // siendo planeta, la masa que suma (o resta) cada cuerpo se multiplica por esto          // segundos de la cinemática de la ignición
+  planetPhaseGain: number;
+  planetPullMul: number;         // siendo planeta, tu gravedad atrae esto respecto de la de una estrella       // siendo planeta, la masa que suma (o resta) cada cuerpo se multiplica por esto          // segundos de la cinemática de la ignición
   halfSplitSpeed: number;
   splitNoCatch: number;          // segundos que derivan los pedazos de un planeta recién partido antes de poder entrar a tu órbita
   bhDiskR: number;
@@ -234,6 +235,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   planetStart: false,
   ignitionTime: 4,
   planetPhaseGain: 0.45,
+  planetPullMul: 0.35,
   halfSplitSpeed: 0.3,
   splitNoCatch: 3.5,
   bhDiskR: 4.5,
