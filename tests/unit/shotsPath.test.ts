@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG } from '../../src/sim/config';
 import { type Intent, step } from '../../src/sim/step';
-import { addBody, BOLT, createWorld, DEAD, FREE, KIND_ASTEROID, KIND_ROCKY, ORBITING, PROJECTILE, type World } from '../../src/sim/world';
+import { addBody, addSatellite, BOLT, createWorld, DEAD, FREE, KIND_ASTEROID, KIND_MOON, KIND_ROCKY, ORBITING, PROJECTILE, type World } from '../../src/sim/world';
 
 const cfg = { ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, blackHole: false, cometFirst: 1e9, rockShatterChance: 0 };
 const idle: Intent = { targetX: 0, targetY: 0, hasTarget: false };
@@ -77,5 +77,17 @@ describe('lo que tenés en órbita choca', () => {
     for (let k = 0; k < 10; k++) step(w, idle);
     expect(w.state[p]).not.toBe(ORBITING);
     expect(w.impactCount).toBeGreaterThan(0);
+  });
+});
+
+describe('las lunas de tus planetas', () => {
+  it('de a poco pasan a ser tuyas', () => {
+    const { w, p } = withOwnPlanet();
+    const m = addSatellite(w, p, 6, 0, 0.6, KIND_MOON, 0.5);
+    const m0 = w.star.mass;
+    for (let k = 0; k < 60 * 40 && w.state[m] !== ORBITING; k++) step(w, idle);
+    expect(w.state[m]).toBe(ORBITING);
+    expect(w.parent[m]).toBe(-1);
+    expect(w.star.mass).toBeGreaterThan(m0);
   });
 });

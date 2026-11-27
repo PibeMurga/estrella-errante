@@ -8,10 +8,10 @@ import type { Layer } from '../layer';
 
 export function createArtifactsLayer(world: World): Layer {
   const group = new Group();
-  const metal = new MeshStandardMaterial({ color: 0x8a8d92, metalness: 0.85, roughness: 0.38 });
+  const metal = new MeshStandardMaterial({ color: 0x8a8d92, metalness: 0.85, roughness: 0.38, emissive: 0x15171a });
   const dark = new MeshStandardMaterial({ color: 0x3a3c40, metalness: 0.7, roughness: 0.55 });
   const panel = new MeshStandardMaterial({ color: 0x1b2a4a, metalness: 0.4, roughness: 0.25, emissive: 0x000000 });
-  const gold = new MeshStandardMaterial({ color: 0x9c7a35, metalness: 0.9, roughness: 0.3 });   // aislante térmico dorado
+  const gold = new MeshStandardMaterial({ color: 0x9c7a35, metalness: 0.9, roughness: 0.3, emissive: 0x2a1e08 });   // aislante térmico dorado (un leve reflejo propio: que se distinga con poca luz)
   const items: { body: number; g: Group; ax: number; ay: number; az: number }[] = [];
   for (let i = 0; i < world.count; i++) {
     if (world.kind[i] !== KIND_ARTIFACT) continue;

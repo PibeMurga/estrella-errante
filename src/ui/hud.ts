@@ -209,7 +209,7 @@ export function createHud(parent: HTMLElement): Hud {
       // Registro de sucesos.
       if (w.ignitions > seen.ign) log(`IGNICIÓN · NACE ${pnameEl.textContent ?? ''}`);
       if (w.stageUps > seen.stageUps) log(`ETAPA: ${STAGES[w.stage]!.name}`);
-      if (w.cometSteals > seen.steals) log(`UN COMETA SE LLEVÓ ${w.lastStealCount} CUERPOS DE TU ÓRBITA`);
+      if (w.cometSteals > seen.steals) log(`UN COMETA SE LLEVÓ ${w.lastStealCount} ${w.lastStealCount === 1 ? 'CUERPO' : 'CUERPOS'} DE TU ÓRBITA`);
       if (w.planetCaptures > seen.pcap) log('PLANETA CAPTURADO: ENTRÓ A TU ÓRBITA');
       if (w.planetBreaks > seen.pbrk) log('PARTISTE UN PLANETA: EL PEDAZO ES TUYO');
       if (w.graveHits > seen.grave) log('GOLPE GRAVE: PERDISTE UNA ETAPA');
@@ -219,7 +219,7 @@ export function createHud(parent: HTMLElement): Hud {
       if (w.cometKills > seen.kills) log('COMETA DESTRUIDO');
       if (w.bolts > seen.bolts) log(`BÓLIDO: SALIERON ${w.lastBoltSize} ASTEROIDES DE TU ÓRBITA`);
       if (w.boltHitsBh > seen.bh) log('EL BÓLIDO FRENÓ AL AGUJERO NEGRO, PERO LO ALIMENTÓ');
-      if (w.hits > seen.hits) log(`CHOQUE CON UN PLANETA: PERDISTE ${Math.max(1, lastOrbit - w.orbitingCount)} CUERPOS DE TU ÓRBITA`);
+      if (w.hits > seen.hits) { const n = Math.max(1, lastOrbit - w.orbitingCount); log(`CHOQUE CON UN PLANETA: PERDISTE ${n} ${n === 1 ? 'CUERPO' : 'CUERPOS'} DE TU ÓRBITA`); }
       if (w.tidalBreaks > seen.tidal) log('MAREA: UN PLANETA SE PARTIÓ');
       if (w.planetCrashes > seen.crashes) log('CHOQUE DE PLANETAS');
       const ac = activeComets(w);

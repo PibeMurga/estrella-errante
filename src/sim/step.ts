@@ -395,6 +395,12 @@ function cinematic(w: World): void {
   for (let i = 0; i < w.count; i++) {
     const st = w.state[i];
     if (st === ORBITING || st === ABSORBING) moveOrbiting(w, i, st === ABSORBING, size);
+    else if (st === ORBIT_PLANET) {
+      // Las lunas siguen girando alrededor de su planeta durante la cinemática (no quedan congeladas).
+      const p = w.parent[i]!, ang = w.orbitAngle[i] + w.orbitW[i] * DT;
+      w.orbitAngle[i] = ang;
+      w.x[i] = w.x[p] + Math.cos(ang) * w.orbitR[i]; w.y[i] = w.y[p] + Math.sin(ang) * w.orbitR[i];
+    }
   }
   if (w.phase === PHASE_COLLAPSE) {
     // El rival siente la supernova y huye: la caza nunca arranca con él pegado.
@@ -649,6 +655,16 @@ export function step(w: World, intent: Intent): void {
       } else {
         // Luna o escombro: gira alrededor de su planeta (que ya se movió en este paso, porque se creó antes).
         const p = w.parent[i]!;
+        // Si su planeta es tuyo, de a poco pasa a ser tuyo también: se suma a tus cinturones (y a tu masa).
+        if (w.state[p] === ORBITING && !hunting && w.rng.next() < c.moonTransfer * DT && w.orbitingCount + w.gathered < c.orbitCapacity) {
+          const dx = w.x[i] - s.x, dy = w.y[i] - s.y, dd = Math.hypot(dx, dy) || 1;
+          w.state[i] = ORBITING; w.parent[i] = -1;
+          w.orbitR[i] = dd; w.orbitTarget[i] = dd; w.orbitAngle[i] = Math.atan2(dy, dx);
+          w.orbitW[i] = w.orbitW[p]!; w.joinT[i] = 0; w.life[i] = 0;
+          w.orbitingCount++;
+          s.mass += massGain(w, i);
+          continue;
+        }
         const ang = w.orbitAngle[i] + w.orbitW[i] * DT;
         w.orbitAngle[i] = ang;
         x = w.x[p] + Math.cos(ang) * w.orbitR[i];
