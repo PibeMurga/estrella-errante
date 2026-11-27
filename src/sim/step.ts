@@ -10,7 +10,7 @@ import { stepAbilities } from './abilities';
 import { graveHit, isPlanetKind, shatter, joinsOrbit, stepPlanetHits, planetTier, TIER_GRAVE, TIER_HURT } from './planetCapture';
 import { releaseLaunch, returnGathered, sling, slingAngle, stepBolts, stepLaunch } from './launch';
 import { canCollapse, playerHoleRadius, startCollapse, startHunt, startMerge, stepMerge } from './phase';
-import { ABSORBING, BOLT, KIND_ASTEROID, KIND_STAR, noteBreak, CARRIED, captureRadiusFor, DEAD, massGain, FREE, GATHERING, KIND_GAS, KIND_ICE, KIND_ROCKY, MAX_IMPACTS, ORBIT_PLANET, ORBITING, OVER_DIMMED, OVER_ESCAPED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_IGNITION, PHASE_MERGE, PHASE_PLAY, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
+import { ABSORBING, BOLT, KIND_ARTIFACT, KIND_ASTEROID, KIND_STAR, noteBreak, CARRIED, captureRadiusFor, DEAD, massGain, FREE, GATHERING, KIND_GAS, KIND_ICE, KIND_ROCKY, MAX_IMPACTS, ORBIT_PLANET, ORBITING, OVER_DIMMED, OVER_ESCAPED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_IGNITION, PHASE_MERGE, PHASE_PLAY, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
 
 // target: hacia dónde ir. aim: hacia dónde apuntar la honda (stick derecho); sin aim se apunta al objetivo.
 export interface Intent {
@@ -719,6 +719,7 @@ export function step(w: World, intent: Intent): void {
         w.orbitingCount++;
         s.mass += massGain(w, i);
         w.captured[w.capturedCount++] = i;
+        if (w.kind[i] === KIND_ARTIFACT) w.artifactsFound++;
       }
     } else moveOrbiting(w, i, st === ABSORBING, size, hunting && st === ORBITING ? holeR : 0);
   }

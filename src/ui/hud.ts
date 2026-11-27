@@ -54,7 +54,7 @@ export function createHud(parent: HTMLElement): Hud {
   const timeEl = q<HTMLElement>('.time'), massEl = q<HTMLElement>('.mass');
   const resEl = q<HTMLElement>('.vb.res'), resCover = q<HTMLElement>('.rcover');
   const minimap = createMinimap(root);
-  let lastRes = -1, lastFrac = 0;
+  let lastRes = -1, lastFrac = 0, lastArt = 0;
   const bhDistEl = q<HTMLElement>('.bhdist'), bhInfo = q<HTMLElement>('.bhinfo');
   const slingEl = q<HTMLElement>('.sling'), worldsEl = q<HTMLElement>('.worlds');
   const logEls = Array.from(root.querySelectorAll<HTMLElement>('.log div'));
@@ -149,6 +149,7 @@ export function createHud(parent: HTMLElement): Hud {
       // Resistencia: baja rápido con los golpes, se recarga despacio; roja cuando queda poca.
       const res = Math.round(w.integrity * 100);
       if (res !== lastRes) { resCover.style.height = `${100 - res}%`; resEl.classList.toggle('low', res < 30); lastRes = res; }
+      if (w.artifactsFound > lastArt) { lastArt = w.artifactsFound; log('RESTOS ARTIFICIALES · NO SON NATURALES · ALGUIEN ESTUVO ACÁ'); }
       if (w.fractures > lastFrac) { lastFrac = w.fractures; log('TU CUERPO SE FRACTURÓ · PERDISTE MASA Y ÓRBITA'); }
 
       // La carrera: tu masa contra la del rival (en la caza, tu ventaja).

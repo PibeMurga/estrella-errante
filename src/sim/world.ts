@@ -30,6 +30,7 @@ export const KIND_ICE = 2;
 export const KIND_GAS = 3;
 export const KIND_MOON = 4;
 export const KIND_STAR = 5;   // estrella del mapa (no la tuya)
+export const KIND_ARTIFACT = 6;   // restos de una sonda o satélite de otra civilización (muy raros)
 export const MAX_IMPACTS = 16;
 
 export interface Star {
@@ -88,6 +89,7 @@ export interface World {
   starsEaten: number;    // estrellas que absorbiste (evento)
   coasting: boolean;   // vas suelto (sin el clic izquierdo): te llevan las fuerzas de alrededor
   starPullNow: number; // el tirón más fuerte de una estrella del mapa en este paso
+  artifactsFound: number;   // restos artificiales atrapados (evento)
   rockHits: number;
   contactHits: number;
   disintegrated: number;   // planetas o pedazos que se desintegraron contra la estrella (evento)  // choques pesados entre planetas (evento)    // asteroides veloces o grandes que golpearon la estrella (evento)
@@ -241,7 +243,7 @@ function makeDensity(rng: Rng, hw: number, hh: number): (x: number, y: number) =
 }
 
 export function createWorld(config: SimConfig, seed: number, extraCapacity = 0): World {
-  const capacity = config.asteroidCount + config.planetCount * (1 + MAX_MOONS + MAX_DEBRIS) + config.debrisReserve + config.planetCount + Math.min(MAX_MAP_STARS, config.mapStars) * 8 + extraCapacity;   // + un pedazo de reserva por planeta
+  const capacity = config.asteroidCount + config.planetCount * (1 + MAX_MOONS + MAX_DEBRIS) + config.debrisReserve + config.planetCount + (config.artifacts ? 2 : 0) + Math.min(MAX_MAP_STARS, config.mapStars) * 8 + extraCapacity;   // + un pedazo de reserva por planeta
   const f = (): Float64Array => new Float64Array(capacity);
   const w: World = {
     config, capacity, tick: 0, count: 0,
@@ -258,7 +260,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       tint: new Float32Array(MAX_COMETS), bright: new Float32Array(MAX_COMETS).fill(1), wander: new Float32Array(MAX_COMETS),
     },
     cometClock: config.cometFirst, cometSteals: 0, cometKills: 0, rng: createRng(seed ^ 0x9e3779b9),
-    over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, fireSlow: 0, fireSlowK: 0, fireSlowT: 1, breakFxCount: 0, breakFxX: 0, breakFxY: 0, breakFxR: 0, breakFxKind: 0, breakFxAx: 1, breakFxAy: 0, ignited: !config.planetStart, ignitions: 0, integrity: 1, fractures: 0, planetStripAcc: 0, planetSteals: 0, starBurns: 0, starsEaten: 0, coasting: false, starPullNow: 0, rockHits: 0, contactHits: 0, disintegrated: 0, diskGrazes: 0, inDisk: 0, tide: 0, diskStripAcc: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
+    over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, fireSlow: 0, fireSlowK: 0, fireSlowT: 1, breakFxCount: 0, breakFxX: 0, breakFxY: 0, breakFxR: 0, breakFxKind: 0, breakFxAx: 1, breakFxAy: 0, ignited: !config.planetStart, ignitions: 0, integrity: 1, fractures: 0, planetStripAcc: 0, planetSteals: 0, starBurns: 0, starsEaten: 0, coasting: false, starPullNow: 0, artifactsFound: 0, rockHits: 0, contactHits: 0, disintegrated: 0, diskGrazes: 0, inDisk: 0, tide: 0, diskStripAcc: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
     x: f(), y: f(), prevX: f(), prevY: f(), vx: f(), vy: f(), radius: f(), mass: f(),
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
     parent: new Int32Array(capacity).fill(-1),
@@ -348,6 +350,14 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     }
   }
   w.mapStars = Int32Array.from(starList);
+  // Restos artificiales: muy de vez en cuando, piezas de una sonda o un satélite de otra civilización a la deriva.
+  const nArt = !config.artifacts ? 0 : rng.next() < 0.25 ? 0 : rng.next() < 0.75 ? 1 : 2;
+  for (let k = 0; k < nArt; k++) {
+    let px = 0, py = 0;
+    do { px = rng.range(-hw * 0.9, hw * 0.9); py = rng.range(-hh * 0.9, hh * 0.9); } while (Math.hypot(px, py) < 120);
+    const ang = rng.range(0, Math.PI * 2), sp = rng.range(0.3, 1.2);
+    addBody(w, { x: px, y: py, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, radius: 0.9, kind: KIND_ARTIFACT });
+  }
   // Reserva de asteroides muertos: los cometas los reviven como escombros al morir.
   for (let k = 0; k < config.debrisReserve; k++) {
     const i = addBody(w, { x: 0, y: 0, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID });

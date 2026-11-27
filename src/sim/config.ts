@@ -7,7 +7,8 @@ export interface SimConfig {
   asteroidCount: number;
   planetCount: number;
   planetMaxRadius: number;
-  mapStars: number;              // estrellas del mapa (chicas y grandes, algunas con planetas)       // el planeta más grande del mapa (muchos medianos, pocos inmensos)
+  mapStars: number;
+  artifacts: boolean;            // restos artificiales muy raros (0 a 2 por mapa)              // estrellas del mapa (chicas y grandes, algunas con planetas)       // el planeta más grande del mapa (muchos medianos, pocos inmensos)
   spawnClearRadius: number;
   starStartMass: number;
   starMaxSpeed: number;          // unidades por segundo
@@ -161,6 +162,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   planetCount: 40,
   planetMaxRadius: 16,
   mapStars: 0,
+  artifacts: false,
   spawnClearRadius: 15,
   starStartMass: 1,
   starMaxSpeed: 32,
@@ -309,4 +311,4 @@ export const DEFAULT_CONFIG: SimConfig = {
 
 // La partida de verdad: arranca como planeta gaseoso y se enciende con la ignición. (La base arranca como estrella, para
 // las pruebas y los bancos que miden otras cosas.)
-export const GAME_CONFIG: SimConfig = { ...DEFAULT_CONFIG, planetStart: true, mapStars: 3 };
+export const GAME_CONFIG: SimConfig = { ...DEFAULT_CONFIG, planetStart: true, mapStars: 3, artifacts: true };
