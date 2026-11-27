@@ -68,8 +68,12 @@ function hurt(w: World, p: number): void {
       return;
     }
   }
+  // Cuanto más grande el planeta, más duele: perdés una parte de tu órbita y de tu masa.
+  const t = clamp((w.radius[p] / starSize(s.mass) - 1) / 0.5, 0, 1);
+  const toLose = Math.max(c.hurtWorldsLost, Math.ceil(w.orbitingCount * (c.hurtLossMin + (c.hurtLossMax - c.hurtLossMin) * t)));
+  s.mass = Math.max(c.starStartMass, s.mass * (1 - (c.hurtMassMin + (c.hurtMassMax - c.hurtMassMin) * t)));
   let lost = 0;
-  for (let i = 0; i < w.count && lost < c.hurtWorldsLost; i++) {
+  for (let i = 0; i < w.count && lost < toLose; i++) {
     if (w.state[i] !== ORBITING || isPlanetKind(w.kind[i]!)) continue;   // se pierden asteroides y lunas, no planetas
     const a = w.orbitAngle[i];
     w.state[i] = FREE;

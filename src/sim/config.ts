@@ -95,6 +95,10 @@ export interface SimConfig {
   bodyJoinTime: number;          // lo mismo para asteroides y lunas
   planetInfallSpeed: number;     // velocidad radial máxima de un planeta al acomodarse en su órbita
   huntOrbitFall: number;         // en la caza, lo que tenías en órbita cae hacia tu agujero negro a esta velocidad (radial, media)
+  hurtLossMin: number;           // un choque que daña te saca de esta fracción de tu órbita (planeta apenas más grande)…
+  hurtLossMax: number;           // …hasta esta (planeta 1,5 veces tu tamaño)
+  hurtMassMin: number;           // y de tu masa, entre esto…
+  hurtMassMax: number;           // …y esto
   autoCollapse: boolean;         // colapsar solo al superar al rival siendo hipergigante (las pruebas lo pueden apagar)
   rivalMassScale: number;        // masa del rival en la carrera = esto × la masa física del agujero negro
   collapseTime: number;          // segundos de la cinemática del colapso (supernova y nacimiento)
@@ -206,5 +210,9 @@ export const DEFAULT_CONFIG: SimConfig = {
   bodyJoinTime: 0.7,
   planetInfallSpeed: 5,
   huntOrbitFall: 1.6,
+  hurtLossMin: 0.15,
+  hurtLossMax: 0.4,
+  hurtMassMin: 0.05,
+  hurtMassMax: 0.15,
   autoCollapse: true,
 };

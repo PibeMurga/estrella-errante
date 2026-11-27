@@ -63,3 +63,28 @@ describe('planetas que dañan', () => {
     expect(w.over).toBe(OVER_NONE);
   });
 });
+
+describe('cuanto más grande el planeta, más duele', () => {
+  function big(n: number): World {
+    const w = createWorld({ ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, blackHole: false, cometFirst: 1e9 }, 5, n + 10);
+    w.star.mass = 100;
+    for (let k = 0; k < n; k++) {
+      const a = (k / n) * Math.PI * 2;
+      const i = addBody(w, { x: Math.cos(a) * 14, y: Math.sin(a) * 14, vx: 0, vy: 0, radius: 0.6, kind: KIND_ASTEROID });
+      w.state[i] = ORBITING; w.orbitR[i] = 14; w.orbitTarget[i] = 14; w.orbitAngle[i] = a; w.orbitingCount++;
+    }
+    return w;
+  }
+  it('chocar con uno 1,4 veces tu tamaño te saca bastante órbita y masa; con uno apenas más grande, menos', () => {
+    const E = 4 + 0.5 * Math.sqrt(100);
+    const fuerte = big(100), leve = big(100);
+    const m0 = fuerte.star.mass;
+    addBody(fuerte, { x: E + 1, y: 0, vx: 0, vy: 0, radius: E * 1.4, kind: KIND_GAS });
+    addBody(leve, { x: E + 1, y: 0, vx: 0, vy: 0, radius: E * 1.05, kind: KIND_GAS });
+    step(fuerte, NO_INPUT); step(leve, NO_INPUT);
+    expect(100 - fuerte.orbitingCount).toBeGreaterThanOrEqual(30);
+    expect(100 - leve.orbitingCount).toBeGreaterThanOrEqual(12);
+    expect(100 - fuerte.orbitingCount).toBeGreaterThan(100 - leve.orbitingCount);
+    expect(fuerte.star.mass).toBeLessThan(m0 * 0.92);
+  });
+});
