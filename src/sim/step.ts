@@ -317,8 +317,8 @@ function stepIgnition(w: World): void {
     for (let i = 0; i < w.count; i++) {
       if (w.state[i] !== FREE) continue;
       const dx = w.x[i] - s.x, dy = w.y[i] - s.y, d2 = dx * dx + dy * dy;
-      if (d2 > 45 * 45 || d2 < 1e-6) continue;
-      const d = Math.sqrt(d2), push = 9 * (1 - d / 45);
+      if (d2 > 25 * 25 || d2 < 1e-6) continue;
+      const d = Math.sqrt(d2), push = 4 * (1 - d / 25);   // suave: el gran empujón es el del colapso
       w.vx[i] += (dx / d) * push; w.vy[i] += (dy / d) * push;
     }
   }

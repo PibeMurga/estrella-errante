@@ -85,7 +85,7 @@ export function createPlayerPlanetLayer(sunPos: Vector3, paletteIndex: number): 
       const u = mat.uniforms;
       u['uTime']!.value = ctx.time;
       u['uHeat']!.value = smooth01((w.star.mass - 16) / 14);   // enana marrón desde 18, al rojo al llegar a la ignición
-      u['uCore']!.value = igniting ? smooth01(t / 1.2) * (1 + 2 * smooth01((t - 1.0) / 0.2)) : 0;
+      u['uCore']!.value = igniting ? smooth01(t / 1.2) * (0.45 + 0.55 * smooth01((t - 1.0) / 0.2)) : 0;   // contenido
       u['uFade']!.value = fade;
     },
   };

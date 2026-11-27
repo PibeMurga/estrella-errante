@@ -4,6 +4,8 @@ import { showFatal } from '../render/context';
 import { createSpaceView } from '../render/spaceView';
 import { GAME_CONFIG } from '../sim/config';
 import { createNameScreen } from '../ui/nameScreen';
+import { createAmbient } from '../audio/ambient';
+import { stageFor, STAGE_HYPER } from '../sim/stages';
 import { FixedStepper } from '../sim/loop';
 import { step } from '../sim/step';
 import { createWorld, PHASE_COLLAPSE, PHASE_MERGE } from '../sim/world';
@@ -53,6 +55,12 @@ if (!view.ok) {
   };
   // Antes de jugar se elige el nombre (salvo al reiniciar o en las pruebas que arrancan como estrella).
   const params = new URLSearchParams(location.search);
+  // Música de fondo: arranca con el primer gesto (el navegador no deja sonar antes). M la silencia.
+  const music = createAmbient();
+  const startMusic = (): void => { music.start(); };
+  window.addEventListener('pointerdown', startMusic);
+  window.addEventListener('keydown', (e) => { startMusic(); if ((e.key === 'm' || e.key === 'M') && named) music.toggleMute(); });
+  let lastIgn = world.ignitions;
   let named = asStar || params.get('n') === '1';
   if (!named) createNameScreen(document.body, (name) => { named = true; hud.setName(name); last = performance.now(); });
   let last = performance.now();
@@ -72,6 +80,8 @@ if (!view.ok) {
     view.render();
     hud.setVisible(world.over === 0 && world.phase !== PHASE_COLLAPSE && world.phase !== PHASE_MERGE);
     hud.update(world, view, elapsed, window.innerWidth, window.innerHeight);
+    music.setGrowth(stageFor(world.star.mass) / STAGE_HYPER);
+    if (world.ignitions > lastIgn) { lastIgn = world.ignitions; music.swell(); }
     gameOver.update(world, elapsed);
     cine.update(world, elapsed);
     const next = governor.sample(elapsed * 1000);
