@@ -101,7 +101,7 @@ export function halfTumble(t: number, rate: number): number {
 }
 // Calor del borde y del núcleo: al rojo vivo al partirse, después queda un rescoldo que se apaga en unos minutos.
 export function breakHeat(t: number): number {
-  return 0.75 * Math.exp(-t / 12) + 0.25 * Math.exp(-t / 240);
+  return 0.75 * Math.exp(-t / 25) + 0.25 * Math.exp(-t / 240);
 }
 
 export function createBrokenPlanetsLayer(world: World, sunPos: Vector3): Layer {
@@ -196,7 +196,7 @@ export function createBrokenPlanetsLayer(world: World, sunPos: Vector3): Layer {
         // Con los pedazos sueltos, el núcleo queda entre los dos (lo dibuja el de arriba).
         const tw = w.twin[i]!;
         if (side === 1 && tw >= 0) pos.set((x + w.prevX[tw] + (w.x[tw] - w.prevX[tw]) * a) / 2, 0, -(y + w.prevY[tw] + (w.y[tw] - w.prevY[tw]) * a) / 2);
-        scl.setScalar(side === -1 ? 0 : r * 0.3 * Math.exp(-t / 12));
+        scl.setScalar(side === -1 ? 0 : r * 0.3 * Math.exp(-t / 25));
         m4.compose(pos, q, scl); core.setMatrixAt(k, m4);
         core.setColorAt(k, col.setRGB(2.2 * heat, 0.7 * heat, 0.15 * heat));
         k++;

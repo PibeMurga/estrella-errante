@@ -26,7 +26,7 @@ describe('planeta partido en dos pedazos', () => {
     expect(w.mass[p] * w.vx[p] + w.mass[j] * w.vx[j]).toBeCloseTo(0, 3);
     const d0 = Math.hypot(w.x[p] - w.x[j], w.y[p] - w.y[j]);
     for (let k = 0; k < 600; k++) step(w, idle);
-    expect(Math.hypot(w.x[p] - w.x[j], w.y[p] - w.y[j])).toBeGreaterThan(d0 + 8);
+    expect(Math.hypot(w.x[p] - w.x[j], w.y[p] - w.y[j])).toBeGreaterThan(d0 + 2);   // se separan despacio
   });
 
   it('para las habilidades, alcanza con tener uno de los dos pedazos', () => {

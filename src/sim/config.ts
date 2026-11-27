@@ -220,7 +220,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   cometStealMin: 3,
   cometStealMax: 5,
   cometPlanetChance: 0.5,
-  halfSplitSpeed: 0.5,
+  halfSplitSpeed: 0.3,
   bhDiskR: 4.5,
   bhSwallowR: 1.5,
   bhDiskStrip: 1.2,

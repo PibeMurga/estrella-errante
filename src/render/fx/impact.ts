@@ -54,9 +54,9 @@ export function createImpactLayer(): Layer {
         mesh.scale.setScalar(w.crashR * 0.5 * SPAN);
       }
       const t = ctx.time - start;
-      mesh.visible = seen > 0 && t < 6;
+      mesh.visible = seen > 0 && t < 10;
       if (!mesh.visible) return;
-      mat.uniforms['uT']!.value = t;
+      mat.uniforms['uT']!.value = t * 0.6;   // más lenta, pesada
       mesh.quaternion.copy(ctx.camera.quaternion);   // siempre de frente a la cámara
     },
   };

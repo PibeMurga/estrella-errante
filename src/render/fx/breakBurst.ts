@@ -75,7 +75,7 @@ export function createBreakBurstLayer(): Layer {
         const h = (k: number): number => { const v = Math.sin(seen * 12.9898 + k * 78.233 + w.breakFxX * 0.37) * 43758.5453; return v - Math.floor(v); };
         u['uType']!.value = Math.floor(h(1) * 4);
         u['uSeed']!.value = h(2) * 50;
-        life = 2.5 + h(3) * 3;
+        life = 5 + h(3) * 4;   // lenta: se desarrolla al ritmo del resto del juego
         u['uLife']!.value = life;
         (u['uTint']!.value as Vector3).copy(w.breakFxKind === KIND_ICE ? TINT_ICE : w.breakFxKind === KIND_GAS ? TINT_GAS : TINT_ROCK);
         (u['uAxis']!.value as Vector2).set(w.breakFxAx, w.breakFxAy);
