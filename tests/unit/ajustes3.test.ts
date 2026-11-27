@@ -93,7 +93,7 @@ describe('final de la pantalla: no se puede forzar', () => {
     return w;
   }
   it('colapsar pegado al rival no gana al instante: huye durante la supernova y la caza arranca con distancia', () => {
-    const w = hyper(20);
+    const w = hyper(45);
     step(w, { ...idle, collapse: true });
     expect(w.phase).toBe(PHASE_COLLAPSE);
     run(w, w.config.collapseTime + 0.1);

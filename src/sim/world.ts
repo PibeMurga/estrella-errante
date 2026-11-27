@@ -163,7 +163,8 @@ export function massGain(w: World, i: number): number {
 // comunes y crece hasta ser como los grandes; desde la ignición, el tamaño de una estrella (que sigue creciendo).
 export function starSize(mass: number): number {
   const m = Math.max(0, mass);
-  return m < 30 ? 0.8 + 0.85 * Math.sqrt(m) : 4 + 0.55 * Math.sqrt(m);
+  // Planeta: de 1,7 a unos 10 (un planeta grande). Estrella: de 15 a 24 (casi siempre más grande que los planetas).
+  return m < 30 ? 0.6 + Math.sqrt(m) + 0.13 * m : 11 + 0.75 * Math.sqrt(m);
 }
 
 export function captureRadiusFor(config: SimConfig, mass: number): number {

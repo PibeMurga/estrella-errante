@@ -68,12 +68,12 @@ describe('lo que tenés en órbita choca', () => {
     step(w, idle);
     expect(w.state[a]).toBe(DEAD);
   });
-  it('un planeta suelto que choca con uno tuyo recibe el golpe y se daña; el tuyo sigue en órbita', () => {
+  it('si un planeta tuyo choca con uno suelto bastante más grande, el tuyo se rompe y sale de tu órbita (sin rebote)', () => {
     const { w, p } = withOwnPlanet();
-    const f = addBody(w, { x: w.x[p] + 9.8, y: w.y[p], vx: -6, vy: 0, radius: 7, kind: KIND_ROCKY });   // de los que se pueden partir
+    const f = addBody(w, { x: w.x[p] + 9.8, y: w.y[p], vx: -6, vy: 0, radius: 7, kind: KIND_ROCKY });
     w.noCatch[f] = 5;
     for (let k = 0; k < 10; k++) step(w, idle);
-    expect(w.state[p]).toBe(ORBITING);
-    expect(w.planetDmg[f] + (w.broken[f] > 0 ? 1 : 0)).toBeGreaterThan(0);
+    expect(w.state[p]).not.toBe(ORBITING);
+    expect(w.impactCount).toBeGreaterThan(0);
   });
 });

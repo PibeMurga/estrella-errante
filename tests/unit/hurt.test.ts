@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG } from '../../src/sim/config';
 import { type Intent, step } from '../../src/sim/step';
-import { addBody, createWorld, FREE, KIND_ASTEROID, KIND_GAS, ORBITING, OVER_DIMMED, OVER_NONE, OVER_SHATTERED, type World } from '../../src/sim/world';
+import { addBody, createWorld, starSize, FREE, KIND_ASTEROID, KIND_GAS, ORBITING, OVER_DIMMED, OVER_NONE, OVER_SHATTERED, type World } from '../../src/sim/world';
 
 const NO_INPUT: Intent = { targetX: 0, targetY: 0, hasTarget: false };
 
@@ -74,13 +74,13 @@ describe('cuanto más grande el planeta, más duele', () => {
     w.star.mass = 100;
     for (let k = 0; k < n; k++) {
       const a = (k / n) * Math.PI * 2;
-      const i = addBody(w, { x: Math.cos(a) * 14, y: Math.sin(a) * 14, vx: 0, vy: 0, radius: 0.6, kind: KIND_ASTEROID });
-      w.state[i] = ORBITING; w.orbitR[i] = 14; w.orbitTarget[i] = 14; w.orbitAngle[i] = a; w.orbitingCount++;
+      const i = addBody(w, { x: Math.cos(a) * 24, y: Math.sin(a) * 24, vx: 0, vy: 0, radius: 0.6, kind: KIND_ASTEROID });
+      w.state[i] = ORBITING; w.orbitR[i] = 24; w.orbitTarget[i] = 24; w.orbitAngle[i] = a; w.orbitingCount++;
     }
     return w;
   }
   it('chocar con uno 1,4 veces tu tamaño te saca bastante órbita y masa; con uno apenas más grande, menos', () => {
-    const E = 4 + 0.55 * Math.sqrt(100);
+    const E = starSize(100);
     const fuerte = big(100), leve = big(100);
     const m0 = fuerte.star.mass;
     addBody(fuerte, { x: E + 1, y: 0, vx: 0, vy: 0, radius: E * 1.4, kind: KIND_GAS });
@@ -94,9 +94,9 @@ describe('cuanto más grande el planeta, más duele', () => {
 });
 
 describe('choque desproporcionado', () => {
-  it('contra algo de más de 2,5 veces tu tamaño, tu mundo se hace pedazos', () => {
+  it('contra algo de más del doble de tu tamaño, tu mundo se hace pedazos', () => {
     const w = worldWithOrbit(5);
-    addBody(w, { x: 9, y: 0, vx: 0, vy: 0, radius: 7, kind: KIND_GAS });
+    addBody(w, { x: 11, y: 0, vx: 0, vy: 0, radius: 9.5, kind: KIND_GAS });
     step(w, NO_INPUT);
     expect(w.over).toBe(OVER_SHATTERED);
   });

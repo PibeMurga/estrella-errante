@@ -237,7 +237,7 @@ describe('lunas y cinturones de planetas', () => {
     step(w, NO_INPUT);
     expect(w.state[m]).toBe(ORBITING);
     expect(w.parent[m]).toBe(-1);
-    expect(w.orbitingCount).toBe(1);
+    expect(w.orbitingCount).toBeGreaterThanOrEqual(1);   // (el planeta, chico al lado de la estrella, también puede entrar)
   });
 });
 

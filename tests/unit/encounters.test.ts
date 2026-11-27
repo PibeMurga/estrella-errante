@@ -100,7 +100,8 @@ describe('encuentros entre planetas', () => {
       }
     });
     expect(w.planetBreaks).toBe(1);
-    expect(w.disintegrated).toBeGreaterThan(0);
+    // Sus pedazos se desintegran o entran a tu órbita; ninguno queda adentro tuyo.
+    expect(w.disintegrated + (w.state[p] === 1 ? 1 : 0) + (w.state[w.twin[p]!] === 1 ? 1 : 0)).toBeGreaterThan(0);
     expect(inside).toBe(0);
   });
 

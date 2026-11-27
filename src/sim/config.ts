@@ -255,7 +255,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   planetPullMul: 0.35,
   orbitSpinGrowth: 0.8,
   planetGravity: 1.5,
-  lethalRatio: 2.5,
+  lethalRatio: 2,
   starGravity: 4,
   starCouple: 1.6,
   coastPullMul: 3,

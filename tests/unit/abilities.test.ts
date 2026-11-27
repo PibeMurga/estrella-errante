@@ -3,7 +3,7 @@ import { DEFAULT_CONFIG } from '../../src/sim/config';
 import { abilityLevel, planetsAlive, planetsInOrbit } from '../../src/sim/abilities';
 import { spawnComet } from '../../src/sim/comets';
 import { type Intent, step } from '../../src/sim/step';
-import { addBody, BOLT, CARRIED, captureRadiusFor, createWorld, DEAD, FREE, GATHERING, KIND_ASTEROID, KIND_ROCKY, ORBITING, type World } from '../../src/sim/world';
+import { starSize, addBody, BOLT, CARRIED, captureRadiusFor, createWorld, DEAD, FREE, GATHERING, KIND_ASTEROID, KIND_ROCKY, ORBITING, type World } from '../../src/sim/world';
 
 const idle: Intent = { targetX: 0, targetY: 0, hasTarget: false };
 // Mundo con 20 planetas lejanos (la pantalla) y N de ellos en tu órbita.
@@ -38,8 +38,11 @@ describe('habilidades por cantidad de planetas', () => {
     const w = system(6);
     const countAst = (): number => { let n = 0; for (let i = 0; i < w.count; i++) if (w.state[i] === ORBITING && w.kind[i] === KIND_ASTEROID) n++; return n; };
     const ast0 = countAst();   // los planetas traen sus cinturones: se cuenta justo antes del golpe
-    const big = addBody(w, { x: w.star.x + 15, y: 0, vx: 0, vy: 0, radius: 15, kind: KIND_ROCKY });
-    w.radius[big] = 13;   // daña (E de masa 200 ≈ 11) pero no es grave
+    const E = starSize(w.star.mass);
+    // Tus planetas lejos del golpe (si no, el grande también rompe alguno de ellos al pasar).
+    for (let i = 0; i < w.count; i++) if (w.state[i] === ORBITING && w.kind[i] !== KIND_ASTEROID) { w.orbitR[i] = 120; w.orbitTarget[i] = 120; w.orbitAngle[i] = Math.PI; w.x[i] = w.star.x - 120; w.y[i] = w.star.y; }
+    const big = addBody(w, { x: w.star.x + E * 2.1, y: 0, vx: 0, vy: 0, radius: E * 1.2, kind: KIND_ROCKY });   // daña pero no es grave
+    void big;
     step(w, idle);
     expect(w.hits).toBe(1);
     expect(countAst()).toBeGreaterThanOrEqual(ast0);   // no se perdió ningún asteroide

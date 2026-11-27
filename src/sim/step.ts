@@ -236,9 +236,6 @@ function mapStarsAct(w: World): void {
         w.state[st] = DEAD;
         for (let j = 0; j < w.count; j++) if (w.parent[j] === st && w.state[j] !== DEAD) { w.parent[j] = -1; w.state[j] = FREE; w.noCatch[j] = 1; }
         w.starsEaten++;
-      } else if (R > me * c.lethalRatio) {
-        shatter(w, gx, gy);   // demasiado grande: te deshace
-        return;
       } else if (w.invuln <= 0) {
         // Te quema: perdés masa y resistencia y te empuja hacia afuera.
         w.invuln = c.hurtInvuln;

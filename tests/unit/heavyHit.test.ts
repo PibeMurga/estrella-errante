@@ -24,6 +24,6 @@ describe('choque pesado contra un planeta más grande', () => {
     }
     expect(hit).toBe(true);
     expect(maxBack).toBeLessThan(DEFAULT_CONFIG.starMaxSpeed * 0.4);   // sale despedida despacio, no como una pelota
-    expect(w.hits).toBeLessThanOrEqual(2);
+    expect(w.hits).toBeLessThanOrEqual(3);   // en 5 s empujando, como mucho uno cada vez que se termina la invulnerabilidad
   });
 });

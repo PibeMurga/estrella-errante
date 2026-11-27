@@ -154,6 +154,14 @@ export function stepOwnPlanetRams(w: World): void {
       const dx = w.x[f]! - w.x[o]!, dy = w.y[f]! - w.y[o]!, D = w.radius[f]! + w.radius[o]!, d2 = dx * dx + dy * dy;
       if (d2 >= D * D) continue;
       const d = Math.sqrt(d2) || 1, nx = dx / d, ny = dy / d;
+      // Si el suelto es bastante más grande que tu planeta, el tuyo se rompe (sale de tu órbita) y deja su marca.
+      if (w.radius[f]! > w.radius[o]! * 1.25) {
+        mark(w, f, Math.atan2(-ny, -nx), Math.min(1.4, w.radius[o]! / 3));
+        mark(w, o, Math.atan2(ny, nx), 1.2);
+        hitPlanet(w, o, 1e6);
+        if (w.state[o] === ORBITING) { w.state[o] = DEAD; w.orbitingCount--; noteBreak(w, o, -ny, nx); }   // (si no se podía partir, se deshace)
+        continue;
+      }
       // Se alinea, no rebota: lo chico o partido entra a tu órbita; lo que se puede partir se parte y sus pedazos entran.
       const t = planetTier(w.radius[f]!, s.mass);
       if (joinsOrbit(w, f) || t === TIER_BREAK) {
