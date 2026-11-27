@@ -84,6 +84,7 @@ function steal(w: World, k: number, i: number): void {
 // Cometas cazadores: aparecen por los bordes, persiguen a la estrella, le roban cuerpos y huyen.
 export function stepComets(w: World): void {
   const c = w.config, s = w.star, cm = w.comets;
+  if (!w.ignited) return;   // los cometas llegan después de la ignición
   w.cometClock -= DT;
   if (w.cometClock <= 0) { spawnOnEdge(w); w.cometClock += c.cometEvery; }
 

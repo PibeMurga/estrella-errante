@@ -2,7 +2,7 @@ import { InputController } from '../input/controller';
 import { QualityGovernor } from '../perf/qualityGovernor';
 import { showFatal } from '../render/context';
 import { createSpaceView } from '../render/spaceView';
-import { DEFAULT_CONFIG } from '../sim/config';
+import { GAME_CONFIG } from '../sim/config';
 import { FixedStepper } from '../sim/loop';
 import { step } from '../sim/step';
 import { createWorld, PHASE_COLLAPSE, PHASE_MERGE } from '../sim/world';
@@ -15,7 +15,7 @@ const canvas = document.getElementById('game') as HTMLCanvasElement;
 // Cada partida, un mapa distinto. Con ?seed=N se repite un mapa (lo usan las pruebas).
 const seedParam = Number(new URLSearchParams(location.search).get('seed'));
 const seed = Number.isFinite(seedParam) && seedParam > 0 ? seedParam : Math.floor(Math.random() * 2 ** 31);
-const world = createWorld(DEFAULT_CONFIG, seed);
+const world = createWorld(GAME_CONFIG, seed);
 const view = createSpaceView(canvas, { world, quality: 'high' });
 
 if (!view.ok) {

@@ -3,12 +3,12 @@ import { breakPlanet } from './tidal';
 import { stepRockImpacts } from './rockImpacts';
 import { stepEncounters, stepStarFlybys } from './encounters';
 import { DT, type SimConfig } from './config';
-import { stageFor } from './stages';
+import { IGNITION_MASS, stageFor } from './stages';
 import { stepAbilities } from './abilities';
 import { graveHit, isPlanetKind, joinsOrbit, stepPlanetHits, planetTier, TIER_GRAVE, TIER_HURT } from './planetCapture';
-import { returnGathered, sling, slingAngle, stepBolts, stepLaunch } from './launch';
+import { releaseLaunch, returnGathered, sling, slingAngle, stepBolts, stepLaunch } from './launch';
 import { canCollapse, playerHoleRadius, startCollapse, startHunt, startMerge, stepMerge } from './phase';
-import { ABSORBING, BOLT, KIND_ASTEROID, CARRIED, captureRadiusFor, DEAD, massGain, FREE, GATHERING, KIND_GAS, KIND_ICE, KIND_ROCKY, MAX_IMPACTS, ORBIT_PLANET, ORBITING, OVER_DIMMED, OVER_ESCAPED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
+import { ABSORBING, BOLT, KIND_ASTEROID, CARRIED, captureRadiusFor, DEAD, massGain, FREE, GATHERING, KIND_GAS, KIND_ICE, KIND_ROCKY, MAX_IMPACTS, ORBIT_PLANET, ORBITING, OVER_DIMMED, OVER_ESCAPED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_IGNITION, PHASE_MERGE, PHASE_PLAY, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
 
 // target: hacia dónde ir. aim: hacia dónde apuntar la honda (stick derecho); sin aim se apunta al objetivo.
 export interface Intent {
@@ -298,7 +298,30 @@ function cinematic(w: World): void {
     }
     if (w.phaseTime >= w.config.collapseTime) startHunt(w);
   }
+  else if (w.phase === PHASE_IGNITION) stepIgnition(w);
   else stepMerge(w);
+}
+
+// Ignición: el centro se comprime, destella y una onda empuja lo suelto que está cerca; al final nace tu estrella:
+// se desbloquea el disparo, despierta el agujero negro y empieza a correr el reloj de los cometas.
+function stepIgnition(w: World): void {
+  const c = w.config, s = w.star, t = w.phaseTime;
+  if (t >= 1.2 && t - DT < 1.2) {
+    for (let i = 0; i < w.count; i++) {
+      if (w.state[i] !== FREE) continue;
+      const dx = w.x[i] - s.x, dy = w.y[i] - s.y, d2 = dx * dx + dy * dy;
+      if (d2 > 45 * 45 || d2 < 1e-6) continue;
+      const d = Math.sqrt(d2), push = 9 * (1 - d / 45);
+      w.vx[i] += (dx / d) * push; w.vy[i] += (dy / d) * push;
+    }
+  }
+  // Lo suelto sigue moviéndose durante la cinemática (empujado por la onda).
+  for (let i = 0; i < w.count; i++) if (w.state[i] === FREE && w.parent[i] === -1) { w.x[i] += w.vx[i] * DT; w.y[i] += w.vy[i] * DT; }
+  if (t >= c.ignitionTime) {
+    w.phase = PHASE_PLAY; w.phaseTime = 0;
+    w.ignited = true;
+    w.cometClock = c.cometFirst;
+  }
 }
 
 export function step(w: World, intent: Intent): void {
@@ -319,7 +342,9 @@ export function step(w: World, intent: Intent): void {
   w.comets.prevY.set(w.comets.y);
   // Partida terminada: todo queda quieto (y sin interpolar) hasta que se reinicie.
   if (w.over !== OVER_NONE) return;
-  if (w.phase === PHASE_COLLAPSE || w.phase === PHASE_MERGE) { cinematic(w); w.tick++; return; }
+  if (w.phase === PHASE_COLLAPSE || w.phase === PHASE_MERGE || w.phase === PHASE_IGNITION) { cinematic(w); w.tick++; return; }
+  // Siendo planeta el agujero negro rival duerme: no se mueve, no atrae ni traga. Despierta con la ignición.
+  const awake = bh.active && w.ignited;
   const hunting = w.phase === PHASE_HUNT;
   if (w.invuln > 0) w.invuln = Math.max(0, w.invuln - DT);
   if (w.slingCd > 0) w.slingCd = Math.max(0, w.slingCd - DT);
@@ -329,7 +354,7 @@ export function step(w: World, intent: Intent): void {
   const range2 = c.bhRange * c.bhRange;
   // Crece con la raíz de su masa: comer lo hace más peligroso, pero no imposible de esquivar.
   const G = c.bhPull * Math.sqrt(bh.mass);
-  if (bh.active) {
+  if (awake) {
     const dx = s.x - bh.x, dy = s.y - bh.y;
     const d = Math.hypot(dx, dy);
     if (hunting) {
@@ -391,7 +416,7 @@ export function step(w: World, intent: Intent): void {
   s.x += s.vx * DT;
   s.y += s.vy * DT;
   const holeR = hunting ? playerHoleRadius(w) : 0;
-  if (bh.active) {
+  if (awake) {
     const dd = Math.hypot(s.x - bh.x, s.y - bh.y);
     if (hunting) {
       w.inDisk = 0; w.tide = 0;
@@ -432,7 +457,7 @@ export function step(w: World, intent: Intent): void {
             w.vx[i] += ex * a; w.vy[i] += ey * a;
           }
         }
-        if (bh.active) {
+        if (awake) {
           const gx = bh.x - x, gy = bh.y - y;
           const g2 = gx * gx + gy * gy;
           if (g2 < range2) {
@@ -564,6 +589,8 @@ export function step(w: World, intent: Intent): void {
   stepAbilities(w);
   s.captureRadius = captureRadiusFor(c, s.mass) * (w.ability >= 1 ? c.abilityGravityMul : 1);   // gravedad ampliada
   if (s.mass > w.maxMass) w.maxMass = s.mass;
+  // Al llegar a la masa de ignición, se enciende la fusión: cinemática de la ignición (una sola vez).
+  if (!w.ignited && w.phase === PHASE_PLAY && s.mass >= IGNITION_MASS) { w.phase = PHASE_IGNITION; w.phaseTime = 0; w.ignitions++; releaseLaunch(w); }
   const st = stageFor(s.mass);
   if (st > w.stage) { w.stage = st; w.stageUps++; }
   if (hunting) {

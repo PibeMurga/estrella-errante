@@ -87,6 +87,9 @@ export interface SimConfig {
   cometStealMin: number;         // cuerpos que roba un cometa por pasada (mínimo y máximo)
   cometStealMax: number;
   cometPlanetChance: number;
+  planetStart: boolean;          // la partida arranca como planeta (sin disparo, agujero dormido y sin cometas hasta la ignición)
+  ignitionTime: number;
+  planetPhaseGain: number;       // siendo planeta, la masa que suma (o resta) cada cuerpo se multiplica por esto          // segundos de la cinemática de la ignición
   halfSplitSpeed: number;
   splitNoCatch: number;          // segundos que derivan los pedazos de un planeta recién partido antes de poder entrar a tu órbita
   bhDiskR: number;
@@ -228,6 +231,9 @@ export const DEFAULT_CONFIG: SimConfig = {
   cometStealMin: 3,
   cometStealMax: 5,
   cometPlanetChance: 0.5,
+  planetStart: false,
+  ignitionTime: 4,
+  planetPhaseGain: 0.45,
   halfSplitSpeed: 0.3,
   splitNoCatch: 3.5,
   bhDiskR: 4.5,
@@ -268,3 +274,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   hurtStunK: 0.55,
   autoCollapse: true,
 };
+
+// La partida de verdad: arranca como planeta gaseoso y se enciende con la ignición. (La base arranca como estrella, para
+// las pruebas y los bancos que miden otras cosas.)
+export const GAME_CONFIG: SimConfig = { ...DEFAULT_CONFIG, planetStart: true };

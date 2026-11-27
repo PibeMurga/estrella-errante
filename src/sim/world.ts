@@ -21,7 +21,8 @@ export const OVER_WON = 4;       // te fusionaste con el rival: ganaste la panta
 export const PHASE_PLAY = 0;     // crecer
 export const PHASE_COLLAPSE = 1; // cinemática: supernova y nacimiento de tu agujero negro
 export const PHASE_HUNT = 2;     // sos el agujero negro y cazás al rival
-export const PHASE_MERGE = 3;    // cinemática: la fusión
+export const PHASE_MERGE = 3;
+export const PHASE_IGNITION = 4; // cinemática: se enciende la fusión y nace tu estrella    // cinemática: la fusión
 export const KIND_ASTEROID = 0;
 export const KIND_ROCKY = 1;
 export const KIND_ICE = 2;
@@ -71,6 +72,8 @@ export interface World {
   hits: number;        // choques con planetas (evento para el dibujo y la interfaz)
   slingCd: number;     // segundos hasta poder volver a disparar
   breakFxCount: number; breakFxX: number; breakFxY: number; breakFxR: number; breakFxKind: number; breakFxAx: number; breakFxAy: number;   // última ruptura de un planeta (para la explosión)
+  ignited: boolean;    // ya se encendió tu estrella (o la partida arrancó como estrella)
+  ignitions: number;   // igniciones (evento)
   rockHits: number;
   contactHits: number;
   disintegrated: number;   // planetas o pedazos que se desintegraron contra la estrella (evento)  // choques pesados entre planetas (evento)    // asteroides veloces o grandes que golpearon la estrella (evento)
@@ -136,7 +139,8 @@ const MAX_DEBRIS = 60;
 // Suma sólo una parte (un planeta, una décima; un asteroide, tres cuartos): el enjambre se ve grande pero la masa crece despacio.
 export function massGain(w: World, i: number): number {
   const k = w.kind[i]!;
-  return w.mass[i] * (k >= KIND_ROCKY && k <= KIND_GAS ? w.config.planetMassGain : w.config.bodyMassGain);
+  // Siendo planeta crece más despacio: la etapa de planeta dura lo suyo (uno a dos minutos).
+  return w.mass[i] * (k >= KIND_ROCKY && k <= KIND_GAS ? w.config.planetMassGain : w.config.bodyMassGain) * (w.ignited ? 1 : w.config.planetPhaseGain);
 }
 
 // Tamaño (radio) de la estrella según su masa. Lo usan la simulación y el dibujo.
@@ -236,7 +240,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       timer: new Float32Array(MAX_COMETS), carry: new Int32Array(MAX_COMETS),
     },
     cometClock: config.cometFirst, cometSteals: 0, cometKills: 0, rng: createRng(seed ^ 0x9e3779b9),
-    over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, fireSlow: 0, fireSlowK: 0, fireSlowT: 1, breakFxCount: 0, breakFxX: 0, breakFxY: 0, breakFxR: 0, breakFxKind: 0, breakFxAx: 1, breakFxAy: 0, rockHits: 0, contactHits: 0, disintegrated: 0, diskGrazes: 0, inDisk: 0, tide: 0, diskStripAcc: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
+    over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, fireSlow: 0, fireSlowK: 0, fireSlowT: 1, breakFxCount: 0, breakFxX: 0, breakFxY: 0, breakFxR: 0, breakFxKind: 0, breakFxAx: 1, breakFxAy: 0, ignited: !config.planetStart, ignitions: 0, rockHits: 0, contactHits: 0, disintegrated: 0, diskGrazes: 0, inDisk: 0, tide: 0, diskStripAcc: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
     x: f(), y: f(), prevX: f(), prevY: f(), vx: f(), vy: f(), radius: f(), mass: f(),
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
     parent: new Int32Array(capacity).fill(-1),

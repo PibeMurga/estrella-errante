@@ -107,6 +107,7 @@ function launchBolt(w: World): void {
 // Lee el botón: mientras se mantiene, carga; al soltarlo, toque o bólido.
 export function stepLaunch(w: World, intent: Intent): void {
   const c = w.config;
+  if (!w.ignited) { w.charge = 0; return; }   // siendo planeta no hay disparo: se enciende con la ignición
   if (intent.hold === true) {
     if (w.charge === 0 && (w.slingCd > 0 || w.orbitingCount === 0)) return;   // no arranca a cargar
     w.charge += DT;
