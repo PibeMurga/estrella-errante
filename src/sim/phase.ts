@@ -1,6 +1,7 @@
 import { DT } from './config';
+import { releaseLaunch } from './launch';
 import { STAGE_HYPER } from './stages';
-import { CARRIED, FREE, OVER_NONE, OVER_WON, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PHASE_PLAY, PROJECTILE, RETURNING, type World } from './world';
+import { CARRIED, FREE, OVER_NONE, OVER_WON, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PHASE_PLAY, type World } from './world';
 
 // La meta de la pantalla: superar en masa al agujero negro rival, colapsar, cazarlo y fusionarse.
 // Masa del rival en la misma escala que la tuya (la de las barras).
@@ -28,7 +29,7 @@ export function startCollapse(w: World): void {
     if (c >= 0 && w.state[c] === CARRIED) { w.state[c] = FREE; w.vx[c] = 0; w.vy[c] = 0; w.noCatch[c] = 0; }
     cm.carry[k] = -1; cm.mode[k] = 0;
   }
-  for (let i = 0; i < w.count; i++) if (w.state[i] === PROJECTILE || w.state[i] === RETURNING) w.state[i] = FREE;
+  releaseLaunch(w);   // lo que se juntaba vuelve a la órbita y lo que vuela queda suelto
 }
 
 // Nace tu agujero negro y empieza la caza. Si el rival quedó demasiado lejos, se lo acerca fuera de cámara.

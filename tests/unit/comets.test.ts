@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG, type SimConfig } from '../../src/sim/config';
 import { spawnComet } from '../../src/sim/comets';
 import { type Intent, step } from '../../src/sim/step';
-import { addBody, CARRIED, createWorld, FREE, KIND_ASTEROID, MAX_COMETS, ORBITING, PROJECTILE, type World } from '../../src/sim/world';
+import { addBody, BOLT, CARRIED, createWorld, FREE, KIND_ASTEROID, MAX_COMETS, ORBITING, PROJECTILE, type World } from '../../src/sim/world';
 
 const IDLE: Intent = { targetX: 0, targetY: 0, hasTarget: false };
 const cfg = (o: Partial<SimConfig> = {}): SimConfig => ({ ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, blackHole: false, ...o });
@@ -63,6 +63,16 @@ describe('cometa cazador', () => {
     w.state[i] = PROJECTILE; w.life[i] = 1;
     step(w, IDLE);
     expect(w.comets.hp[k]).toBe(DEFAULT_CONFIG.cometHp - 1);
+  });
+
+  it('un bólido lo destruye de un golpe: suelta lo robado y deja asteroides', () => {
+    const w = createWorld({ ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, blackHole: false, cometFirst: 1e9 }, 1, 40);
+    const k = spawnComet(w, 30, 0);
+    const b = addBody(w, { x: 30, y: 0, vx: 0, vy: 0, radius: 0.6, kind: KIND_ASTEROID });
+    w.state[b] = BOLT; w.life[b] = 1;
+    step(w, { targetX: 0, targetY: 0, hasTarget: false });
+    expect(w.comets.mode[k]).toBe(0);
+    expect(w.cometKills).toBe(1);
   });
 
   it('nunca hay más cometas que el tamaño de la reserva', () => {

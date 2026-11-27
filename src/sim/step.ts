@@ -3,8 +3,9 @@ import { breakPlanet } from './tidal';
 import { stepEncounters, stepStarFlybys } from './encounters';
 import { DT } from './config';
 import { stageFor } from './stages';
+import { sling, slingAngle, stepBolts, stepLaunch } from './launch';
 import { canCollapse, playerHoleRadius, startCollapse, startHunt, startMerge, stepMerge } from './phase';
-import { ABSORBING, CARRIED, captureRadiusFor, DEAD, FREE, KIND_GAS, KIND_ICE, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_DIMMED, OVER_ESCAPED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
+import { ABSORBING, BOLT, CARRIED, captureRadiusFor, DEAD, FREE, GATHERING, KIND_GAS, KIND_ICE, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_DIMMED, OVER_ESCAPED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
 
 // target: hacia dónde ir. aim: hacia dónde apuntar la honda (stick derecho); sin aim se apunta al objetivo.
 export interface Intent {
@@ -12,6 +13,7 @@ export interface Intent {
   fire?: boolean;
   aimX?: number; aimY?: number; hasAim?: boolean;
   collapse?: boolean;   // apretó la tecla de colapso
+  hold?: boolean;       // el botón de lanzar está apretado (mantener carga el bólido)
 }
 
 const clamp = (v: number, lo: number, hi: number): number => (v < lo ? lo : v > hi ? hi : v);
@@ -56,50 +58,6 @@ function hurt(w: World, p: number): void {
     s.mass = Math.max(c.starStartMass, s.mass - w.mass[i]);
     lost++;
   }
-}
-
-// Honda: lanza el mundo en órbita cuyo ángulo está más cerca de la dirección de la mira.
-// Dirección de la honda: la mira propia; si no, el objetivo; si está encima de la estrella, el cometa más cercano;
-// si no hay cometas, hacia donde se mueve. Devuelve NaN si no hay ninguna dirección razonable.
-function slingAngle(w: World, it: Intent): number {
-  const s = w.star;
-  if (it.hasAim && Number.isFinite(it.aimX) && Number.isFinite(it.aimY)) {
-    const dx = it.aimX! - s.x, dy = it.aimY! - s.y;
-    if (dx * dx + dy * dy > 1e-6) return Math.atan2(dy, dx);
-  }
-  if (it.hasTarget && Number.isFinite(it.targetX) && Number.isFinite(it.targetY)) {
-    const dx = it.targetX - s.x, dy = it.targetY - s.y;
-    if (dx * dx + dy * dy > 4) return Math.atan2(dy, dx);
-  }
-  const cm = w.comets;
-  let best = -1, bestD = Infinity;
-  for (let k = 0; k < cm.mode.length; k++) {
-    if (cm.mode[k] === 0) continue;
-    const e = (cm.x[k]! - s.x) ** 2 + (cm.y[k]! - s.y) ** 2;
-    if (e < bestD) { bestD = e; best = k; }
-  }
-  if (best >= 0) return Math.atan2(cm.y[best]! - s.y, cm.x[best]! - s.x);
-  if (s.vx * s.vx + s.vy * s.vy > 1) return Math.atan2(s.vy, s.vx);
-  return Number.NaN;
-}
-
-function sling(w: World, aim: number): void {
-  const c = w.config, s = w.star;
-  let best = -1, bestDiff = Infinity;
-  for (let i = 0; i < w.count; i++) {
-    if (w.state[i] !== ORBITING) continue;
-    let d = Math.abs(w.orbitAngle[i] - aim) % (Math.PI * 2);
-    if (d > Math.PI) d = Math.PI * 2 - d;
-    if (d < bestDiff) { bestDiff = d; best = i; }
-  }
-  if (best < 0) return;
-  w.state[best] = PROJECTILE;
-  w.vx[best] = Math.cos(aim) * c.slingSpeed + s.vx;
-  w.vy[best] = Math.sin(aim) * c.slingSpeed + s.vy;
-  w.life[best] = c.slingLife;
-  w.orbitingCount--;
-  w.slingCd = c.slingCooldown;
-  w.shots++;
 }
 
 // Vuelo de un mundo lanzado: avanza en línea recta y después vuelve a la estrella.
@@ -190,6 +148,7 @@ export function step(w: World, intent: Intent): void {
   const hunting = w.phase === PHASE_HUNT;
   if (w.invuln > 0) w.invuln = Math.max(0, w.invuln - DT);
   if (w.slingCd > 0) w.slingCd = Math.max(0, w.slingCd - DT);
+  if (w.bhSlow > 0) w.bhSlow = Math.max(0, w.bhSlow - DT);
 
   // El agujero negro persigue a la estrella, cada vez un poco más rápido.
   const range2 = c.bhRange * c.bhRange;
@@ -208,7 +167,8 @@ export function step(w: World, intent: Intent): void {
       }
     } else {
       bh.speed = Math.min(c.bhMaxSpeed, bh.speed + c.bhAccel * DT);
-      if (d > 1e-6) { bh.vx = (dx / d) * bh.speed; bh.vy = (dy / d) * bh.speed; }
+      const v = w.bhSlow > 0 ? bh.speed * c.boltBhSlowFactor : bh.speed;   // un bólido lo frena unos segundos
+      if (d > 1e-6) { bh.vx = (dx / d) * v; bh.vy = (dy / d) * v; }
     }
     bh.x += bh.vx * DT;
     bh.y += bh.vy * DT;
@@ -269,7 +229,7 @@ export function step(w: World, intent: Intent): void {
   let hit = -1;
   for (let i = 0; i < w.count; i++) {
     const st = w.state[i];
-    if (st === DEAD || st === CARRIED) continue;
+    if (st === DEAD || st === CARRIED || st === GATHERING || st === BOLT) continue;
     if (st === PROJECTILE || st === RETURNING) { flight(w, i, st); continue; }
     if (st === FREE || st === ORBIT_PLANET) {
       let x: number;
@@ -366,9 +326,13 @@ export function step(w: World, intent: Intent): void {
   if (hit >= 0) hurt(w, hit);
   if (w.over !== OVER_NONE) { w.tick++; return; }   // se apagó en este paso: no pasa nada más
   if (!hunting) stepComets(w);
-  if (!hunting && intent.fire && w.slingCd <= 0 && w.orbitingCount > 0) {
-    const a = slingAngle(w, intent);
-    if (Number.isFinite(a)) sling(w, a);
+  if (!hunting) {
+    stepBolts(w, bandHi);
+    if (intent.fire && w.slingCd <= 0 && w.orbitingCount > 0) {   // disparo directo (bot y pruebas)
+      const a = slingAngle(w, intent);
+      if (Number.isFinite(a)) sling(w, a);
+    }
+    stepLaunch(w, intent);
   }
   bh.radius = c.bhStartRadius * Math.cbrt(bh.mass);
   s.captureRadius = captureRadiusFor(c, s.mass);

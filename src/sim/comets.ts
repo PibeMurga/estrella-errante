@@ -1,5 +1,5 @@
 import { DT } from './config';
-import { CARRIED, DEAD, FREE, KIND_ASTEROID, MAX_COMETS, ORBITING, PROJECTILE, RETURNING, starSize, type World } from './world';
+import { BOLT, CARRIED, DEAD, FREE, KIND_ASTEROID, MAX_COMETS, ORBITING, PROJECTILE, RETURNING, starSize, type World } from './world';
 
 export const COMET_OFF = 0;
 export const COMET_HUNT = 1;
@@ -136,16 +136,17 @@ export function stepComets(w: World): void {
     }
   }
 
-  // Golpes de honda: el proyectil rebota y vuelve a la estrella.
+  // Golpes de honda (3 lo matan; el proyectil rebota y vuelve) y de bólido (1 lo mata y sigue de largo).
   let any = false;
   for (let k = 0; k < MAX_COMETS; k++) if (cm.mode[k] !== COMET_OFF) any = true;
   if (!any) return;
   for (let i = 0; i < w.count; i++) {
-    if (w.state[i] !== PROJECTILE) continue;
+    if (w.state[i] !== PROJECTILE && w.state[i] !== BOLT) continue;
     for (let k = 0; k < MAX_COMETS; k++) {
       if (cm.mode[k] === COMET_OFF) continue;
       const r = c.cometRadius + w.radius[i];
       if ((w.x[i] - cm.x[k]!) ** 2 + (w.y[i] - cm.y[k]!) ** 2 < r * r) {
+        if (w.state[i] === BOLT) { damage(w, k, c.cometHp); break; }
         w.state[i] = RETURNING;
         damage(w, k, 1);
         break;

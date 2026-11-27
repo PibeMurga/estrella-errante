@@ -3,7 +3,7 @@ import { DEFAULT_CONFIG } from '../../src/sim/config';
 import { canCollapse, playerHoleRadius, rivalMass } from '../../src/sim/phase';
 import { STAGE_HYPER } from '../../src/sim/stages';
 import { type Intent, step } from '../../src/sim/step';
-import { addBody, CARRIED, createWorld, DEAD, FREE, hashWorld, KIND_ASTEROID, ORBITING, OVER_ESCAPED, OVER_NONE, OVER_WON, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PHASE_PLAY, PROJECTILE, type World } from '../../src/sim/world';
+import { addBody, BOLT, CARRIED, createWorld, DEAD, FREE, GATHERING, hashWorld, KIND_ASTEROID, ORBITING, OVER_ESCAPED, OVER_NONE, OVER_WON, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PHASE_PLAY, PROJECTILE, type World } from '../../src/sim/world';
 
 const cfg = { ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, cometFirst: 1e9 };
 
@@ -150,6 +150,18 @@ describe('correcciones de la revisión', () => {
       maxD = Math.max(maxD, Math.hypot(w.bh.x - w.star.x, w.bh.y - w.star.y));
     }
     expect(maxD).toBeLessThan(Math.min(cfg.arenaHalfWidth, cfg.arenaHalfHeight));
+  });
+  it('al colapsar, lo que se juntaba vuelve a la órbita y el bólido en vuelo queda suelto', () => {
+    const w = hyperWorld();
+    const a = addBody(w, { x: 9, y: 0, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID });
+    const b = addBody(w, { x: 40, y: 0, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID });
+    step(w, idle);
+    w.state[a] = GATHERING; w.orbitingCount--; w.gathered = 1; w.charge = 1;
+    w.state[b] = BOLT; w.life[b] = 1;
+    step(w, { ...press, hold: true });   // sigue apretado: si lo suelta, el bólido sale antes de colapsar
+    expect(w.state[a]).toBe(ORBITING);
+    expect(w.state[b]).toBe(FREE);
+    expect(w.charge).toBe(0); expect(w.gathered).toBe(0);
   });
   it('al ganar, la masa máxima incluye al rival', () => {
     const w = huntWorld();

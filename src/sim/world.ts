@@ -9,6 +9,8 @@ export const PROJECTILE = 4;     // lanzado con la honda
 export const RETURNING = 5;      // vuelve a la órbita después del lanzamiento
 export const CARRIED = 6;        // robado por un cometa, va arrastrado detrás
 export const ABSORBING = 7;      // la estrella lo absorbe: cae en espiral hasta su superficie y después desaparece
+export const GATHERING = 8;      // se está juntando en el bólido mientras se mantiene el botón
+export const BOLT = 9;           // parte de un bólido lanzado: dejó la órbita y se pierde
 export const MAX_COMETS = 6;
 export const OVER_NONE = 0;
 export const OVER_SWALLOWED = 1; // la tragó el agujero negro
@@ -67,6 +69,13 @@ export interface World {
   hits: number;        // choques con planetas (evento para el dibujo y la interfaz)
   slingCd: number;     // segundos hasta poder volver a disparar
   shots: number;       // disparos de honda (evento)
+  charge: number;        // segundos que se viene manteniendo el botón de lanzar (0 = suelto)
+  gathered: number;      // cuerpos juntados en el bólido que se está cargando
+  boltAngle: number;     // hacia dónde sale el bólido
+  bolts: number;         // bólidos lanzados (evento)
+  lastBoltSize: number;  // cuántos cuerpos tenía el último
+  boltHitsBh: number;    // bólidos que le pegaron al agujero negro (evento)
+  bhSlow: number;        // segundos que el agujero negro sigue frenado por un bólido
   readonly x: Float64Array; readonly y: Float64Array;
   readonly prevX: Float64Array; readonly prevY: Float64Array;
   readonly vx: Float64Array; readonly vy: Float64Array;
@@ -178,7 +187,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       timer: new Float32Array(MAX_COMETS), carry: new Int32Array(MAX_COMETS).fill(-1),
     },
     cometClock: config.cometFirst, cometSteals: 0, cometKills: 0, rng: createRng(seed ^ 0x9e3779b9),
-    over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, shots: 0,
+    over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
     x: f(), y: f(), prevX: f(), prevY: f(), vx: f(), vy: f(), radius: f(), mass: f(),
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
     parent: new Int32Array(capacity).fill(-1),

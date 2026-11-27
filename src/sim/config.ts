@@ -60,6 +60,17 @@ export interface SimConfig {
   encounterGap: number;          // dos planetas libres no se acercan a menos de (suma de radios × esto): el chico bordea al grande
   crashSizeRatio: number;        // sólo pueden chocar planetas rocosos o helados casi iguales (cociente de radios hasta esto)
   crashChance: number;           // y de esos pares, sólo esta parte choca de verdad (el resto se esquiva)
+  tapTime: number;               // apretado menos que esto es un toque: un asteroide que vuelve
+  boltGatherRate: number;        // cuerpos por segundo que se suman al bólido mientras se mantiene
+  boltMax: number;               // tope de cuerpos de un bólido
+  boltSpeed: number;             // velocidad del bólido
+  boltLife: number;              // segundos de vuelo; después queda suelto
+  boltLoseSlow: number;          // al terminar el vuelo conserva esta fracción de la velocidad
+  boltNoCatch: number;           // segundos sin poder recapturar lo que quedó suelto
+  boltGatherDist: number;        // a cuánto por fuera de la órbita se arma el bólido
+  boltBhFeed: number;            // masa física que suma el agujero negro por unidad de masa del bólido
+  boltBhSlow: number;            // segundos que lo frena un bólido
+  boltBhSlowFactor: number;      // fracción de su velocidad mientras está frenado
   rivalMassScale: number;        // masa del rival en la carrera = esto × la masa física del agujero negro
   collapseTime: number;          // segundos de la cinemática del colapso (supernova y nacimiento)
   mergeTime: number;             // segundos de la cinemática de la fusión
@@ -135,4 +146,15 @@ export const DEFAULT_CONFIG: SimConfig = {
   huntFleeSpeed: 14,
   huntSwallowFactor: 1.2,
   huntStartMaxDist: 260,
+  tapTime: 0.22,
+  boltGatherRate: 6,
+  boltMax: 12,
+  boltSpeed: 55,
+  boltLife: 2.4,
+  boltLoseSlow: 0.15,
+  boltNoCatch: 2.5,
+  boltGatherDist: 3,
+  boltBhFeed: 0.02,
+  boltBhSlow: 3,
+  boltBhSlowFactor: 0.6,
 };
