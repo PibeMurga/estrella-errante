@@ -44,6 +44,12 @@ function closestTo(w: World, aim: number): number {
   return best;
 }
 
+// Disparar frena a la estrella: pierde parte de su velocidad y la recupera de a poco (ver el movimiento en step).
+function brakeOnFire(w: World, k: number): void {
+  w.star.vx *= 1 - k; w.star.vy *= 1 - k;
+  w.fireSlow = w.config.fireRecover; w.fireSlowK = k;
+}
+
 // Honda: lanza el cuerpo más cercano a la mira; vuelve a la órbita después del vuelo.
 export function sling(w: World, aim: number): void {
   const c = w.config, s = w.star;
@@ -56,6 +62,7 @@ export function sling(w: World, aim: number): void {
   w.orbitingCount--;
   w.slingCd = c.slingCooldown;
   w.shots++;
+  brakeOnFire(w, c.slingBrake);
 }
 
 // Suma al bólido el cuerpo lanzable más cercano a la mira. false si no queda ninguno.
@@ -83,6 +90,7 @@ function launchBolt(w: World): void {
   w.gathered = 0;
   w.bolts++;
   w.slingCd = c.slingCooldown;
+  brakeOnFire(w, c.boltBrake);
 }
 
 // Lee el botón: mientras se mantiene, carga; al soltarlo, toque o bólido.

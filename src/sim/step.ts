@@ -240,6 +240,7 @@ export function step(w: World, intent: Intent): void {
     }
   }
 
+  if (w.fireSlow > 0) w.fireSlow = Math.max(0, w.fireSlow - DT);
   // Movimiento con inercia: acelera hacia una velocidad deseada y frena para llegar sin pasarse.
   const acc = hunting ? c.starAccel : c.starAccel / (1 + c.starMassInertia * s.mass);   // siendo agujero negro ya no cargás con la inercia de la estrella
   let desX = 0;
@@ -252,8 +253,10 @@ export function step(w: World, intent: Intent): void {
     if (dist > 1e-6) {
       // Siendo agujero negro en la caza no frenás al acercarte: vas a fondo hacia lo que apuntás.
       const speed = hunting ? (dist > 1 ? c.starMaxSpeed : 0) : Math.min(c.starMaxSpeed, Math.sqrt(2 * acc * 0.8 * dist), (c.starMaxSpeed * dist) / c.starSlowRadius);
-      desX = (dx / dist) * speed;
-      desY = (dy / dist) * speed;
+      // Recién disparaste: la marcha deseada vuelve de a poco a la normal.
+      const slow = w.fireSlow > 0 ? 1 - w.fireSlowK * (w.fireSlow / c.fireRecover) : 1;
+      desX = (dx / dist) * speed * slow;
+      desY = (dy / dist) * speed * slow;
     }
     maxDv = acc * DT;
   }

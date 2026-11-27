@@ -18,6 +18,24 @@ const hold = (aimX = 100, aimY = 0): Intent => ({ targetX: 0, targetY: 0, hasTar
 const free = (aimX = 100, aimY = 0): Intent => ({ targetX: 0, targetY: 0, hasTarget: false, hold: false, aimX, aimY, hasAim: true });
 const run = (w: World, secs: number, it: Intent): void => { for (let k = 0; k < Math.round(secs * 60); k++) step(w, it); };
 
+describe('al disparar, la estrella se frena un poco', () => {
+  const moving = (w: World): Intent & { hold: boolean } => ({ targetX: w.star.x + 500, targetY: w.star.y, hasTarget: true, hold: false, aimX: w.star.x - 100, aimY: w.star.y, hasAim: true });
+  const cruise = (w: World): number => { for (let k = 0; k < 180; k++) step(w, moving(w)); return Math.hypot(w.star.vx, w.star.vy); };
+  it('la honda la frena poco; el bólido, más; después recupera la marcha', () => {
+    const a = orbitWorld(), b = orbitWorld();
+    const va = cruise(a), vb = cruise(b);
+    step(a, { ...moving(a), hold: true }); step(a, moving(a));   // toque: honda
+    const afterSling = Math.hypot(a.star.vx, a.star.vy);
+    expect(afterSling).toBeLessThan(va * 0.9);
+    for (let k = 0; k < 40; k++) step(b, { ...moving(b), hold: true });
+    step(b, moving(b));                                                // bólido
+    const afterBolt = Math.hypot(b.star.vx, b.star.vy);
+    expect(afterBolt).toBeLessThan(afterSling);
+    for (let k = 0; k < 120; k++) step(a, moving(a));
+    expect(Math.hypot(a.star.vx, a.star.vy)).toBeGreaterThan(va * 0.95);
+  });
+});
+
 describe('lanzamiento cargado', () => {
   it('un toque lanza un asteroide que vuelve', () => {
     const w = orbitWorld();

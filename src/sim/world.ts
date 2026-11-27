@@ -70,6 +70,8 @@ export interface World {
   invuln: number;      // segundos de invulnerabilidad que quedan
   hits: number;        // choques con planetas (evento para el dibujo y la interfaz)
   slingCd: number;     // segundos hasta poder volver a disparar
+  fireSlow: number;    // segundos que le quedan a la estrella para recuperar la marcha después de disparar
+  fireSlowK: number;   // cuánto la frenó ese disparo (fracción de la velocidad)
   shots: number;       // disparos de honda (evento)
   charge: number;        // segundos que se viene manteniendo el botón de lanzar (0 = suelto)
   gathered: number;      // cuerpos juntados en el bólido que se está cargando
@@ -222,7 +224,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       timer: new Float32Array(MAX_COMETS), carry: new Int32Array(MAX_COMETS),
     },
     cometClock: config.cometFirst, cometSteals: 0, cometKills: 0, rng: createRng(seed ^ 0x9e3779b9),
-    over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
+    over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, fireSlow: 0, fireSlowK: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
     x: f(), y: f(), prevX: f(), prevY: f(), vx: f(), vy: f(), radius: f(), mass: f(),
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
     parent: new Int32Array(capacity).fill(-1),
