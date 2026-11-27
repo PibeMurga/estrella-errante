@@ -40,3 +40,18 @@ describe('planeta partido en dos pedazos', () => {
     expect(planetsInOrbit(w)).toBe(1);
   });
 });
+
+describe('tus planetas en órbita', () => {
+  it('no se enciman: si dos se tocan, se separan a lo largo de la órbita', () => {
+    const w = createWorld(cfg, 3, 200);
+    w.star.mass = 150;
+    const mk = (a: number): number => {
+      const p = addBody(w, { x: Math.cos(a) * 30, y: Math.sin(a) * 30, vx: 0, vy: 0, radius: 3, kind: KIND_ROCKY });
+      w.state[p] = ORBITING; w.orbitR[p] = 30; w.orbitTarget[p] = 30; w.orbitAngle[p] = a; w.orbitW[p] = 0; w.orbitingCount++;
+      return p;
+    };
+    const a = mk(0), b = mk(0.05);
+    for (let k = 0; k < 600; k++) step(w, idle);
+    expect(Math.hypot(w.x[a] - w.x[b], w.y[a] - w.y[b])).toBeGreaterThanOrEqual((w.radius[a] + w.radius[b]) * 0.98);
+  });
+});

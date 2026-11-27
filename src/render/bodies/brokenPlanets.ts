@@ -43,7 +43,7 @@ void main(){
     // El interior sale de los colores del planeta, más oscuros y apagados: la roca de adentro de ese mismo mundo.
     // Roca del manto: basalto gris pardo, apenas teñido por el planeta (nunca el color de sus mares o nubes).
     vec3 tint = mix(vA, vB, .5); float lum = dot(tint, vec3(.3, .59, .11));
-    vec3 basalt = mix(vec3(.2, .17, .15), vec3(.34, .29, .24), n1);
+    vec3 basalt = mix(vec3(.13, .11, .1), vec3(.24, .2, .17), n1);   // oscuro: roca de adentro, sin luz propia
     vec3 rockIn = mix(basalt, basalt * (tint / max(lum, .05)) * .9, .18) * (vIce > .5 ? 1.25 : 1.);
     rockIn *= (.7 + .55*n2) * (1. - strata);
     float ndc = max(dot(vCut, L), 0.);

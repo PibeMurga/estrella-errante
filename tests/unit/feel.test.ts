@@ -61,7 +61,7 @@ describe('un planeta que se suma se imanta', () => {
     step(w, idle);
     w0 = (w.orbitAngle[p] - a0) * 60;
     expect(Math.abs(w0 - relW)).toBeLessThan(Math.abs(relW) * 0.25 + 0.02);   // sin salto: sigue girando como venía
-    run(w, w.config.planetJoinTime + 0.5);
+    run(w, w.config.planetJoinTime * 1.8 + 0.5);   // cada uno tarda distinto (hasta 1,8 veces)
     const a1 = w.orbitAngle[p]; step(w, idle);
     const wOrbit = w.config.orbitSpeedK * Math.pow(w.config.orbitMin / w.orbitR[p], 1.5);
     expect((w.orbitAngle[p] - a1) * 60).toBeCloseTo(wOrbit, 3);       // ya acoplado a la órbita

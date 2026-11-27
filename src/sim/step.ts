@@ -210,20 +210,46 @@ function moveOrbiting(w: World, i: number, absorbing: boolean, size: number, hol
   // Los planetas van en una franja propia, más afuera y más lenta que la de los asteroides.
   const planet = isPlanetKind(w.kind[i]!);
   const lo = planet ? bandHi + c.planetOrbitGap : bandLo, hi = planet ? lo + c.planetOrbitSpan : bandHi;
-  const target = absorbing ? size * 0.7 : clamp(w.orbitTarget[i], lo, hi);
-  // Recién atrapado se imanta: conserva el giro con que venía y se acopla de a poco a la órbita (más lento si es un planeta).
-  const join = planet ? c.planetJoinTime : c.bodyJoinTime;
+  let target = absorbing ? size * 0.7 : clamp(w.orbitTarget[i], lo, hi);
+  // Recién atrapado se imanta: conserva el giro con que venía, se frena, baja un poco más que su órbita y después vuelve
+  // suave a su lugar. Cada cuerpo a su manera: cuánto baja y cuánto tarda cambian (más lento si es un planeta).
+  const v1 = (i * 0.618034) % 1, v2 = (i * 0.414214) % 1;
+  const join = (planet ? c.planetJoinTime : c.bodyJoinTime) * (0.7 + 1.1 * v2);
   let k = 1;
-  if (w.joinT[i]! < join) { const t = w.joinT[i]! / join; k = t * t * (3 - 2 * t); w.joinT[i] = w.joinT[i]! + DT; }
+  if (w.joinT[i]! < join) {
+    const t = w.joinT[i]! / join; k = t * t * (3 - 2 * t); w.joinT[i] = w.joinT[i]! + DT;
+    if (!absorbing) target = Math.max(size * 1.3, target * (1 - (0.08 + 0.22 * v1) * Math.sin(Math.PI * Math.min(1, t * 1.15))));
+  }
   const maxDr = (planet ? c.planetInfallSpeed : c.orbitInfallSpeed) * (absorbing ? 1.6 : 1) * (0.25 + 0.75 * k) * DT;
   const r = w.orbitR[i] + clamp((target - w.orbitR[i]) * c.orbitEase, -maxDr, maxDr);
   w.orbitR[i] = r;
   if (absorbing && r <= size * 0.8) { w.state[i] = DEAD; return; }
   const wOrbit = c.orbitSpeedK * Math.pow(c.orbitMin / Math.max(r, 1e-6), 1.5);
-  const a = w.orbitAngle[i] + (k >= 1 ? wOrbit : w.orbitW[i] + (wOrbit - w.orbitW[i]) * k) * DT;
+  // Al entrar se frena (gira más lento) y recupera el ritmo de la órbita al acoplarse.
+  const a = w.orbitAngle[i] + (k >= 1 ? wOrbit : (w.orbitW[i] + (wOrbit - w.orbitW[i]) * k) * (0.55 + 0.45 * k)) * DT;
   w.orbitAngle[i] = a;
   w.x[i] = s.x + Math.cos(a) * r;
   w.y[i] = s.y + Math.sin(a) * r;
+}
+
+// Tus planetas no se enciman: si dos se tocan en la órbita, se van separando de a poco a lo largo de ella
+// (el de adelante se adelanta y el de atrás se atrasa). También los dos pedazos de un partido.
+function separateOwnPlanets(w: World): void {
+  const P = w.planets, n = P.length;
+  for (let a = 0; a < n * 2; a++) {
+    const i = a < n ? P[a]! : w.twin[P[a - n]!]!;
+    if (i < 0 || w.state[i] !== ORBITING) continue;
+    for (let b = a + 1; b < n * 2; b++) {
+      const j = b < n ? P[b]! : w.twin[P[b - n]!]!;
+      if (j < 0 || w.state[j] !== ORBITING) continue;
+      const dx = w.x[i] - w.x[j], dy = w.y[i] - w.y[j], rr = (w.radius[i] + w.radius[j]) * 1.15;
+      if (dx * dx + dy * dy >= rr * rr) continue;
+      let da = Math.atan2(Math.sin(w.orbitAngle[i] - w.orbitAngle[j]), Math.cos(w.orbitAngle[i] - w.orbitAngle[j]));
+      if (Math.abs(da) < 1e-4) da = i < j ? 1e-4 : -1e-4;
+      const push = 0.5 * DT * Math.sign(da);
+      w.orbitAngle[i] += push; w.orbitAngle[j] -= push;
+    }
+  }
 }
 
 // Cinemáticas (colapso y fusión): guion fijo. Sólo gira lo que está en órbita; lo demás espera.
@@ -478,6 +504,7 @@ export function step(w: World, intent: Intent): void {
     } else moveOrbiting(w, i, st === ABSORBING, size, hunting && st === ORBITING ? holeR : 0);
   }
 
+  separateOwnPlanets(w);
   stepEncounters(w);
   stepRockImpacts(w);
   if (!hunting) stepStarFlybys(w);
