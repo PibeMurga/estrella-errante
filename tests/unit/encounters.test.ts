@@ -87,15 +87,20 @@ describe('encuentros entre planetas', () => {
     expect(under / n).toBeLessThan(0.42);
   });
 
-  it('un planeta que no se puede capturar, más chico que la estrella, choca pesado contra ella: no la atraviesa ni rebota', () => {
-    const w = createWorld(cfg(), 5, 10);
+  it('un planeta más chico que la estrella que la choca se parte, y sus pedazos se desintegran: nada la atraviesa', () => {
+    const w = createWorld(cfg(), 5, 80);
     const size = starSize(w.star.mass);
     const p = addBody(w, { x: -60, y: 0.5, vx: 9, vy: 0, radius: 3, kind: KIND_ROCKY });
-    let minD = Infinity, maxBack = 0;
-    run(w, 10, () => { minD = Math.min(minD, Math.hypot(w.x[p]! - w.star.x, w.y[p]! - w.star.y)); maxBack = Math.max(maxBack, -(w.vx[p]! - w.star.vx)); });
-    expect(minD).toBeGreaterThanOrEqual((size + 3) * 0.98);
-    expect(maxBack).toBeLessThan(0.5);   // sin rebote
-    expect(w.state[p]).toBe(FREE);
+    let inside = 0;
+    run(w, 14, () => {
+      for (const b of [p, w.twin[p]!]) {
+        if (b < 0 || w.state[b] === DEAD) continue;
+        if (Math.hypot(w.x[b]! - w.star.x, w.y[b]! - w.star.y) < size * 0.8) inside++;
+      }
+    });
+    expect(w.planetBreaks).toBe(1);
+    expect(w.disintegrated).toBeGreaterThan(0);
+    expect(inside).toBe(0);
   });
 
   it('el mapa completo sigue siendo determinista con los encuentros', () => {

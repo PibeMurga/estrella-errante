@@ -1,7 +1,7 @@
 import { DT } from './config';
 import { hitPlanet } from './planetCapture';
-import { breakPlanet } from './tidal';
-import { DEAD, FREE, KIND_GAS, KIND_ICE, KIND_ROCKY, MAX_IMPACTS, starSize, type World } from './world';
+import { breakPlanet, spawnDebris } from './tidal';
+import { DEAD, FREE, KIND_GAS, KIND_ICE, KIND_ROCKY, massGain, MAX_IMPACTS, noteBreak, starSize, type World } from './world';
 
 // Encuentros entre planetas libres. Dos planetas no se atraviesan: el más chico bordea al más grande por fuera,
 // en arco, y sigue con la misma dirección y velocidad que traía (sólo se corre su posición, nunca su velocidad).
@@ -77,6 +77,19 @@ function heavyContact(w: World, big: number, small: number, nx: number, ny: numb
   if (solid(w.kind[small]!) && w.broken[small]! === 0 && jn > 2.5) breakPlanet(w, small, nx, ny, false);
 }
 
+// Se deshace contra la estrella: explosión, polvo y picadillo que tu gravedad puede atrapar; la estrella se queda con
+// parte de su masa. Sus lunas quedan sueltas.
+function disintegrate(w: World, i: number, dx: number, dy: number): void {
+  const d = Math.hypot(dx, dy) || 1, nx = dx / d, ny = dy / d, r = w.radius[i]!;
+  noteBreak(w, i, -ny, nx);
+  mark(w, i, Math.atan2(-ny, -nx), 1.4);
+  spawnDebris(w, w.x[i]!, w.y[i]!, w.star.vx + nx * 2, w.star.vy + ny * 2, r, -ny, nx, Math.min(16, Math.round(4 + r * 2.5)), 0.3, Math.min(w.config.maxCaptureSize, 0.5 + r * 0.25));
+  w.star.mass += massGain(w, i) * 0.5;
+  w.state[i] = DEAD;
+  for (let j = 0; j < w.count; j++) if (w.parent[j] === i && w.state[j] !== DEAD) { w.parent[j] = -1; w.state[j] = FREE; }
+  w.disintegrated++;
+}
+
 function mark(w: World, p: number, ang: number, size: number): void {
   const slot = (w.impactCount % MAX_IMPACTS) * 4;
   w.impacts[slot] = p; w.impacts[slot + 1] = ang; w.impacts[slot + 2] = size; w.impactCount++;
@@ -125,9 +138,17 @@ export function stepStarFlybys(w: World): void {
     const k = w.kind[i]!;
     if (k < KIND_ROCKY || k > KIND_GAS || w.state[i] !== FREE || w.parent[i] !== -1) continue;
     const r = w.radius[i]!;
-    if (r <= Math.max(c.maxCaptureSize, size * 0.5) || r > size || w.broken[i]! > 0) continue;   // los chicos y los partidos entran solos: no esquivan
+    if (r <= c.maxCaptureSize || r > size) continue;
     const dx = w.x[i]! - s.x, dy = w.y[i]! - s.y;
     if (Math.abs(dx) > hw || Math.abs(dy) > hh) continue;
+    // Un pedazo de planeta partido (o uno chico que todavía no podés atrapar) que toca tu estrella se desintegra: explota,
+    // se vuelve polvo y picadillo, y la estrella absorbe parte de su masa. Nada la atraviesa.
+    if ((w.broken[i]! > 0 && w.kind[i] !== KIND_GAS) || (r <= size * 0.5 && w.noCatch[i]! > 0)) {
+      const touch = size + r * 0.6;
+      if (dx * dx + dy * dy < touch * touch) disintegrate(w, i, dx, dy);
+      continue;
+    }
+    if (r <= size * 0.5 || w.broken[i]! > 0) continue;   // los chicos y los partidos gaseosos entran solos
     // Choca pesado contra la estrella: sin rebote ni arco; pierde la velocidad con que se acercaba y se desliza apoyado.
     const D = size + r, d2 = dx * dx + dy * dy;
     if (d2 >= D * D) continue;
@@ -144,9 +165,10 @@ export function stepStarFlybys(w: World): void {
       const dvS = vn * (mp / m), dvP = -vn * (ms / m);   // cambios de velocidad normal de cada uno
       s.vx += nx * dvS; s.vy += ny * dvS;
       w.vx[i] = w.vx[i]! + nx * dvP - (-ny) * vt * 0.4; w.vy[i] = w.vy[i]! + ny * dvP - nx * vt * 0.4;
-      if (-vn > 0.8) {
-        mark(w, i, Math.atan2(-ny, -nx), Math.min(1.6, 0.6 - vn / 4));
-        hitPlanet(w, i, Math.min(4, Math.floor(-vn / 4)));   // embestirlo fuerte lo va partiendo
+      if (-vn > 0.5) {
+        // El impacto contra una estrella es demasiado para un planeta más chico que ella: se parte en el acto.
+        mark(w, i, Math.atan2(-ny, -nx), Math.min(1.6, 0.8 - vn / 4));
+        hitPlanet(w, i, 1e6);
       }
     }
   }
