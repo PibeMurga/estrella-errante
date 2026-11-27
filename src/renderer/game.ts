@@ -5,7 +5,7 @@ import { createSpaceView } from '../render/spaceView';
 import { DEFAULT_CONFIG } from '../sim/config';
 import { FixedStepper } from '../sim/loop';
 import { step } from '../sim/step';
-import { createWorld } from '../sim/world';
+import { createWorld, PHASE_COLLAPSE, PHASE_MERGE } from '../sim/world';
 import { createGameOver } from '../ui/gameOver';
 import { createHud } from '../ui/hud';
 
@@ -35,10 +35,10 @@ if (!view.ok) {
     last = now;
     const steps = stepper.advance(elapsed);
     const intent = input.poll(world.star.x, world.star.y);
-    for (let i = 0; i < steps; i++) { step(world, intent); intent.fire = false; }
+    for (let i = 0; i < steps; i++) { step(world, intent); intent.fire = false; intent.collapse = false; }
     view.update(world, stepper.alpha, now / 1000);
     view.render();
-    hud.setVisible(world.over === 0);
+    hud.setVisible(world.over === 0 && world.phase !== PHASE_COLLAPSE && world.phase !== PHASE_MERGE);
     hud.update(world, view, elapsed, window.innerWidth, window.innerHeight);
     gameOver.update(world, elapsed);
     const next = governor.sample(elapsed * 1000);

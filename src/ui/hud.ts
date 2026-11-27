@@ -1,5 +1,6 @@
-import { MAX_COMETS, type World } from '../sim/world';
-import { STAGES, stageFor, stageProgress } from '../sim/stages';
+import { canCollapse, rivalMass } from '../sim/phase';
+import { MAX_COMETS, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, type World } from '../sim/world';
+import { STAGE_HYPER, STAGES, stageFor, stageProgress } from '../sim/stages';
 import './hud.css';
 
 // Visor de fósforo de la partida. El texto se actualiza a 10 Hz para no tocar el DOM en cada cuadro;
@@ -27,6 +28,8 @@ export function createHud(parent: HTMLElement): Hud {
   root.innerHTML = `
     <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
     <div class="stage"><span class="name"></span> · <span class="pct"></span><div class="seg">${'<i class="o"></i>'.repeat(SEGMENTS)}</div></div>
+    <div class="race"><span class="me">VOS <b class="mv">0000</b></span><div class="bar"><i class="mb"></i><i class="rb"></i></div><span class="rv"><b class="rvv">0000</b> RIVAL</span></div>
+    <div class="note am"></div>
     <div class="clock"><span class="time">00:00</span><br><span class="dim mass">MASA 0000</span></div>
     <div class="bhinfo am">AGUJERO NEGRO<br><span class="bhdist"></span></div>
     <div class="bottom"><span class="sling">HONDA ●</span><span class="am ecl">ECLIPSE ×0</span><span class="worlds">EN ÓRBITA 000</span></div>
@@ -44,6 +47,9 @@ export function createHud(parent: HTMLElement): Hud {
   const logEls = Array.from(root.querySelectorAll<HTMLElement>('.log div'));
   const arrow = q<HTMLElement>('.arrow'), arrowSvg = q<SVGElement>('.arrow svg'), arrowDist = q<HTMLElement>('.adist');
   const brackets = q<HTMLElement>('.brackets');
+  const race = q<HTMLElement>('.race'), mvEl = q<HTMLElement>('.mv'), rvEl = q<HTMLElement>('.rvv');
+  const mb = q<HTMLElement>('.mb'), rb = q<HTMLElement>('.rb'), note = q<HTMLElement>('.note');
+  let lastRace = -1, lastNote = '';
 
   const logText: string[] = [], logAge: number[] = [];
   const scr = { x: 0, y: 0, ahead: true as boolean | undefined }, edge = { x: 0, y: 0 };
@@ -51,7 +57,7 @@ export function createHud(parent: HTMLElement): Hud {
   let shownMode = -1, lastTx = NaN, lastTy = NaN, lastHalf = NaN, lastAng = NaN, visible = true;
   let acc = 1, lastSeg = -1, lastBhDist = Infinity, lastOrbit = 0;
   let lastFlip = false;
-  let seen = { stageUps: 0, eclipses: 0, steals: 0, kills: 0, hits: 0, comets: 0, tidal: 0, crashes: 0 };
+  let seen = { stageUps: 0, eclipses: 0, steals: 0, kills: 0, hits: 0, comets: 0, tidal: 0, crashes: 0, phase: 0 };
 
   const log = (text: string): void => {
     logText.unshift(text); logAge.unshift(0);
@@ -63,7 +69,7 @@ export function createHud(parent: HTMLElement): Hud {
   const hud: Hud = {
     root,
     reset(w) {
-      seen = { stageUps: w.stageUps, eclipses: w.eclipses, steals: w.cometSteals, kills: w.cometKills, hits: w.hits, comets: activeComets(w), tidal: w.tidalBreaks, crashes: w.planetCrashes };
+      seen = { stageUps: w.stageUps, eclipses: w.eclipses, steals: w.cometSteals, kills: w.cometKills, hits: w.hits, comets: activeComets(w), tidal: w.tidalBreaks, crashes: w.planetCrashes, phase: w.phase };
       logText.length = 0; logAge.length = 0;
       lastSeg = -1; acc = 1; lastBhDist = Infinity; lastOrbit = w.orbitingCount;
     },
@@ -120,6 +126,21 @@ export function createHud(parent: HTMLElement): Hud {
       timeEl.textContent = `${pad(secs / 60, 2)}:${pad(secs % 60, 2)}`;
       massEl.textContent = `MASA ${pad(s.mass, 4)}`;
 
+      // La carrera: tu masa contra la del rival (en la caza, tu ventaja).
+      race.style.display = bh.active || w.phase === PHASE_MERGE ? '' : 'none';
+      const me = s.mass, rv = rivalMass(w);
+      const f = Math.round((me / Math.max(1e-6, me + rv)) * 1000) / 10;
+      if (f !== lastRace) { mb.style.width = `${f}%`; rb.style.width = `${100 - f}%`; lastRace = f; }
+      mvEl.textContent = pad(me, 4); rvEl.textContent = pad(rv, 4);
+      let nt = '';
+      if (w.phase === PHASE_HUNT) {
+        const left = Math.max(0, w.config.huntTimeLimit - w.phaseTime);
+        nt = `CAZA · ALCANZALO ANTES DE ${pad(left / 60, 2)}:${pad(left % 60, 2)}`;
+      } else if (canCollapse(w)) nt = 'COLAPSO DISPONIBLE · [ESPACIO]';
+      else if (w.phase === 0 && w.stage >= STAGE_HYPER) nt = 'HIPERGIGANTE · SUPERÁ AL RIVAL PARA COLAPSAR';
+      if (nt !== lastNote) { note.textContent = nt; note.className = nt.startsWith('COLAPSO') ? 'note am blink' : 'note am'; lastNote = nt; }
+      if (w.phase >= PHASE_HUNT) nameEl.textContent = 'AGUJERO NEGRO';
+
       if (bh.active) {
         const d = Math.max(0, Math.hypot(bh.x - s.x, bh.y - s.y) - bh.radius);
         bhInfo.style.display = '';
@@ -143,6 +164,12 @@ export function createHud(parent: HTMLElement): Hud {
       if (w.planetCrashes > seen.crashes) log('CHOQUE DE PLANETAS');
       const ac = activeComets(w);
       if (ac > seen.comets) log('COMETA CAZADOR A LA VISTA');
+      if (w.phase !== seen.phase) {
+        if (w.phase === PHASE_COLLAPSE) log('SUPERNOVA');
+        if (w.phase === PHASE_HUNT) log('NACISTE COMO AGUJERO NEGRO · ALCANZÁ AL RIVAL');
+        if (w.phase === PHASE_MERGE) log('FUSIÓN');
+        seen.phase = w.phase;
+      }
       seen.stageUps = w.stageUps; seen.eclipses = w.eclipses; seen.steals = w.cometSteals;
       lastOrbit = w.orbitingCount;
       seen.kills = w.cometKills; seen.hits = w.hits; seen.tidal = w.tidalBreaks; seen.crashes = w.planetCrashes; seen.comets = ac;

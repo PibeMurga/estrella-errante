@@ -16,6 +16,8 @@ export class InputController {
   private usingGamepad = false;
   private firePending = false;   // clic o gatillo todavía no entregado
   private triggerHeld = false;
+  private collapsePending = false;   // ESPACIO, C o botón Y todavía no entregado
+  private yHeld = false;
 
   constructor(el: HTMLElement, private readonly toWorld: ToWorld, private readonly reach = 40) {
     el.addEventListener('pointermove', (e: PointerEvent) => {
@@ -34,6 +36,10 @@ export class InputController {
       this.hasPointer = true;
       this.firePending = true;
     });
+    // ESPACIO o C: colapsar (sólo hace algo cuando se puede; la simulación lo decide).
+    if (typeof window !== 'undefined') window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === ' ' || e.key === 'c' || e.key === 'C') { this.collapsePending = true; e.preventDefault(); }
+    });
   }
 
   poll(starX: number, starY: number): Intent {
@@ -43,6 +49,12 @@ export class InputController {
     for (let k = 0; k < pads.length; k++) if (pads[k]?.buttons?.[7]?.pressed) trigger = true;
     if (trigger && !this.triggerHeld) this.firePending = true;
     this.triggerHeld = trigger;
+    let y = false;
+    for (let k = 0; k < pads.length; k++) if (pads[k]?.buttons?.[3]?.pressed) y = true;
+    if (y && !this.yHeld) this.collapsePending = true;
+    this.yHeld = y;
+    this.intent.collapse = this.intent.collapse === true || this.collapsePending;
+    this.collapsePending = false;
     this.intent.fire = this.intent.fire === true || this.firePending;
     this.firePending = false;
     // Stick derecho: mira propia de la honda (en el joystick, Y positivo es abajo).
