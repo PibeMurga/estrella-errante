@@ -15,7 +15,10 @@ const canvas = document.getElementById('game') as HTMLCanvasElement;
 // Cada partida, un mapa distinto. Con ?seed=N se repite un mapa (lo usan las pruebas).
 const seedParam = Number(new URLSearchParams(location.search).get('seed'));
 const seed = Number.isFinite(seedParam) && seedParam > 0 ? seedParam : Math.floor(Math.random() * 2 ** 31);
-const world = createWorld(GAME_CONFIG, seed);
+// Con &estrella=1 la partida arranca ya como estrella (lo usan las pruebas que miden el disparo, el visor, etc.).
+const asStar = new URLSearchParams(location.search).get('estrella') === '1';
+const world = createWorld(asStar ? { ...GAME_CONFIG, planetStart: false } : GAME_CONFIG, seed);
+if (asStar) world.star.mass = world.maxMass = 30;   // ya encendida: la enana roja recién nacida
 const view = createSpaceView(canvas, { world, quality: 'high' });
 
 if (!view.ok) {

@@ -4,7 +4,7 @@ async function boot(page: Page): Promise<string[]> {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.goto('/?seed=20261124');
+  await page.goto('/?seed=20261124&estrella=1');
   await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 60, undefined, { timeout: 45_000 });
   return errors;
 }

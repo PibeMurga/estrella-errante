@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('las barras de masa; superar al rival siendo hipergigante colapsa solo', async ({ page }) => {
-  await page.goto('/?seed=20261124');
+  await page.goto('/?seed=20261124&estrella=1');
   await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
   await expect(page.locator('.hud .race')).toBeVisible();
   await page.evaluate(() => { const w = window.__GAME__!.world; w.star.mass = 2000; w.bh.mass = 1; });
@@ -11,7 +11,7 @@ test('las barras de masa; superar al rival siendo hipergigante colapsa solo', as
 test('supernova, caza, fusión y cartel de victoria', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto('/?seed=20261124');
+  await page.goto('/?seed=20261124&estrella=1');
   await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
   await page.evaluate(() => { const w = window.__GAME__!.world; w.star.mass = 2000; w.bh.mass = 1; });
   await page.waitForFunction(() => window.__GAME__!.world.phase === 1, undefined, { timeout: 5_000 });   // colapsa solo
@@ -36,7 +36,7 @@ test('supernova, caza, fusión y cartel de victoria', async ({ page }) => {
 });
 
 test('en la partida normal la capa de cinemática no toca la página en cada cuadro', async ({ page }) => {
-  await page.goto('/?seed=20261124');
+  await page.goto('/?seed=20261124&estrella=1');
   await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
   const writes = await page.evaluate(() => new Promise<number>((resolve) => {
     let n = 0;

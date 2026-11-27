@@ -1,7 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
 
 async function boot(page: Page): Promise<void> {
-  await page.goto('/?seed=20261124');
+  await page.goto('/?seed=20261124&estrella=1');
   await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
 }
 
@@ -24,7 +24,7 @@ test('con el agujero negro fuera de pantalla aparece la flecha en el borde', asy
 
 test('la barra de etapa avanza con la masa', async ({ page }) => {
   await boot(page);
-  await page.evaluate(() => { window.__GAME__!.world.star.mass = 20; });   // la mitad de la primera etapa (umbral 40)
+  await page.evaluate(() => { window.__GAME__!.world.star.mass = 50; });   // la mitad de la enana roja (de 30 a 70)
   await expect(page.locator('.hud .stage .pct')).toHaveText('50%');
   expect(await page.locator('.hud .seg i:not(.o)').count()).toBe(12);
 });

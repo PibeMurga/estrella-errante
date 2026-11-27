@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('al terminar la partida aparece el cartel y el clic arranca una nueva', async ({ page }) => {
-  await page.goto('/?seed=20261124');
+  await page.goto('/?seed=20261124&estrella=1');
   await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
   await page.evaluate(() => window.__GAME__!.forceOver!(1));
   await expect(page.locator('.gameover.on .title')).toHaveText('ESTRELLA TRAGADA', { timeout: 5_000 });
@@ -17,7 +17,7 @@ test('al terminar la partida aparece el cartel y el clic arranca una nueva', asy
 });
 
 test('la tecla R también reinicia', async ({ page }) => {
-  await page.goto('/?seed=20261124');
+  await page.goto('/?seed=20261124&estrella=1');
   await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
   await page.evaluate(() => window.__GAME__!.forceOver!(2));
   await expect(page.locator('.gameover.on .title')).toHaveText('ESTRELLA APAGADA', { timeout: 5_000 });

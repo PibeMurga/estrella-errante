@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('marcas de peligro alrededor de los planetas cercanos, y el visor del sistema', async ({ page }) => {
-  await page.goto('/?seed=20261124');
+  await page.goto('/?seed=20261124&estrella=1');
   await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
   await expect(page.locator('.hud .sys')).toContainText('PLANETAS');
   // Acercar a la estrella un planeta de cada escalón (sin que la toquen).
@@ -19,7 +19,7 @@ test('los planetas partidos conservan el aspecto de su tipo', async ({ page }) =
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.goto('/?seed=20261124');
+  await page.goto('/?seed=20261124&estrella=1');
   await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
   await page.evaluate(() => {
     const w = window.__GAME__!.world; const s = w.star;
@@ -44,7 +44,7 @@ test('los dos pedazos de un planeta partido se ven separados, cada uno por su la
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.goto('/?seed=20261124');
+  await page.goto('/?seed=20261124&estrella=1');
   await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
   await page.evaluate(() => {
     const w = window.__GAME__!.world; const s = w.star;
@@ -71,7 +71,7 @@ test('un asteroide que le pega a un planeta deja una pequeña explosión en el t
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.goto('/?seed=20261124');
+  await page.goto('/?seed=20261124&estrella=1');
   await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
   await page.evaluate(() => {
     const w = window.__GAME__!.world; const s = w.star;
@@ -93,7 +93,7 @@ test('los golpes dejan cráteres en el planeta y, en los que se pueden partir, g
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.goto('/?seed=20261124');
+  await page.goto('/?seed=20261124&estrella=1');
   await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
   await page.evaluate(() => {
     const w = window.__GAME__!.world; const s = w.star;
@@ -116,7 +116,7 @@ test('cada ruptura de un planeta tiene su propia explosión', async ({ page }) =
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.goto('/?seed=20261124');
+  await page.goto('/?seed=20261124&estrella=1');
   await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
   for (let k = 0; k < 4; k++) {
     await page.evaluate((kind) => {
