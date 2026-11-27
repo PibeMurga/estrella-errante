@@ -95,6 +95,7 @@ export interface SimConfig {
   bhDiskDrag: number;            // frenado por el gas del disco (por segundo, en lo más hondo)
   rockHitSpeed: number;          // un asteroide suelto más rápido que esto no se suma a tu órbita: te golpea
   rockHitSize: number;           // ídem si es más grande que esto
+  rockBounceChance: number;      // un asteroide suelto que choca contra un planeta rebota (si no, se deshace)
   rockShatterChance: number;     // probabilidad de que un asteroide lanzado se deshaga al chocar contra un planeta
   rockRestitution: number;       // rebote contra la superficie (0 = se queda pegado, 1 = pelota)
   rockFriction: number;          // velocidad a lo largo de la superficie que conserva al rozarla
@@ -232,7 +233,8 @@ export const DEFAULT_CONFIG: SimConfig = {
   bhDiskDrag: 1.6,
   rockHitSpeed: 6,
   rockHitSize: 1.15,
-  rockShatterChance: 0.45,
+  rockBounceChance: 0.15,
+  rockShatterChance: 0.75,
   rockRestitution: 0.18,
   rockFriction: 0.45,
   slingBrake: 0.2,
