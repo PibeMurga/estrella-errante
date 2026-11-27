@@ -47,7 +47,9 @@ describe('encuentros entre planetas', () => {
     expect(freeDebris(w) - before).toBe(DEFAULT_CONFIG.tidalDebris * 2);
     // Cantidad de movimiento: el sobreviviente sigue con la velocidad combinada.
     const ma = 5.2 ** 3, mb = 5 ** 3;
-    expect(w.vx[a]).toBeCloseTo((10 * mb) / (ma + mb), 5);
+    const t = w.twin[a]!;   // el sobreviviente quedó en dos pedazos: su centro de masa lleva esa velocidad
+    expect((w.vx[a] * w.mass[a] + w.vx[t] * w.mass[t]) / (w.mass[a] + w.mass[t])).toBeCloseTo((10 * mb) / (ma + mb), 4);
+    expect(w.state[w.twin[b]!]).toBe(DEAD);
     expect(w.crashR).toBeCloseTo(10.2, 5);
   });
 

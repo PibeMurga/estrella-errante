@@ -1,4 +1,5 @@
 import type { SimConfig } from './config';
+import { capCentroid, capVolume, cutOffset, halfSeed } from './halves';
 import { createRng, type Rng } from './rng';
 
 export const FREE = 0;
@@ -26,6 +27,7 @@ export const KIND_ROCKY = 1;
 export const KIND_ICE = 2;
 export const KIND_GAS = 3;
 export const KIND_MOON = 4;
+export const MAX_IMPACTS = 16;
 
 export interface Star {
   x: number; y: number; prevX: number; prevY: number;
@@ -88,6 +90,10 @@ export interface World {
   readonly life: Float32Array;     // segundos de vuelo que le quedan a un proyectil
   readonly broken: Float32Array;   // segundos desde que el planeta se partió por marea (0 = entero)
   readonly breakAx: Float32Array; readonly breakAy: Float32Array;   // eje de la ruptura (hacia el agujero negro)
+  readonly twin: Int32Array;       // el otro pedazo de un planeta rocoso o helado (se reserva muerto al crearlo); -1 = no tiene
+  readonly halfSide: Int8Array;    // 0 = entero (o partido sin reserva); 1 = pedazo de arriba del corte; -1 = pedazo de abajo
+  readonly impacts: Float32Array;  // últimos golpes contra planetas: [planeta, ángulo, tamaño, 0] por golpe (anillo de MAX_IMPACTS)
+  impactCount: number;             // golpes contra planetas desde el inicio (el render dibuja los nuevos)
   tidalBreaks: number;             // planetas partidos por marea (evento)
   planetCrashes: number;           // choques entre planetas (evento)
   crashX: number; crashY: number; crashR: number;   // dónde fue el último choque y de qué tamaño (para la explosión)
@@ -144,6 +150,14 @@ export function addBody(w: World, b: BodySpec): number {
   if (b.kind >= KIND_ROCKY && b.kind <= KIND_GAS) {
     const pl = new Int32Array(w.planets.length + 1); pl.set(w.planets); pl[w.planets.length] = i; w.planets = pl;
   }
+  // Un rocoso o helado se puede partir en dos pedazos que se mueven cada uno por su cuenta: el segundo pedazo
+  // se reserva ya, muerto, al lado (no entra en la lista de planetas: el planeta sigue siendo uno).
+  if ((b.kind === KIND_ROCKY || b.kind === KIND_ICE) && w.count < w.capacity) {
+    const j = w.count++;
+    w.x[j] = w.prevX[j] = b.x; w.y[j] = w.prevY[j] = b.y; w.vx[j] = w.vy[j] = 0;
+    w.radius[j] = b.radius; w.mass[j] = 0; w.parent[j] = -1; w.kind[j] = b.kind; w.state[j] = DEAD; w.noCatch[j] = 0;
+    w.twin[i] = j; w.twin[j] = i;
+  }
   return i;
 }
 
@@ -193,7 +207,7 @@ function makeDensity(rng: Rng, hw: number, hh: number): (x: number, y: number) =
 }
 
 export function createWorld(config: SimConfig, seed: number, extraCapacity = 0): World {
-  const capacity = config.asteroidCount + config.planetCount * (1 + MAX_MOONS + MAX_DEBRIS) + config.debrisReserve + extraCapacity;
+  const capacity = config.asteroidCount + config.planetCount * (1 + MAX_MOONS + MAX_DEBRIS) + config.debrisReserve + config.planetCount + extraCapacity;   // + un pedazo de reserva por planeta
   const f = (): Float64Array => new Float64Array(capacity);
   const w: World = {
     config, capacity, tick: 0, count: 0,
@@ -213,7 +227,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
     parent: new Int32Array(capacity).fill(-1),
     state: new Uint8Array(capacity), kind: new Uint8Array(capacity), noCatch: new Float32Array(capacity), life: new Float32Array(capacity),
-    broken: new Float32Array(capacity), breakAx: new Float32Array(capacity), breakAy: new Float32Array(capacity), tidalBreaks: 0, planetCrashes: 0, crashX: 0, crashY: 0, crashR: 0,
+    broken: new Float32Array(capacity), breakAx: new Float32Array(capacity), breakAy: new Float32Array(capacity), twin: new Int32Array(capacity).fill(-1), halfSide: new Int8Array(capacity), impacts: new Float32Array(MAX_IMPACTS * 4), impactCount: 0, tidalBreaks: 0, planetCrashes: 0, crashX: 0, crashY: 0, crashR: 0,
     orbitingCount: 0, stage: 0, stageUps: 0, maxMass: config.starStartMass, absorbed: 0, captured: new Int32Array(capacity), capturedCount: 0,
     planets: new Int32Array(0), planetDmg: new Float32Array(capacity), joinT: new Float32Array(capacity).fill(1e9), planetCaptures: 0, graveHits: 0, planetBreaks: 0, lastStealCount: 0, ability: 0, planetsHeld: 0, abilityUps: 0, abilityDowns: 0,
   };
@@ -269,13 +283,39 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
   // Algunos planetas rocosos o helados ya están partidos (se sortea al final, sin alterar el resto del mapa).
   for (let i = 0; i < w.count; i++) {
     const k = w.kind[i]!;
-    if (k !== KIND_ROCKY && k !== KIND_ICE) continue;
+    if ((k !== KIND_ROCKY && k !== KIND_ICE) || w.state[i] === DEAD || w.halfSide[i] !== 0) continue;   // los pedazos (de reserva o ya separados) no cuentan
     if (rng.next() >= config.preBrokenChance) continue;
     const a = rng.range(0, Math.PI * 2);
     w.broken[i] = 60; w.breakAx[i] = Math.cos(a); w.breakAy[i] = Math.sin(a);
     w.radius[i] *= 0.85; w.mass[i] = w.radius[i] ** 3;
+    splitHalves(w, i, 6);   // partido hace rato: los pedazos ya se separaron un poco
   }
   return w;
+}
+
+// Parte el planeta `i` (ya marcado como partido, con su eje y su tamaño de esfera entera) en dos cuerpos: cada
+// pedazo con su masa y su centro de masa, alejándose del otro por el eje del corte (el chico, más rápido, como en un
+// empujón que conserva el momento). Desde ahí cada uno sigue por su cuenta: deriva, se captura o se pierde solo.
+// `apart` = segundos de separación ya recorridos. Sin pedazo de reserva, queda como un cuerpo (el render lo dibuja igual).
+export function splitHalves(w: World, i: number, apart = 0): void {
+  const j = w.twin[i]!;
+  if (j < 0 || w.state[j] !== DEAD || w.halfSide[i] !== 0) return;
+  const R = w.radius[i], ax = w.breakAx[i]!, ay = w.breakAy[i]!;
+  const h0 = cutOffset(halfSeed(Math.min(i, j)));
+  const vT = capVolume(h0), vB = 1 - vT;
+  const cT = capCentroid(h0) * R, cB = capCentroid(-h0) * R;
+  const S = w.config.halfSplitSpeed;
+  const x = w.x[i], y = w.y[i], vx = w.vx[i], vy = w.vy[i];
+  const uT = S * vB, uB = S * vT;   // velocidades de separación (el momento total se conserva)
+  w.x[i] = w.prevX[i] = x + ax * (cT + uT * apart); w.y[i] = w.prevY[i] = y + ay * (cT + uT * apart);
+  w.x[j] = w.prevX[j] = x - ax * (cB + uB * apart); w.y[j] = w.prevY[j] = y - ay * (cB + uB * apart);
+  w.vx[i] = vx + ax * uT; w.vy[i] = vy + ay * uT;
+  w.vx[j] = vx - ax * uB; w.vy[j] = vy - ay * uB;
+  w.radius[i] = R * Math.cbrt(vT); w.mass[i] = w.radius[i] ** 3;
+  w.radius[j] = R * Math.cbrt(vB); w.mass[j] = w.radius[j] ** 3;
+  w.kind[j] = w.kind[i]!; w.state[j] = w.state[i]!; w.parent[j] = -1; w.noCatch[j] = w.noCatch[i]!;
+  w.broken[j] = w.broken[i]!; w.breakAx[j] = ax; w.breakAy[j] = ay; w.planetDmg[j] = 0; w.joinT[j] = 1e9;
+  w.halfSide[i] = 1; w.halfSide[j] = -1;
 }
 
 // Huella FNV-1a del estado. Sirve sólo para pruebas y depuración (crea objetos).

@@ -81,7 +81,8 @@ export interface SimConfig {
   abilityBoltBonus: number;      // bólido mayor: cuerpos extra en el tope del bólido
   cometStealMin: number;         // cuerpos que roba un cometa por pasada (mínimo y máximo)
   cometStealMax: number;
-  cometPlanetChance: number;     // probabilidad de que, además, se lleve el planeta más chico de tu órbita
+  cometPlanetChance: number;
+  halfSplitSpeed: number;        // velocidad con que se separan los dos pedazos de un planeta partido     // probabilidad de que, además, se lleve el planeta más chico de tu órbita
   planetMassGain: number;        // fracción de la masa de un planeta que suma (o resta) a tu estrella
   bodyMassGain: number;          // fracción de la masa de un asteroide o luna que suma (o resta): la masa crece más lento que el enjambre
   boltPlanetDmg: number;         // daño a un planeta de cada cuerpo de un bólido (un bólido entero parte uno mediano)
@@ -198,6 +199,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   cometStealMin: 3,
   cometStealMax: 5,
   cometPlanetChance: 0.5,
+  halfSplitSpeed: 1.4,
   planetMassGain: 0.03,
   bodyMassGain: 0.75,
   boltPlanetDmg: 3,

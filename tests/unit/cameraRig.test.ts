@@ -86,3 +86,17 @@ describe('CameraRig', () => {
     expect(out).toEqual({ x: 7, y: 9 });
   });
 });
+
+describe('zoom del jugador', () => {
+  it('acerca y aleja un poco, de a poco, sin pasar el tope que esconde la costura del mapa', () => {
+    const rig = new CameraRig();
+    const d0 = rig.distance;
+    rig.nudgeZoom(-10);   // acercar todo lo posible
+    for (let k = 0; k < 300; k++) rig.followMass(1, 1 / 60);
+    expect(rig.distance).toBeLessThan(d0 * 0.8);
+    expect(rig.distance).toBeGreaterThan(d0 * 0.6);
+    rig.nudgeZoom(10);    // alejar todo lo posible
+    for (let k = 0; k < 600; k++) rig.followMass(1e6, 1 / 60);
+    expect(rig.distance).toBeLessThanOrEqual(rig.options.distance * rig.options.maxZoom + 1e-6);
+  });
+});

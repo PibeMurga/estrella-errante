@@ -37,11 +37,22 @@ if (!view.ok) {
     onChange: (on) => { if (!on) input.poll(world.star.x, world.star.y); },   // al retomar se descarta lo apretado durante la pausa
   });
   window.__GAME__ = { diagnostics: view.diagnostics, world, forceOver: (kind: number) => { world.over = kind; } };
+  // Zoom: la rueda del mouse acerca o aleja un poco la cámara; en el mando, LB acerca y RB aleja (mantenidos).
+  canvas.addEventListener('wheel', (e) => { e.preventDefault(); if (!pause.paused) view.rig.nudgeZoom(Math.sign(e.deltaY)); }, { passive: false });
+  const pollZoomPad = (dt: number): void => {
+    if (!navigator.getGamepads) return;
+    for (const p of navigator.getGamepads()) {
+      if (!p) continue;
+      if (p.buttons[4]?.pressed) view.rig.nudgeZoom(-dt * 6);
+      if (p.buttons[5]?.pressed) view.rig.nudgeZoom(dt * 6);
+    }
+  };
   let last = performance.now();
   const frame = (now: number): void => {
     const elapsed = (now - last) / 1000;
     last = now;
     pause.pollPad(canPause());
+    if (!pause.paused) pollZoomPad(elapsed);
     const steps = pause.paused ? 0 : stepper.advance(elapsed);
     // El control se lee sólo en los cuadros que avanzan la simulación: así un clic muy corto no se pierde
     // en un cuadro sin pasos (a más de 60 cuadros por segundo los hay).

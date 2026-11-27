@@ -11,6 +11,7 @@ import { createBoltLayer } from './fx/bolt';
 import { createCometsLayer } from './fx/comets';
 import { createDangerMarksLayer, type DangerMarksLayer } from './fx/dangerMarks';
 import { createImpactLayer } from './fx/impact';
+import { createHitSparksLayer } from './fx/hitSparks';
 import type { Layer } from './layer';
 import type { Pipeline } from './pipeline';
 import type { QualitySettings } from './quality';
@@ -36,6 +37,7 @@ export function buildLayers(deps: LayerDeps): BuiltLayers {
       createBoltLayer(),
       createCometsLayer(),
       createImpactLayer(),
+      createHitSparksLayer(),
       marks,
     ],
     planetTypes: planets.typesShown,

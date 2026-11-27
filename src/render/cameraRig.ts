@@ -19,7 +19,8 @@ export class CameraRig {
   readonly up: V3 = { x: 0, y: 1, z: 0 };
   aspect = 16 / 9;
   private opts: CameraRigOptions;
-  private zoom = 1;   // multiplica la distancia: crece con la masa de la estrella
+  private zoom = 1;   // multiplica la distancia: crece con la masa de la estrella (y con el zoom del jugador)
+  private userWant = 1;   // zoom pedido por el jugador (rueda del mouse o LB/RB): de 0,7 (cerca) a 1,3 (lejos)
 
   constructor(opts: Partial<CameraRigOptions> = {}) {
     this.opts = { ...DEFAULT_RIG, ...opts };
@@ -34,9 +35,15 @@ export class CameraRig {
   // Se aleja de a poco cuando la estrella crece, para que se sienta la escala.
   followMass(mass: number, dt: number): void {
     if (!Number.isFinite(mass) || !(dt > 0)) return;
-    const want = Math.min(this.opts.maxZoom, 1 + 0.06 * (Math.sqrt(Math.max(mass, 1)) - 1));
-    this.zoom += (want - this.zoom) * (1 - Math.exp(-0.6 * dt));
+    const want = Math.min(this.opts.maxZoom, (1 + 0.06 * (Math.sqrt(Math.max(mass, 1)) - 1)) * this.userWant);
+    this.zoom += (want - this.zoom) * (1 - Math.exp(-2.5 * dt));
     this.recompute();
+  }
+
+  // El jugador acerca (pasos negativos) o aleja (positivos) un poco la cámara. Cada paso, un 8 %.
+  nudgeZoom(steps: number): void {
+    if (!Number.isFinite(steps)) return;
+    this.userWant = Math.min(1.3, Math.max(0.7, this.userWant * Math.pow(1.08, steps)));
   }
 
   setOptions(opts: Partial<CameraRigOptions>): void {

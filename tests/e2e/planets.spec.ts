@@ -39,3 +39,52 @@ test('los planetas partidos conservan el aspecto de su tipo', async ({ page }) =
   await page.screenshot({ path: 'artifacts/e2e/planetas-partidos.png' });
   expect(errors).toEqual([]);
 });
+
+test('los dos pedazos de un planeta partido se ven separados, cada uno por su lado', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  await page.goto('/?seed=20261124');
+  await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
+  await page.evaluate(() => {
+    const w = window.__GAME__!.world; const s = w.star;
+    let n = 0;
+    for (let q = 0; q < w.planets.length && n < 3; q++) {
+      const p = w.planets[q]!, t = w.twin[p]!;
+      if ((w.kind[p] !== 1 && w.kind[p] !== 2) || t < 0) continue;
+      const a = n * 2.1, cx = s.x + Math.cos(a) * 26, cy = s.y + Math.sin(a) * 26;
+      // Como lo deja la simulación al partirlo: dos cuerpos con medio volumen cada uno, separados por el eje.
+      for (const [b, sd] of [[p, 1], [t, -1]] as const) {
+        w.state[b] = 0; w.parent[b] = -1; w.halfSide[b] = sd; w.broken[b] = 20; w.breakAx[b] = 1; w.breakAy[b] = 0.2;
+        w.x[b] = w.prevX[b] = cx + sd * 3.5; w.y[b] = w.prevY[b] = cy + sd * 0.7; w.vx[b] = 0; w.vy[b] = 0;
+        w.radius[b] = 3.2; w.mass[b] = 3.2 ** 3;
+      }
+      n++;
+    }
+  });
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: 'artifacts/e2e/pedazos-sueltos.png' });
+  expect(errors).toEqual([]);
+});
+
+test('un asteroide que le pega a un planeta deja una pequeña explosión en el terreno', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  await page.goto('/?seed=20261124');
+  await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
+  await page.evaluate(() => {
+    const w = window.__GAME__!.world; const s = w.star;
+    const p = w.planets[0]!;
+    w.x[p] = w.prevX[p] = s.x + 26; w.y[p] = w.prevY[p] = s.y; w.vx[p] = w.vy[p] = 0;
+    // Dos golpes: uno de honda y uno de bólido, en dos puntos del terreno.
+    const put = (k: number, ang: number, sz: number): void => { w.impacts[k * 4] = p; w.impacts[k * 4 + 1] = ang; w.impacts[k * 4 + 2] = sz; };
+    put(w.impactCount % 16, Math.PI, 0.45); put((w.impactCount + 1) % 16, 2.2, 1);
+    w.impactCount += 2;
+  });
+  for (const ms of [60, 250, 600]) {
+    await page.waitForTimeout(ms === 60 ? 60 : ms === 250 ? 190 : 350);
+    await page.screenshot({ path: `artifacts/e2e/impacto-terreno-${ms}.png`, clip: { x: 640, y: 220, width: 320, height: 280 } });
+  }
+  expect(errors).toEqual([]);
+});

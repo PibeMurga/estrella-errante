@@ -50,8 +50,10 @@ export function createDangerMarksLayer(world: World): DangerMarksLayer {
       const sx = ctx.starX, sy = ctx.starY, k = Math.min(1, ctx.dt * 4);
       let used = 0;
       shown = 0;
-      for (let q = 0; q < w.planets.length; q++) {
-        const p = w.planets[q]!;
+      const P = w.planets;
+      for (let q = 0; q < P.length * 2; q++) {
+        const p = q < P.length ? P[q]! : w.twin[P[q - P.length]!]!;   // también el segundo pedazo de un partido
+        if (p < 0) continue;
         const x = w.prevX[p] + (w.x[p] - w.prevX[p]) * a, y = w.prevY[p] + (w.y[p] - w.prevY[p]) * a;
         const r = w.radius[p];
         let want = 0;

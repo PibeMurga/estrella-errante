@@ -90,7 +90,8 @@ describe('partir planetas a golpes', () => {
     expect(w.planetBreaks).toBe(1);
     expect(w.broken[p]).toBeGreaterThan(0);
     // Es el mismo planeta, colapsado y partido: casi del mismo tamaño (no un pedacito).
-    expect(w.radius[p]).toBeGreaterThan(E * 0.8 * 0.8);
+    // (ahora en dos pedazos, cada uno un cuerpo: juntos, casi toda la esfera)
+    expect(Math.cbrt(w.mass[p] + w.mass[w.twin[p]!])).toBeGreaterThan(E * 0.8 * 0.8);
     expect(hitPlanet(w, p, 1000)).toBe(false);   // ya partido: no se vuelve a partir
   });
   it('a los que dañan no se los puede partir', () => {

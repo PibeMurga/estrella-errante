@@ -41,6 +41,7 @@ function crash(w: World, big: number, small: number, nx: number, ny: number): vo
   w.vx[small] = vx; w.vy[small] = vy;
   breakPlanet(w, small, nx, ny, false);
   w.state[small] = DEAD;
+  if (w.twin[small]! >= 0) w.state[w.twin[small]!] = DEAD;   // sus dos pedazos
   w.vx[big] = vx; w.vy[big] = vy;
   breakPlanet(w, big, nx, ny, false);
 }

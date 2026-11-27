@@ -7,7 +7,11 @@ export const ABILITY_NAMES: readonly string[] = ['', 'GRAVEDAD AMPLIADA', 'ESCUD
 
 export function planetsInOrbit(w: World): number {
   let n = 0;
-  for (let k = 0; k < w.planets.length; k++) { const p = w.planets[k]!; if (w.state[p] === ORBITING && isPlanetKind(w.kind[p]!)) n++; }
+  // Un planeta partido cuenta una vez: alcanza con tener uno de sus dos pedazos.
+  for (let k = 0; k < w.planets.length; k++) {
+    const p = w.planets[k]!, t = w.twin[p]!;
+    if (isPlanetKind(w.kind[p]!) && (w.state[p] === ORBITING || (t >= 0 && w.halfSide[p] !== 0 && w.state[t] === ORBITING))) n++;
+  }
   return n;
 }
 

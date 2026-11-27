@@ -24,17 +24,18 @@ const SUN_FRAG = /* glsl */ `uniform float uTime; uniform float uIntensity; unif
 void main(){
   vec3 p = normalize(vO); float t = uTime;
   float mu = clamp(dot(normalize(vN), normalize(vV)), 0., 1.);
-  vec3 q = p*22. + vec3(0., t*.18, t*.11) + .35*vec3(snoise(p*6.+t*.2), snoise(p*6.+9.+t*.2), snoise(p*6.+17.+t*.2));
+  // El plasma hierve: la granulación se deforma y fluye (dos capas de ruido que se mueven a ritmos distintos).
+  vec3 q = p*22. + vec3(0., t*.3, t*.2) + .45*vec3(snoise(p*6.+t*.42), snoise(p*6.+9.+t*.38), snoise(p*6.+17.+t*.45)) + .18*vec3(snoise(p*14.-t*.6), snoise(p*14.+5.-t*.55), 0.);
   float c = worley(q); float gran = 1. - smoothstep(.05, .85, c);
-  float fine = fbm(p*60. + t*.3, 3)*.5+.5;
-  float sg = fbm(p*3.2 + vec3(t*.01), 5)*.5+.5;
-  // Manchas y fáculas: giran muy despacio con la estrella (más rápido en el ecuador, como el Sol) y cambian de forma de a poco.
-  float wr = t*.012*(1. - .25*p.y*p.y);
+  float fine = fbm(p*60. + vec3(t*.7, -t*.5, t*.4), 3)*.5+.5;
+  float sg = fbm(p*3.2 + vec3(t*.05, t*.03, -t*.04), 5)*.5+.5;   // supergranos que respiran
+  // Manchas y fáculas: giran despacio con la estrella (más rápido en el ecuador, como el Sol) y cambian de forma de a poco.
+  float wr = t*.035*(1. - .25*p.y*p.y);
   vec3 pr = vec3(p.x*cos(wr) - p.z*sin(wr), p.y, p.x*sin(wr) + p.z*cos(wr));
-  float sp = fbm(pr*2.6 + 11.3 + vec3(0., 0., t*.003), 5)*.5+.5;
+  float sp = fbm(pr*2.6 + 11.3 + vec3(0., t*.006, t*.018), 5)*.5+.5;
   float spot = smoothstep(.73, .78, sp);
   float pen = smoothstep(.69, .74, sp);
-  float fac = smoothstep(.62, .8, fbm(pr*9. + 3.1 + vec3(t*.006), 4)*.5+.5) * (1. - mu);
+  float fac = smoothstep(.62, .8, fbm(pr*9. + 3.1 + vec3(t*.03), 4)*.5+.5) * (1. - mu);
   vec3 hot = uHot, mid = uMid, cool = uCool;
   vec3 col = mix(mid, hot, gran*.75 + fine*.15);
   col *= .82 + .3*sg;

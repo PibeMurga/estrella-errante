@@ -2,6 +2,7 @@ import { Color, DoubleSide, Frustum, Group, InstancedBufferAttribute, InstancedM
 import { DEAD, KIND_ICE, KIND_ROCKY, type World } from '../../sim/world';
 import type { Layer } from '../layer';
 import { NOISE_GLSL } from '../shaders/noise';
+import { capCentroid, capVolume, cutOffset, halfSeed } from '../../sim/halves';
 import { planetVisualFor, VISUALS } from './planets';
 
 // Planetas partidos: dos pedazos de corteza, no necesariamente iguales (el corte cae en cualquier altura),
@@ -65,6 +66,7 @@ void main(){
 
 const LIGHT_BASE = new Vector3(1.25, 1.02, 0.8);
 const m4 = new Matrix4();
+const ZERO = new Matrix4().makeScale(0, 0, 0);
 const qAlign = new Quaternion();
 const qSpin = new Quaternion();
 const q = new Quaternion();
@@ -89,20 +91,7 @@ const smooth = (a: number, b: number, x: number): number => { const t = Math.min
 export function halfSeparation(t: number): number {
   return 0.45 * smooth(0, 2.5, t) + 1.4 * (1 - Math.exp(-t / 300));
 }
-// Altura del corte sobre el eje (−0,45 a 0,45 radios): pedazos de distinto tamaño. Igual que en el shader.
-export function cutOffset(seed: number): number {
-  const v = seed * 97 * 0.371;
-  return (v - Math.floor(v) - 0.5) * 0.9;
-}
-// Fracción del volumen del planeta que queda del lado alto de un corte a altura h.
-export function capVolume(h: number): number {
-  const H = 1 - h;
-  return (H * H * (3 - H)) / 4;
-}
-// Distancia del centro de masa de ese pedazo al centro de la esfera.
-export function capCentroid(h: number): number {
-  return (3 * (1 + h) * (1 + h)) / (4 * (2 + h));
-}
+export { capCentroid, capVolume, cutOffset } from '../../sim/halves';
 // Vuelco de cada mitad (radianes): cada una gira despacio sobre su propio centro de masa, en sentidos opuestos,
 // y con el tiempo deja ver la cara del corte. Arranca suave y no se detiene.
 export function halfTumble(t: number, rate: number): number {
@@ -128,8 +117,10 @@ export function createBrokenPlanetsLayer(world: World, sunPos: Vector3): Layer {
   geo.setAttribute('aA', attrA); geo.setAttribute('aB', attrB); geo.setAttribute('aC', attrC);
   const palette = new Float32Array(world.capacity * 9);   // A, B y C de cada planeta, armados una sola vez
   const tmpC = new Color();
+  // Cada pedazo de reserva (el segundo de un partido) usa el aspecto del planeta del que salió.
+  const srcOf = (i: number): number => { const t = world.twin[i]!; return t >= 0 && t < i ? t : i; };
   for (let s = 0; s < idx.length; s++) {
-    const i = idx[s]!, v = VISUALS[planetVisualFor(world.kind[i]!, i)]!;
+    const i = idx[s]!, v = VISUALS[planetVisualFor(world.kind[i]!, srcOf(i))]!;
     const hexes = [v.A, v.B ?? v.A, v.C ?? v.B ?? v.A];
     for (let h = 0; h < 3; h++) { tmpC.set(hexes[h]!); palette[i * 9 + h * 3] = tmpC.r; palette[i * 9 + h * 3 + 1] = tmpC.g; palette[i * 9 + h * 3 + 2] = tmpC.b; }
   }
@@ -165,38 +156,45 @@ export function createBrokenPlanetsLayer(world: World, sunPos: Vector3): Layer {
         if (t <= 0 || w.state[i] === DEAD) continue;
         const x = w.prevX[i] + (w.x[i] - w.prevX[i]) * a;
         const y = w.prevY[i] + (w.y[i] - w.prevY[i]) * a;
-        const r = w.radius[i];
+        const src = srcOf(i), side = w.halfSide[i]!;
+        const seed = halfSeed(src), h0 = cutOffset(seed);
+        // Un pedazo suelto es un cuerpo con su radio de volumen: el dibujo usa el radio de la esfera entera.
+        const r = side === 0 ? w.radius[i] : w.radius[i] / Math.cbrt(capVolume(side * h0));
         pos.set(x, 0, -y);
         bound.center.copy(pos); bound.radius = r * 4.2;
         if (!frustum.intersectsSphere(bound)) continue;
         dir.set(w.breakAx[i]!, 0, -w.breakAy[i]!).normalize();
         qAlign.setFromUnitVectors(yAxis, dir);
-        qSpin.setFromAxisAngle(yAxis, ctx.time * 0.05 + i);
+        qSpin.setFromAxisAngle(yAxis, ctx.time * 0.05 + src);
         q.multiplyQuaternions(qAlign, qSpin);
         const sep = halfSeparation(t) * r, heat = breakHeat(t);   // sep: lo que se aleja cada pedazo si fueran iguales
-        const seed = (i * 0.6180339) % 1;
         for (let h = 0; h < 3; h++) { colA[k * 3 + h] = palette[i * 9 + h]!; colB[k * 3 + h] = palette[i * 9 + 3 + h]!; colC[k * 3 + h] = palette[i * 9 + 6 + h]!; }
         col.setRGB(seed, heat, w.kind[i] === KIND_ICE ? 1 : 0);
         scl.setScalar(r);
         // Cada pedazo vuelca sobre su centro de masa. El chico se aleja y gira más que el grande
         // (se reparten el empujón según su masa), y el centro de masa del conjunto queda quieto.
-        const h0 = cutOffset(seed);
-        const rate = 0.006 + 0.009 * ((i * 0.7548776) % 1);
+        const rate = 0.006 + 0.009 * ((src * 0.7548776) % 1);
         for (let h = 0; h < 2; h++) {
           const sd = h === 0 ? 1 : -1;
+          if (side !== 0 && sd !== side) { (h === 0 ? top : bottom).setMatrixAt(k, ZERO); continue; }   // pedazo suelto: sólo el suyo
           const hh = sd * h0;                       // altura del corte vista desde este pedazo
           const mine = capVolume(hh), cen = capCentroid(hh);
           const push = sep * 2 * (1 - mine);
           qTumble.setFromAxisAngle(xAxis, sd * halfTumble(t, rate * Math.sqrt(0.5 / Math.max(mine, 0.1))));
           qHalf.multiplyQuaternions(q, qTumble);
           off.set(0, sd * cen * r, 0).applyQuaternion(qHalf);
-          half.copy(pos).addScaledVector(dir, sd * (push + cen * r)).sub(off);
+          // Pedazo suelto: su posición ya es su centro de masa. Si no, los dos salen del centro de la esfera.
+          if (side !== 0) half.copy(pos).sub(off);
+          else half.copy(pos).addScaledVector(dir, sd * (push + cen * r)).sub(off);
           m4.compose(half, qHalf, scl);
           const m = h === 0 ? top : bottom;
           m.setMatrixAt(k, m4); m.setColorAt(k, col);
         }
         // El núcleo al rojo sólo se ve mientras las mitades están juntas: se encoge y se apaga en el primer medio minuto.
-        scl.setScalar(r * 0.3 * Math.exp(-t / 12));
+        // Con los pedazos sueltos, el núcleo queda entre los dos (lo dibuja el de arriba).
+        const tw = w.twin[i]!;
+        if (side === 1 && tw >= 0) pos.set((x + w.prevX[tw] + (w.x[tw] - w.prevX[tw]) * a) / 2, 0, -(y + w.prevY[tw] + (w.y[tw] - w.prevY[tw]) * a) / 2);
+        scl.setScalar(side === -1 ? 0 : r * 0.3 * Math.exp(-t / 12));
         m4.compose(pos, q, scl); core.setMatrixAt(k, m4);
         core.setColorAt(k, col.setRGB(2.2 * heat, 0.7 * heat, 0.15 * heat));
         k++;

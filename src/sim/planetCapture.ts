@@ -1,7 +1,7 @@
 import { returnGathered } from './launch';
 import { STAGES, stageFor } from './stages';
 import { breakPlanet, spawnDebris } from './tidal';
-import { BOLT, FREE, KIND_GAS, KIND_ROCKY, OVER_DIMMED, PROJECTILE, RETURNING, starSize, type World } from './world';
+import { BOLT, FREE, KIND_GAS, KIND_ROCKY, MAX_IMPACTS, OVER_DIMMED, PROJECTILE, RETURNING, starSize, type World } from './world';
 
 // Escalones de los planetas según su tamaño comparado con el de tu estrella (E):
 // hasta la mitad entran solos; hasta E hay que partirlos; hasta 1,5·E dañan; más grandes, golpe grave.
@@ -68,12 +68,15 @@ export function stepPlanetHits(w: World): void {
   for (let i = 0; i < w.count; i++) {
     const st = w.state[i];
     if (st !== PROJECTILE && st !== BOLT) continue;
-    for (let k = 0; k < P.length; k++) {
-      const p = P[k]!;
-      if (w.state[p] !== FREE) continue;
+    for (let k = 0; k < P.length * 2; k++) {
+      const p = k < P.length ? P[k]! : w.twin[P[k - P.length]!]!;   // también el segundo pedazo de un partido
+      if (p < 0 || w.state[p] !== FREE) continue;
       const r = w.radius[p] + w.radius[i];
       const dx = w.x[i] - w.x[p], dy = w.y[i] - w.y[p];
       if (dx * dx + dy * dy >= r * r) continue;
+      // El golpe queda marcado en el terreno: el render dibuja una pequeña explosión ahí.
+      const slot = (w.impactCount % MAX_IMPACTS) * 4;
+      w.impacts[slot] = p; w.impacts[slot + 1] = Math.atan2(dy, dx); w.impacts[slot + 2] = st === BOLT ? 1 : 0.45; w.impactCount++;
       if (st === PROJECTILE) w.state[i] = RETURNING;
       else { w.state[i] = FREE; w.vx[i] *= 0.2; w.vy[i] *= 0.2; w.noCatch[i] = c.boltNoCatch; }
       hitPlanet(w, p, st === BOLT ? c.boltPlanetDmg * (w.ability >= 3 ? 1.5 : 1) : 1);   // un bólido entero parte uno mediano

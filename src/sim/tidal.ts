@@ -1,4 +1,4 @@
-import { DEAD, FREE, KIND_ASTEROID, type World } from './world';
+import { DEAD, FREE, KIND_ASTEROID, splitHalves, type World } from './world';
 
 // Escombros de un planeta que se parte: se reviven asteroides de la reserva (cuerpos DEAD de tipo asteroide)
 // en dos chorros a lo largo del eje (ax, ay), con la velocidad del planeta (vx, vy) más un empujón.
@@ -26,7 +26,7 @@ export function spawnDebris(w: World, x: number, y: number, vx: number, vy: numb
 
 // Ruptura por marea: el planeta `i` se parte en el eje (ax, ay), que apunta al agujero negro.
 // Suelta escombros en dos chorros, uno hacia el agujero y otro hacia afuera (la corriente de marea),
-// y queda más chico, partido en dos mitades que se separan de a poco (eso lo dibuja el render).
+// y queda más chico, partido en dos pedazos (dos cuerpos) que se separan y siguen cada uno por su cuenta.
 // También lo usan el choque entre planetas y los golpes de la estrella (tidal = false: no cuenta como marea).
 export function breakPlanet(w: World, i: number, ax: number, ay: number, tidal = true): void {
   const c = w.config;
@@ -37,4 +37,5 @@ export function breakPlanet(w: World, i: number, ax: number, ay: number, tidal =
   spawnDebris(w, w.x[i], w.y[i], w.vx[i], w.vy[i], R, ax, ay, c.tidalDebris);
   w.radius[i] = R * 0.85;
   w.mass[i] = w.radius[i] ** 3;
+  splitHalves(w, i);   // dos pedazos que siguen cada uno por su cuenta
 }
