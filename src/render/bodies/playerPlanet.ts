@@ -3,7 +3,7 @@ import { OVER_SWALLOWED, PHASE_IGNITION, starSize, type World } from '../../sim/
 import { toWorld } from '../cameraRig';
 import type { Layer } from '../layer';
 import { sceneLight } from '../lighting';
-import { playerLook } from '../playerLook';
+import { GAS_TYPES, playerLook } from '../playerLook';
 import { NOISE_GLSL } from '../shaders/noise';
 import { smoothToward } from '../smooth';
 
@@ -16,7 +16,7 @@ const VERT = /* glsl */ `varying vec3 vN; varying vec3 vO; varying vec3 vP; vary
 void main(){ vO = position; vec4 w = modelMatrix*vec4(position,1.); vP = w.xyz; vN = normalize(mat3(modelMatrix)*normal); vV = normalize(cameraPosition - w.xyz); gl_Position = projectionMatrix*viewMatrix*w; }`;
 
 const FRAG = /* glsl */ `uniform float uTime; uniform vec3 uSunPos; uniform vec3 uLight; uniform vec3 uA; uniform vec3 uB; uniform vec3 uC;
-uniform float uHeat; uniform float uCore; uniform float uFade; uniform float uSeed;
+uniform float uHeat; uniform float uGlow; uniform float uCore; uniform float uFade; uniform float uSeed;
 varying vec3 vN; varying vec3 vO; varying vec3 vP; varying vec3 vV;
 void main(){
   vec3 p = normalize(vO), n = normalize(vN);
@@ -35,6 +35,8 @@ void main(){
   vec3 col = alb * uLight * lit + alb * .006;
   // Atmósfera en el borde, del lado iluminado.
   col += uA * pow(1. - mu, 3.) * (.15 + .85*max(ndl + .2, 0.)) * .35 * uLight;
+  // Gigantes calientes (magenta, brasa): brillan un poco por su propio calor, más en las bandas.
+  col += vec3(.55, .1, .05) * uGlow * (.25 + .75*(band*.5+.5)) * (.5 + .5*turb) * .5;
   // Enana marrón: las bandas se calientan; brillo propio rojo oscuro que no depende de la luz de afuera.
   // Una enana marrón real es oscura: rojo apagado, tirando a magenta, con bandas un poco más vivas.
   vec3 ember = vec3(.42, .07, .09) * (.3 + .7*(band*.5+.5)) * (.5 + .5*turb) * (.4 + .6*pow(mu, .7));
@@ -44,23 +46,19 @@ void main(){
   gl_FragColor = vec4(col * uFade, 1.);
 }`;
 
-const PALETTES: readonly (readonly [string, string, string])[] = [
-  ['#c39a6b', '#eadbc0', '#8f5f3e'],   // ocre, como Júpiter
-  ['#d6c296', '#f2e8cc', '#b0925c'],   // crema, como Saturno
-  ['#3f68b4', '#86aee4', '#26407c'],   // azul, como Neptuno
-];
+
 
 const smooth01 = (x: number): number => { const t = Math.min(1, Math.max(0, x)); return t * t * (3 - 2 * t); };
 
 export function createPlayerPlanetLayer(sunPos: Vector3): Layer {
   let shownType = playerLook.planetType;
-  const pal = PALETTES[shownType % PALETTES.length]!;
+  const pal = GAS_TYPES[shownType % GAS_TYPES.length]!.colors;
   const light = new Vector3();
   const mat = new ShaderMaterial({
     uniforms: {
       uTime: { value: 0 }, uSunPos: { value: sunPos }, uLight: { value: light },
       uA: { value: new Color(pal[0]) }, uB: { value: new Color(pal[1]) }, uC: { value: new Color(pal[2]) },
-      uHeat: { value: 0 }, uCore: { value: 0 }, uFade: { value: 1 }, uSeed: { value: 3.7 },
+      uHeat: { value: 0 }, uGlow: { value: GAS_TYPES[shownType % GAS_TYPES.length]!.glow }, uCore: { value: 0 }, uFade: { value: 1 }, uSeed: { value: 3.7 },
     },
     vertexShader: VERT, fragmentShader: NOISE_GLSL + FRAG,
   });
@@ -87,7 +85,8 @@ export function createPlayerPlanetLayer(sunPos: Vector3): Layer {
       const u = mat.uniforms;
       if (playerLook.planetType !== shownType) {   // lo eligió en la pantalla del nombre
         shownType = playerLook.planetType;
-        const p = PALETTES[shownType % PALETTES.length]!;
+        const p = GAS_TYPES[shownType % GAS_TYPES.length]!.colors;
+        u['uGlow']!.value = GAS_TYPES[shownType % GAS_TYPES.length]!.glow;
         (u['uA']!.value as Color).set(p[0]); (u['uB']!.value as Color).set(p[1]); (u['uC']!.value as Color).set(p[2]);
       }
       u['uTime']!.value = ctx.time;

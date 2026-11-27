@@ -18,7 +18,11 @@
 .namescreen button { font: inherit; font-size: 12px; letter-spacing: 3px; color: #7af5c9; background: transparent; border: 1px solid #7af5c977; padding: 8px 16px; cursor: pointer; }
 .namescreen button:hover { background: #7af5c91a; }
 .namescreen .keys { margin-top: 18px; font-size: 11px; opacity: .6; }
-.namescreen .types { margin-top: 18px; display: flex; gap: 14px; justify-content: center; }
-.namescreen .type { display: inline-flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 14px 8px; opacity: .5; }
-.namescreen .type canvas { width: 72px; height: 72px; }
-.namescreen .type.on { opacity: 1; border-color: #7af5c9; box-shadow: 0 0 10px #7af5c955; }
+/* Carrusel de planetas: el elegido al centro, los vecinos a los costados. */
+.namescreen .carousel { position: relative; margin: 22px auto 4px; height: 130px; width: 420px; display: flex; align-items: center; justify-content: space-between; }
+.namescreen .ring { position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; }
+.namescreen .pl { position: absolute; left: 0; top: 0; width: 120px; height: 120px; cursor: pointer; transition: transform .35s ease, opacity .35s ease; }
+.namescreen .nav { position: relative; z-index: 20; border: none; font-size: 28px; padding: 4px 10px; opacity: .7; }
+.namescreen .nav:hover { opacity: 1; background: transparent; }
+.namescreen .tname { font-size: 14px; letter-spacing: 6px; }
+.namescreen .tnote { margin-top: 4px; font-size: 10px; letter-spacing: 3px; opacity: .6; }

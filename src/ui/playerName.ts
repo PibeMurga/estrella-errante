@@ -1,4 +1,6 @@
 // Nombre del cuerpo del jugador: lo elige al empezar y lo acompaña de planeta a agujero negro. Se guarda en el equipo.
+import { GAS_TYPES } from '../render/playerLook';
+
 const KEY = 'magnar.nombre';
 export const NAME_MAX = 16;
 
@@ -25,11 +27,10 @@ export function setPlayerName(name: string): string {
   return n;
 }
 
-// Tipo de gaseoso con el que arrancás: 0 ocre (como Júpiter), 1 crema (como Saturno), 2 azul (como Neptuno).
+// Tipo de gaseoso con el que arrancás (índice en GAS_TYPES).
 const TYPE_KEY = 'magnar.tipo';
-export const PLANET_TYPES = ['OCRE', 'CREMA', 'AZUL'] as const;
 export function savedPlanetType(): number {
-  try { const v = Number(localStorage.getItem(TYPE_KEY)); return Number.isInteger(v) && v >= 0 && v < 3 ? v : 0; } catch { return 0; }
+  try { const v = Number(localStorage.getItem(TYPE_KEY)); return Number.isInteger(v) && v >= 0 && v < GAS_TYPES.length ? v : 0; } catch { return 0; }
 }
 export function setPlanetType(t: number): void {
   try { localStorage.setItem(TYPE_KEY, String(t)); } catch { /* sin almacenamiento */ }

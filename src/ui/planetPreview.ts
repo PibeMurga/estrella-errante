@@ -2,7 +2,7 @@
 // lado de noche y un borde de atmósfera. Dibujado en un lienzo 2D (sin otra escena 3D), con los colores del tipo.
 const hex = (h: string): [number, number, number] => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 
-export function drawPlanetPreview(canvas: HTMLCanvasElement, colors: readonly [string, string, string], t: number, seed: number): void {
+export function drawPlanetPreview(canvas: HTMLCanvasElement, colors: readonly [string, string, string], t: number, seed: number, glow = 0): void {
   const g = canvas.getContext('2d');
   if (!g) return;
   const W = canvas.width, R = W / 2 - 2, img = g.createImageData(W, W), d = img.data;
@@ -23,15 +23,11 @@ export function drawPlanetPreview(canvas: HTMLCanvasElement, colors: readonly [s
       rr += (C[0] - rr) * storm * 0.7; gg += (C[1] - gg) * storm * 0.7; bb += (C[2] - bb) * storm * 0.7;
       const ndl = Math.max(0, x * lx + y * ly + z * lz), lit = 0.06 + 1.05 * Math.pow(ndl, 0.8);
       const rim = Math.pow(1 - z, 3) * 0.6 * (0.3 + ndl);
-      d[o] = Math.min(255, rr * lit + A[0] * rim); d[o + 1] = Math.min(255, gg * lit + A[1] * rim); d[o + 2] = Math.min(255, bb * lit + A[2] * rim);
+      const em = glow * (0.4 + 0.6 * k) * 120;   // brillo propio de los gigantes calientes
+      d[o] = Math.min(255, rr * lit + A[0] * rim + em); d[o + 1] = Math.min(255, gg * lit + A[1] * rim + em * 0.2); d[o + 2] = Math.min(255, bb * lit + A[2] * rim + em * 0.1);
       d[o + 3] = r2 > 0.97 ? 255 * (1 - (r2 - 0.97) / 0.03) : 255;
     }
   }
   g.putImageData(img, 0, 0);
 }
 
-export const PREVIEW_COLORS: readonly (readonly [string, string, string])[] = [
-  ['#c39a6b', '#eadbc0', '#8f5f3e'],
-  ['#d6c296', '#f2e8cc', '#b0925c'],
-  ['#3f68b4', '#86aee4', '#26407c'],
-];
