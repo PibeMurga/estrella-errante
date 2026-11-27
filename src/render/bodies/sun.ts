@@ -58,7 +58,7 @@ void main(){
     float env = smoothstep(0., .05, ph) * exp(-ph*6.);
     float tur = snoise(p*40. + id) * .5 + .5;
     float core = exp(-dd*dd/(.0012 + .01*ph)) * (1.6 + tur);
-    float wave = exp(-pow((dd - (.02 + .3*ph))/.025, 2.)) * .6 * tur;
+    float wave = exp(-pow((dd - (.02 + .12*ph))/.04, 2.)) * .15 * tur;   // apenas un brillo que se corre, sin anillo
     flare += env * (core + wave) * (.6 + .8*h1(id*3.7 + fi));
   }
   col += mix(hot, vec3(1., .96, .88), .55) * flare * 1.6;
@@ -81,7 +81,7 @@ void main(){
   float spikes = smoothstep(.55, .9, fbm(vec3(cos(a)*7., sin(a)*7., uTime*.05), 4)*.5+.5);
   vec3 prom = uTint * vec3(1.,.7,.55) * loops * (1.2 + spikes) * 1.4;
   // Eyecciones del borde: cada una distinta. Según su tipo es un arco de plasma con los dos pies en el borde, un chorro
-  // fino que se inclina, un abanico de filamentos o una nube de gas; cambian la altura, el grosor, la inclinación y el color.
+  // fino que se inclina, una columna ancha que se dobla o una nube de gas; cambian la altura, el grosor, la inclinación y el color.
   for (int i = 0; i < 2; i++) {
     float fi = float(i), tt = uTime/(7.5 + fi*3.4) + fi*.53 + fract(uSeed*.271 + fi*.43), id = floor(tt) + uSeed, ph = fract(tt);
     if (h1(id*6.7 + fi*1.3) < .4) continue;
@@ -100,10 +100,13 @@ void main(){
       m += step(.6, h1(id*7.7)) * exp(-(pow(h - top, 2.) + x*x)/(.0015 + .003*ph)) * .9;
     } else if (kind < .6) {                                  // arco: un lazo de plasma con los dos pies en el borde
       float A = top*.8 + .03;
-      m = exp(-pow((length(vec2(x*1.2, h)) - A)/(wid*.7), 2.)) * (.5 + .9*n);
-    } else if (kind < .82) {                                 // abanico de filamentos que se abre
-      float fan = abs(sin(atan(x, h + .02)*9. + id*5. + n*2.));
-      m = smoothstep(.75, 1., fan) * (1. - smoothstep(top*.6, top*1.1, length(vec2(x, h)))) * (.6 + .8*n);
+      float ar = length(vec2(x*1.2, h)), wob = .35*wid*snoise(vec3(x*20., h*20., uTime*.4 + id));
+      float th = wid*(.4 + .8*n);                            // grosor irregular a lo largo del arco
+      m = exp(-pow((ar - A + wob)/th, 2.));
+      m *= smoothstep(.25, .6, n) * (1. - .55*smoothstep(.0, A, h)) * (.6 + .9*n);   // cortes, nudos y la cima más tenue
+    } else if (kind < .82) {                                 // columna ancha y difusa que sube y se dobla (como un surge)
+      float bend = x - .25*top*sin(h/max(top, .01)*2.2 + id);
+      m = exp(-pow(bend/(wid*2.2 + .05*h), 2.)) * (1. - smoothstep(top*.7, top*1.05, h)) * (.35 + .9*n);
     } else {                                                 // nube de gas que se hincha y se va
       m = (1. - smoothstep(top*.25, top*.6*(1. + .4*n), length(vec2(x, h - top*.55)))) * (.4 + .7*n);
     }
@@ -142,7 +145,7 @@ void main(){
       float rot = h1(id*4.4) * 3.1416, u = q.x*cos(rot) + q.y*sin(rot), v = -q.x*sin(rot) + q.y*cos(rot);
       float gap = .01 + .07*ph;
       body = (exp(-pow((abs(v) - gap)/.012, 2.)) * (1. - smoothstep(R*.6, R*1.4, abs(u)))) * (.5 + n);
-    } else body = exp(-pow((e - R*1.3)/(.015 + .02*n), 2.)) * (.4 + n);                          // onda que se abre
+    } else body = (1. - smoothstep(R*.2, R*(.8 + .6*n), e)) * (.3 + .8*n);                        // mancha difusa que se hincha
     float env = smoothstep(0., .06, ph) * (1. - smoothstep(.45, 1., ph));
     float fil = smoothstep(.55, .75, n) * body;        // filamentos más brillantes
     vec3 tcol = mix(vec3(1.2,.85,.55), vec3(1.35,1.15,.95), h1(id*2.9 + fi));
