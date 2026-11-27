@@ -198,3 +198,21 @@ Cada entrega tiene su propio plan, se prueba y Lucas la juega antes de unirla a 
 2. **La caza tiene tiempo límite.** Si no alcanzás al rival a tiempo, se escapa y perdés.
 3. **Los cortes de tamaño son 0,5·E, E y 1,5·E.** El golpe grave te hace perder una etapa entera de masa.
 4. **Las habilidades se pierden** si bajás del umbral, y el juego se pausa para elegir la mejora.
+
+## 12. Ajustes después de las primeras partidas (27/11/2026)
+
+Lucas jugó las Entregas 1 a 3 y ganó en 2:50, 3:11 y 2:42. Con eso quedó decidido:
+
+- **La carrera de masa queda como está.** La escala del rival sigue en 55.
+- **El final no se puede forzar.** Durante la supernova el rival huye; la caza arranca con él a 120 unidades o más; huye a 18; y en la caza tu agujero negro no frena al acercarse a lo que apuntás.
+- **Un ecosistema más grande con la masa creciendo más lento:**
+  - Los asteroides y las lunas suman 3/4 de su masa, y los planetas 1/10. Lo mismo se resta cuando se pierden.
+  - En la órbita entran hasta 400 cuerpos.
+  - La franja de órbita se ensancha con la estrella.
+  - Los planetas tienen órbita propia, nunca se absorben, y se los atrapa desde el borde de su franja.
+  - Al partir un planeta salen 6 fragmentos rocosos que se pueden capturar. Un bólido entero alcanza para partir un planeta mediano.
+
+**Consultas abiertas para Lucas:**
+1. ¿Las habilidades se calculan sobre todos los planetas de la pantalla, o sólo sobre los que siguen existiendo? Hoy se cuentan todos, y a medida que el rival se come planetas, el 45 % se vuelve casi imposible.
+2. ¿Un cometa roba un planeta desde la habilidad 2 y en la mitad de las pasadas, como hoy?
+3. ¿Un golpe grave en la primera etapa quita la mitad de la masa, como hoy?
