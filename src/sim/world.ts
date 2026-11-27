@@ -124,7 +124,7 @@ export function massGain(w: World, i: number): number {
 
 // Tamaño (radio) de la estrella según su masa. Lo usan la simulación y el dibujo.
 export function starSize(mass: number): number {
-  return 4 + 0.5 * Math.sqrt(mass);
+  return 4 + 0.55 * Math.sqrt(mass);
 }
 
 export function captureRadiusFor(config: SimConfig, mass: number): number {
@@ -236,7 +236,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
   for (let k = 0; k < config.planetCount; k++) {
     let px = 0, py = 0;
     do { px = rng.range(-hw, hw); py = rng.range(-hh, hh); } while (Math.hypot(px, py) < config.spawnClearRadius * 3);
-    const ang = rng.range(0, Math.PI * 2), speed = rng.range(0.3, 1);
+    const ang = rng.range(0, Math.PI * 2), speed = rng.range(1.2, 3);   // los planetas derivan: hay que esquivarlos
     const r = rng.range(2.5, 7);
     const p = addBody(w, { x: px, y: py, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, radius: r, kind: KIND_ROCKY + Math.floor(rng.next() * 3) });
     if (p < 0) break;

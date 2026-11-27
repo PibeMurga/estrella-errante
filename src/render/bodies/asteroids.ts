@@ -1,6 +1,6 @@
 import { type BufferAttribute, type BufferGeometry, Color, Frustum, IcosahedronGeometry, InstancedMesh, Matrix4, MeshStandardMaterial, Quaternion, Sphere, Vector3 } from 'three';
 import type { Rng } from '../../sim/rng';
-import { KIND_ASTEROID, type World, DEAD } from '../../sim/world';
+import { DEAD, GATHERING, KIND_ASTEROID, ORBITING, type World } from '../../sim/world';
 import type { Layer } from '../layer';
 
 // Roca irregular: la deformación depende sólo de la posición, así los vértices repetidos no se separan.
@@ -70,7 +70,9 @@ export function createAsteroidLayer(world: World, rng: Rng): Layer {
         scl.setScalar(w.radius[i]);
         m4.compose(pos, q, scl);
         mesh.setMatrixAt(v, m4);
-        tint.setRGB(tints[s * 3]!, tints[s * 3 + 1]!, tints[s * 3 + 2]!);
+        // Lo que gira a tu alrededor está más cerca de tu estrella: se ve más iluminado.
+        const lit = w.state[i] === ORBITING || w.state[i] === GATHERING ? 1.35 : 1;
+        tint.setRGB(tints[s * 3]! * lit, tints[s * 3 + 1]! * lit, tints[s * 3 + 2]! * lit);
         mesh.setColorAt(v, tint);
         v++;
       }

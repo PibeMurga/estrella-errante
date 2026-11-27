@@ -3,10 +3,10 @@ export interface Stage { readonly name: string; readonly mass: number }
 
 export const STAGES: readonly Stage[] = [
   { name: 'ENANA ROJA', mass: 0 },
-  { name: 'ENANA AMARILLA', mass: 20 },
-  { name: 'ENANA BLANCA', mass: 55 },
-  { name: 'GIGANTE AZUL', mass: 100 },
-  { name: 'SUPERGIGANTE', mass: 160 },
+  { name: 'ENANA AMARILLA', mass: 40 },
+  { name: 'ENANA BLANCA', mass: 90 },
+  { name: 'GIGANTE AZUL', mass: 145 },
+  { name: 'SUPERGIGANTE', mass: 205 },
   { name: 'HIPERGIGANTE', mass: 280 },
 ];
 

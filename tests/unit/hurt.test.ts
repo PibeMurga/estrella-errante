@@ -76,7 +76,7 @@ describe('cuanto más grande el planeta, más duele', () => {
     return w;
   }
   it('chocar con uno 1,4 veces tu tamaño te saca bastante órbita y masa; con uno apenas más grande, menos', () => {
-    const E = 4 + 0.5 * Math.sqrt(100);
+    const E = 4 + 0.55 * Math.sqrt(100);
     const fuerte = big(100), leve = big(100);
     const m0 = fuerte.star.mass;
     addBody(fuerte, { x: E + 1, y: 0, vx: 0, vy: 0, radius: E * 1.4, kind: KIND_GAS });

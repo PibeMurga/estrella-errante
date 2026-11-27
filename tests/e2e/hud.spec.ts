@@ -24,7 +24,7 @@ test('con el agujero negro fuera de pantalla aparece la flecha en el borde', asy
 
 test('la barra de etapa avanza con la masa', async ({ page }) => {
   await boot(page);
-  await page.evaluate(() => { window.__GAME__!.world.star.mass = 10; });
+  await page.evaluate(() => { window.__GAME__!.world.star.mass = 20; });   // la mitad de la primera etapa (umbral 40)
   await expect(page.locator('.hud .stage .pct')).toHaveText('50%');
   expect(await page.locator('.hud .seg i:not(.o)').count()).toBe(12);
 });
