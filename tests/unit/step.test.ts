@@ -106,7 +106,7 @@ describe('captura', () => {
     expect(w.orbitingCount).toBe(1);
     expect(w.capturedCount).toBe(1);
     expect(w.captured[0]).toBe(i);
-    expect(w.star.mass).toBeCloseTo(DEFAULT_CONFIG.starStartMass + 0.125, 12);
+    expect(w.star.mass).toBeCloseTo(DEFAULT_CONFIG.starStartMass + 0.125 * DEFAULT_CONFIG.bodyMassGain, 12);   // suma una parte de su masa
     expect(w.star.captureRadius).toBeCloseTo(captureRadiusFor(w.config, w.star.mass), 12);
   });
 
@@ -127,7 +127,7 @@ describe('captura', () => {
     step(w, NO_INPUT);
     expect(w.orbitingCount).toBe(2);
     expect(w.state[last]).toBe(ABSORBING);   // no desaparece de golpe: se lo ve caer
-    expect(w.star.mass).toBeCloseTo(m0 + w.mass[0] + w.mass[1] + w.mass[last], 9);
+    expect(w.star.mass).toBeCloseTo(m0 + (w.mass[0] + w.mass[1] + w.mass[last]) * DEFAULT_CONFIG.bodyMassGain, 9);
     expect(w.absorbed).toBe(1);
     for (let k = 0; k < 120; k++) step(w, NO_INPUT);
     expect(w.state[last]).toBe(DEAD);

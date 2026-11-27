@@ -37,7 +37,10 @@ export function startHunt(w: World): void {
   w.phase = PHASE_HUNT; w.phaseTime = 0;
   const s = w.star, bh = w.bh, max = w.config.huntStartMaxDist;
   const dx = bh.x - s.x, dy = bh.y - s.y, d = Math.hypot(dx, dy);
-  if (d > max) { bh.x = bh.prevX = s.x + (dx / d) * max; bh.y = bh.prevY = s.y + (dy / d) * max; }
+  const min = w.config.huntStartMinDist;
+  const ux = d > 1e-6 ? dx / d : 1, uy = d > 1e-6 ? dy / d : 0;
+  if (d > max) { bh.x = bh.prevX = s.x + ux * max; bh.y = bh.prevY = s.y + uy * max; }
+  else if (d < min) { bh.x = bh.prevX = s.x + ux * min; bh.y = bh.prevY = s.y + uy * min; }   // nunca pegado: hay que cazarlo
 }
 
 // Lo alcanzaste: los dos agujeros giran uno alrededor del otro, cada vez más cerca y más rápido.

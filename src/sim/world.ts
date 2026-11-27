@@ -115,10 +115,10 @@ const MAX_MOONS = 4;
 const MAX_DEBRIS = 60;
 
 // Masa que aporta a tu estrella el cuerpo i al entrar a tu sistema (y la que se lleva al irse).
-// Un planeta suma sólo una parte: si sumara entero, la carrera contra el rival se ganaría sola.
+// Suma sólo una parte (un planeta, una décima; un asteroide, tres cuartos): el enjambre se ve grande pero la masa crece despacio.
 export function massGain(w: World, i: number): number {
   const k = w.kind[i]!;
-  return k >= KIND_ROCKY && k <= KIND_GAS ? w.mass[i] * w.config.planetMassGain : w.mass[i];
+  return w.mass[i] * (k >= KIND_ROCKY && k <= KIND_GAS ? w.config.planetMassGain : w.config.bodyMassGain);
 }
 
 // Tamaño (radio) de la estrella según su masa. Lo usan la simulación y el dibujo.

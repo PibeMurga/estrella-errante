@@ -1,7 +1,7 @@
 import { stepComets } from './comets';
 import { breakPlanet } from './tidal';
 import { stepEncounters, stepStarFlybys } from './encounters';
-import { DT } from './config';
+import { DT, type SimConfig } from './config';
 import { stageFor } from './stages';
 import { stepAbilities } from './abilities';
 import { graveHit, isPlanetKind, stepPlanetHits, planetTier, TIER_CAPTURE, TIER_GRAVE, TIER_HURT } from './planetCapture';
@@ -20,12 +20,17 @@ export interface Intent {
 
 const clamp = (v: number, lo: number, hi: number): number => (v < lo ? lo : v > hi ? hi : v);
 
-// Franja de órbitas: empieza un poco por fuera de la estrella y crece con ella, siempre con el mismo ancho.
+// Ancho de la franja de órbitas de los asteroides: crece con la estrella (un enjambre, no un anillo).
+export function orbitBandWidth(c: SimConfig, starMass: number): number {
+  return c.orbitMax - c.orbitMin + starSize(starMass) * c.orbitWidenK;
+}
+
+// Franja de órbitas: empieza un poco por fuera de la estrella y se ensancha a medida que la estrella crece.
 let bandLo = 0, bandHi = 0;
 function setOrbitBand(w: World): void {
   const c = w.config;
   bandLo = Math.max(c.orbitMin, starSize(w.star.mass) * c.orbitClearance);
-  bandHi = bandLo + (c.orbitMax - c.orbitMin);
+  bandHi = bandLo + orbitBandWidth(c, w.star.mass);
 }
 
 // La estrella absorbe un cuerpo: no desaparece de golpe, cae en espiral hasta la superficie.
@@ -72,7 +77,7 @@ function hurt(w: World, p: number): void {
     w.vy[i] = Math.sin(a) * c.lostSpeed + s.vy * 0.3;
     w.noCatch[i] = c.noCatchTime;
     w.orbitingCount--;
-    s.mass = Math.max(c.starStartMass, s.mass - w.mass[i]);
+    s.mass = Math.max(c.starStartMass, s.mass - massGain(w, i));
     lost++;
   }
 }
@@ -89,7 +94,7 @@ function flight(w: World, i: number, st: number): void {
         // Quedó demasiado lejos: se pierde y la estrella pierde su masa.
         w.state[i] = FREE;
         w.noCatch[i] = c.noCatchTime;
-        s.mass = Math.max(c.starStartMass, s.mass - w.mass[i]);
+        s.mass = Math.max(c.starStartMass, s.mass - massGain(w, i));
         return;
       }
       w.state[i] = RETURNING;
@@ -142,7 +147,16 @@ function cinematic(w: World): void {
     const st = w.state[i];
     if (st === ORBITING || st === ABSORBING) moveOrbiting(w, i, st === ABSORBING, size);
   }
-  if (w.phase === PHASE_COLLAPSE) { if (w.phaseTime >= w.config.collapseTime) startHunt(w); }
+  if (w.phase === PHASE_COLLAPSE) {
+    // El rival siente la supernova y huye: la caza nunca arranca con él pegado.
+    const bh = w.bh, s = w.star;
+    if (bh.active) {
+      const dx = bh.x - s.x, dy = bh.y - s.y, d = Math.hypot(dx, dy) || 1;
+      bh.prevX = bh.x; bh.prevY = bh.y;
+      bh.x += (dx / d) * w.config.huntFleeSpeed * DT; bh.y += (dy / d) * w.config.huntFleeSpeed * DT;
+    }
+    if (w.phaseTime >= w.config.collapseTime) startHunt(w);
+  }
   else stepMerge(w);
 }
 
@@ -215,7 +229,8 @@ export function step(w: World, intent: Intent): void {
     const dy = intent.targetY - s.y;
     const dist = Math.hypot(dx, dy);
     if (dist > 1e-6) {
-      const speed = Math.min(c.starMaxSpeed, Math.sqrt(2 * acc * 0.8 * dist), (c.starMaxSpeed * dist) / c.starSlowRadius);
+      // Siendo agujero negro en la caza no frenás al acercarte: vas a fondo hacia lo que apuntás.
+      const speed = hunting ? (dist > 1 ? c.starMaxSpeed : 0) : Math.min(c.starMaxSpeed, Math.sqrt(2 * acc * 0.8 * dist), (c.starMaxSpeed * dist) / c.starSlowRadius);
       desX = (dx / dist) * speed;
       desY = (dy / dist) * speed;
     }
@@ -249,6 +264,7 @@ export function step(w: World, intent: Intent): void {
   let hit = -1;
   for (let i = 0; i < w.count; i++) {
     const st = w.state[i];
+    if (st !== DEAD && w.broken[i] > 0) w.broken[i] += DT;   // un planeta partido se sigue enfriando, esté donde esté
     if (st === DEAD || st === CARRIED || st === GATHERING || st === BOLT) continue;
     if (st === PROJECTILE || st === RETURNING) { flight(w, i, st); continue; }
     if (st === FREE || st === ORBIT_PLANET) {
@@ -261,7 +277,6 @@ export function step(w: World, intent: Intent): void {
         // siempre fuera de cámara. La posición anterior se corre igual, así el dibujo no interpola por el medio.
         if (x - s.x > hw) { x -= 2 * hw; w.prevX[i] -= 2 * hw; } else if (x - s.x < -hw) { x += 2 * hw; w.prevX[i] += 2 * hw; }
         if (y - s.y > hh) { y -= 2 * hh; w.prevY[i] -= 2 * hh; } else if (y - s.y < -hh) { y += 2 * hh; w.prevY[i] += 2 * hh; }
-        if (w.broken[i] > 0) w.broken[i] += DT;
         if (bh.active) {
           const gx = bh.x - x, gy = bh.y - y;
           const g2 = gx * gx + gy * gy;
@@ -324,17 +339,20 @@ export function step(w: World, intent: Intent): void {
       // Para robarle algo a un planeta, la estrella tiene que ser claramente más grande que él.
       const canSteal = st === FREE || starSize(s.mass) >= w.radius[w.parent[i]!] * c.stealSizeRatio;
       const small = w.radius[i] <= c.maxCaptureSize || tier === TIER_CAPTURE;   // los planetas chicos entran solos
-      if (canSteal && d < captureR && small && w.orbitingCount + w.gathered >= c.orbitCapacity) {
+      // A un planeta se lo atrapa ya desde el borde de su franja: se lo ve acercarse y caer en órbita.
+      const reach = tier === TIER_CAPTURE ? Math.max(captureR, bandHi + c.planetOrbitGap + c.planetOrbitSpan) : captureR;
+      // Los planetas tienen su propia órbita: no cuentan para el tope (nunca se absorben).
+      if (canSteal && d < reach && small && tier !== TIER_CAPTURE && w.orbitingCount + w.gathered >= c.orbitCapacity) {
         // Órbita llena: la estrella lo absorbe (suma su masa y el cuerpo queda libre para la reserva de escombros).
         startAbsorb(w, i, x - s.x, y - s.y);
         s.mass += massGain(w, i);
         continue;
       }
-      if (canSteal && d < captureR && small) {
+      if (canSteal && d < reach && small) {
         w.state[i] = ORBITING;
         w.parent[i] = -1;
         w.orbitR[i] = d;
-        if (tier === TIER_CAPTURE) { w.orbitTarget[i] = bandHi + c.planetOrbitGap + ((i * 0.618034) % 1) * c.planetOrbitSpan; w.planetCaptures++; }
+        if (tier === TIER_CAPTURE) { w.orbitTarget[i] = Math.min(d, bandHi + c.planetOrbitGap + ((i * 0.618034) % 1) * c.planetOrbitSpan); w.planetCaptures++; }
         else w.orbitTarget[i] = clamp(d * 0.9, bandLo, bandHi);
         w.orbitAngle[i] = Math.atan2(y - s.y, x - s.x);
         w.orbitingCount++;

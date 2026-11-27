@@ -46,6 +46,8 @@ export function hitPlanet(w: World, p: number, dmg: number): boolean {
   const d = Math.hypot(ax, ay) || 1; ax /= d; ay /= d;
   if (w.kind[p] === KIND_GAS) spawnDebris(w, w.x[p], w.y[p], w.vx[p], w.vy[p], R, ax, ay, c.tidalDebris);
   else breakPlanet(w, p, ax, ay, false);
+  // Además de los escombros, fragmentos rocosos más grandes que un asteroide, que se pueden sumar a tu órbita.
+  spawnDebris(w, w.x[p], w.y[p], w.vx[p], w.vy[p], R * 0.7, -ay, ax, c.breakFragments, 1.15, c.maxCaptureSize);
   w.radius[p] = R * c.planetBreakKeep;
   w.mass[p] = w.radius[p] ** 3;
   w.planetDmg[p] = 0;
@@ -67,7 +69,7 @@ export function stepPlanetHits(w: World): void {
       if (dx * dx + dy * dy >= r * r) continue;
       if (st === PROJECTILE) w.state[i] = RETURNING;
       else { w.state[i] = FREE; w.vx[i] *= 0.2; w.vy[i] *= 0.2; w.noCatch[i] = c.boltNoCatch; }
-      hitPlanet(w, p, 1);
+      hitPlanet(w, p, st === BOLT ? c.boltPlanetDmg * (w.ability >= 3 ? 1.5 : 1) : 1);   // un bólido entero parte uno mediano
       break;
     }
   }

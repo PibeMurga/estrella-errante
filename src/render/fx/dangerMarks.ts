@@ -1,6 +1,6 @@
 import { AdditiveBlending, Group, Mesh, PlaneGeometry, ShaderMaterial, Vector3 } from 'three';
 import { planetTier, TIER_BREAK, TIER_GRAVE, TIER_HURT } from '../../sim/planetCapture';
-import { FREE, starSize, type World } from '../../sim/world';
+import { FREE, PHASE_PLAY, starSize, type World } from '../../sim/world';
 import type { Layer } from '../layer';
 
 // Marcas de peligro minimalistas: un arco fino alrededor de los planetas cercanos que podrías chocar.
@@ -53,7 +53,7 @@ export function createDangerMarksLayer(world: World): DangerMarksLayer {
         const x = w.prevX[p] + (w.x[p] - w.prevX[p]) * a, y = w.prevY[p] + (w.y[p] - w.prevY[p]) * a;
         const r = w.radius[p];
         let want = 0;
-        if (w.state[p] === FREE && w.parent[p] === -1 && w.over === 0) {
+        if (w.state[p] === FREE && w.parent[p] === -1 && w.over === 0 && w.phase === PHASE_PLAY) {   // sólo en la partida normal
           const t = planetTier(r, w.star.mass);
           if (t >= TIER_BREAK && Math.hypot(x - sx, y - sy) - E - r < RANGE) { want = 1; tierOf[p] = t; }
         }

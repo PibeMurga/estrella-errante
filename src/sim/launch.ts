@@ -1,6 +1,6 @@
 import { DT } from './config';
 import type { Intent } from './step';
-import { BOLT, DEAD, FREE, GATHERING, KIND_ASTEROID, KIND_MOON, ORBITING, PROJECTILE, RETURNING, type World } from './world';
+import { BOLT, DEAD, massGain, FREE, GATHERING, KIND_ASTEROID, KIND_MOON, ORBITING, PROJECTILE, RETURNING, type World } from './world';
 
 // Lanzamiento con un solo botón. Un toque lanza un asteroide que vuelve (la honda).
 // Mantenido, junta asteroides de la órbita en un bólido adelante de la estrella; al soltar sale, y esos asteroides se pierden.
@@ -77,7 +77,7 @@ function launchBolt(w: World): void {
     w.state[i] = BOLT;
     w.vx[i] = ax * c.boltSpeed + s.vx; w.vy[i] = ay * c.boltSpeed + s.vy;
     w.life[i] = c.boltLife;
-    s.mass = Math.max(c.starStartMass, s.mass - w.mass[i]);   // se pierde: un golpe fuerte te deja más liviano
+    s.mass = Math.max(c.starStartMass, s.mass - massGain(w, i));   // se pierde: un golpe fuerte te deja más liviano
   }
   w.lastBoltSize = w.gathered;
   w.gathered = 0;

@@ -83,6 +83,11 @@ export interface SimConfig {
   cometStealMin: number;         // cuerpos que roba un cometa por pasada (mínimo y máximo)
   cometStealMax: number;
   planetMassGain: number;        // fracción de la masa de un planeta que suma (o resta) a tu estrella
+  bodyMassGain: number;          // fracción de la masa de un asteroide o luna que suma (o resta): la masa crece más lento que el enjambre
+  boltPlanetDmg: number;         // daño a un planeta de cada cuerpo de un bólido (un bólido entero parte uno mediano)
+  breakFragments: number;        // fragmentos rocosos (más grandes que un asteroide) que salen al partir un planeta
+  orbitWidenK: number;           // la franja de órbita se ensancha esto por cada unidad de radio de la estrella
+  huntStartMinDist: number;      // al empezar la caza, el rival nunca queda más cerca que esto
   rivalMassScale: number;        // masa del rival en la carrera = esto × la masa física del agujero negro
   collapseTime: number;          // segundos de la cinemática del colapso (supernova y nacimiento)
   mergeTime: number;             // segundos de la cinemática de la fusión
@@ -110,7 +115,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   stealSizeRatio: 1.5,
   orbitMin: 4,
   orbitMax: 18,
-  orbitCapacity: 240,
+  orbitCapacity: 400,
   orbitEase: 0.08,
   orbitInfallSpeed: 12,
   orbitClearance: 1.3,
@@ -155,7 +160,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   collapseTime: 6,
   mergeTime: 5,
   huntTimeLimit: 60,
-  huntFleeSpeed: 14,
+  huntFleeSpeed: 18,
   huntSwallowFactor: 1.2,
   huntStartMaxDist: 260,
   tapTime: 0.22,
@@ -181,4 +186,9 @@ export const DEFAULT_CONFIG: SimConfig = {
   cometStealMin: 3,
   cometStealMax: 5,
   planetMassGain: 0.1,
+  bodyMassGain: 0.75,
+  boltPlanetDmg: 3,
+  breakFragments: 6,
+  orbitWidenK: 0.8,
+  huntStartMinDist: 120,
 };

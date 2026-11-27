@@ -3,7 +3,7 @@ import { DEFAULT_CONFIG } from '../../src/sim/config';
 import { hitPlanet, planetTier, TIER_BREAK, TIER_CAPTURE, TIER_GRAVE, TIER_HURT } from '../../src/sim/planetCapture';
 import { STAGES } from '../../src/sim/stages';
 import { type Intent, step } from '../../src/sim/step';
-import { addBody, addSatellite, BOLT, createWorld, FREE, KIND_GAS, PROJECTILE, RETURNING, KIND_ASTEROID, KIND_MOON, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_NONE, starSize, type World } from '../../src/sim/world';
+import { addBody, addSatellite, BOLT, massGain, createWorld, FREE, KIND_GAS, PROJECTILE, RETURNING, KIND_ASTEROID, KIND_MOON, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_NONE, starSize, type World } from '../../src/sim/world';
 
 const cfg = { ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, blackHole: false, cometFirst: 1e9 };
 const idle: Intent = { targetX: 0, targetY: 0, hasTarget: false };
@@ -119,7 +119,7 @@ describe('partir planetas a golpes', () => {
     step(w, idle);
     expect(w.state[a]).toBe(RETURNING);
     expect(w.state[b]).toBe(FREE);
-    expect(w.planetDmg[p]).toBe(2);
+    expect(w.planetDmg[p]).toBe(1 + cfg.boltPlanetDmg);   // honda 1, bólido boltPlanetDmg por cuerpo
   });
 });
 
@@ -132,7 +132,7 @@ describe('cuánto suma un planeta', () => {
     step(w, idle);
     expect(w.state[p]).toBe(ORBITING);
     let others = 0;   // lo que entró en el mismo paso, además del planeta
-    for (let c = 0; c < w.capturedCount; c++) { const i = w.captured[c]!; if (i !== p) others += w.mass[i]; }
+    for (let c = 0; c < w.capturedCount; c++) { const i = w.captured[c]!; if (i !== p) others += massGain(w, i); }
     expect(w.star.mass - m0 - others).toBeCloseTo(w.mass[p] * cfg.planetMassGain, 6);
   });
 });

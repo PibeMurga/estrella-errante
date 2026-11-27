@@ -38,7 +38,7 @@ describe('etapas de la estrella', () => {
     const w = createWorld({ ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0 }, 1, 10);
     w.star.mass = 19.9;
     expect(w.stage).toBe(0);
-    addBody(w, { x: 2, y: 0, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID });
+    addBody(w, { x: 2, y: 0, vx: 0, vy: 0, radius: 1, kind: KIND_ASTEROID });   // suma 0,75: cruza los 20
     const none: Intent = { targetX: 0, targetY: 0, hasTarget: false };
     step(w, none);
     expect(w.stage).toBe(1);

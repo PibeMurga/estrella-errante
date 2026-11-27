@@ -2,7 +2,7 @@ import { DEAD, FREE, KIND_ASTEROID, type World } from './world';
 
 // Escombros de un planeta que se parte: se reviven asteroides de la reserva (cuerpos DEAD de tipo asteroide)
 // en dos chorros a lo largo del eje (ax, ay), con la velocidad del planeta (vx, vy) más un empujón.
-export function spawnDebris(w: World, x: number, y: number, vx: number, vy: number, R: number, ax: number, ay: number, n: number): void {
+export function spawnDebris(w: World, x: number, y: number, vx: number, vy: number, R: number, ax: number, ay: number, n: number, rMin = 0.35, rMax = 0.9): void {
   const r = w.rng;
   const px = -ay, py = ax;   // perpendicular al eje
   let left = n;
@@ -15,7 +15,7 @@ export function spawnDebris(w: World, x: number, y: number, vx: number, vy: numb
     const sp = r.range(3, 9), drift = r.range(-1.2, 1.2);
     w.vx[k] = vx + ax * sp * side + px * drift;
     w.vy[k] = vy + ay * sp * side + py * drift;
-    w.radius[k] = r.range(0.35, 0.9);
+    w.radius[k] = r.range(rMin, rMax);
     w.mass[k] = w.radius[k] ** 3;
     w.parent[k] = -1;
     w.noCatch[k] = 0.4;
