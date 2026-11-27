@@ -1073,3 +1073,26 @@ Registrar en Notion (MCP `notion-juego`, cuenta lfigueiraduarte@gmail.com) una e
 - qué se construyó;
 - el p99 medido;
 - lo que queda pendiente: el logo definitivo, la elección entre TABLADO y PLATILLO, las sonificaciones de la NASA y el tutorial guiado.
+
+---
+
+## Lista de lo que viene (aprobado por Lucas el 26/11/2026)
+
+Lucas aprobó todo lo presentado para el inicio y la imagen del juego. Queda en lista para los próximos planes; cada punto también está en la base «Tareas» de Notion (Hito 3).
+
+**Para construir**
+1. El logo definitivo del estudio, con un platillo que se lea también como planeta o platillo volador.
+2. El logo definitivo de MAGNAR.
+3. El ícono del juego.
+4. La portada, a partir de una captura real compuesta.
+5. La pantalla de carga.
+6. La pantalla de inicio completa, según la maqueta en revisión.
+7. El inicio guiado por la voz de la civilización (el tutorial de la pantalla 1).
+8. Un sistema único de señales del visor, donde cada símbolo tenga su motivo.
+9. La música generativa: graves profundos, épica y algo psicodélica.
+10. Las sonificaciones reales de la NASA, revisadas una por una y con el origen anotado.
+
+**Para Lucas**
+- Confirmar que MAGNAR esté libre en Steam, el INPI, el dominio e Instagram.
+- Elegir el estudio entre TABLADO y PLATILLO y crear su cuenta de Instagram.
+- Revisar la especificación de la meta y sus cuatro supuestos.
