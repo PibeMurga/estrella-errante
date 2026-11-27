@@ -225,3 +225,6 @@ Lucas jugó las Entregas 1 a 3 y ganó en 2:50, 3:11 y 2:42. Con eso quedó deci
 - **Colores de las alertas del agujero negro rival** (flecha, corchetes y distancia): rojas mientras te persigue y verde fósforo cuando lo perseguís vos.
 - **Un planeta que partís sigue siendo el mismo planeta:** conserva su tamaño, se ve colapsado y en dos mitades, y entra a tu órbita aunque sea grande. Los gaseosos, que no tienen corteza, pierden su envoltura y se achican.
 - **Marcas, revisadas con Lucas:** el que se puede partir es tu blanco y lleva un aro doble amarillo que late; el que daña, un aro rojo fino; el del golpe grave, un aro rojo grueso con un halo quieto; el que entra solo, sin marca. Reemplaza los trazos verdes y el ámbar del §2.
+- **Tu agujero negro aspira:** lo que entra a menos de 8 veces su radio cae en espiral, cada vez más rápido, y se lo traga; arranca las lunas de sus planetas. Nada pasa de largo.
+- **Lo que se suma a tu órbita se imanta:** conserva el giro con que venía y se acopla de a poco (2,5 s un planeta, 0,7 s un asteroide), bajando más despacio.
+- **Balance:** con el planeta partido entrando entero, Lucas ganó en 1:55; un planeta pasa a sumar el 3 % de su masa (antes 10 %). Bot: 3 de 5 victorias, entre 5,7 y 7 minutos.

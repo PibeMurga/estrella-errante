@@ -128,11 +128,16 @@ function moveOrbiting(w: World, i: number, absorbing: boolean, size: number): vo
   const planet = isPlanetKind(w.kind[i]!);
   const lo = planet ? bandHi + c.planetOrbitGap : bandLo, hi = planet ? lo + c.planetOrbitSpan : bandHi;
   const target = absorbing ? size * 0.7 : clamp(w.orbitTarget[i], lo, hi);
-  const maxDr = c.orbitInfallSpeed * (absorbing ? 1.6 : 1) * DT;
+  // Recién atrapado se imanta: conserva el giro con que venía y se acopla de a poco a la órbita (más lento si es un planeta).
+  const join = planet ? c.planetJoinTime : c.bodyJoinTime;
+  let k = 1;
+  if (w.joinT[i]! < join) { const t = w.joinT[i]! / join; k = t * t * (3 - 2 * t); w.joinT[i] = w.joinT[i]! + DT; }
+  const maxDr = (planet ? c.planetInfallSpeed : c.orbitInfallSpeed) * (absorbing ? 1.6 : 1) * (0.25 + 0.75 * k) * DT;
   const r = w.orbitR[i] + clamp((target - w.orbitR[i]) * c.orbitEase, -maxDr, maxDr);
   w.orbitR[i] = r;
   if (absorbing && r <= size * 0.8) { w.state[i] = DEAD; return; }
-  const a = w.orbitAngle[i] + c.orbitSpeedK * Math.pow(c.orbitMin / Math.max(r, 1e-6), 1.5) * DT;
+  const wOrbit = c.orbitSpeedK * Math.pow(c.orbitMin / Math.max(r, 1e-6), 1.5);
+  const a = w.orbitAngle[i] + (k >= 1 ? wOrbit : w.orbitW[i] + (wOrbit - w.orbitW[i]) * k) * DT;
   w.orbitAngle[i] = a;
   w.x[i] = s.x + Math.cos(a) * r;
   w.y[i] = s.y + Math.sin(a) * r;
@@ -327,7 +332,22 @@ export function step(w: World, intent: Intent): void {
       w.y[i] = y;
       const d = Math.hypot(x - s.x, y - s.y);
       if (hunting) {
-        // Tu agujero negro traga lo que toca; no hay capturas ni choques.
+        // Tu agujero negro aspira: lo que entra en su zona de atracción cae en espiral, cada vez más rápido, y se lo traga.
+        // Nada pasa de largo. No hay capturas ni choques.
+        if (d < holeR * c.huntPullRange) {
+          if (st === ORBIT_PLANET) {
+            // Arranca la luna de su planeta, con la velocidad que llevaba al girar.
+            const p = w.parent[i]!, ang = w.orbitAngle[i], v = w.orbitW[i] * w.orbitR[i];
+            w.vx[i] = w.vx[p] - Math.sin(ang) * v; w.vy[i] = w.vy[p] + Math.cos(ang) * v;
+            w.state[i] = FREE; w.parent[i] = -1;
+          }
+          const nd = Math.max(d, 1e-6), rx = (s.x - x) / nd, ry = (s.y - y) / nd;
+          const acc = Math.min(c.huntPullMax, c.huntPullAccel * (holeR / Math.max(d, 1)) ** 2);
+          w.vx[i] += (rx - ry * 0.3) * acc * DT;   // hacia el centro, con un poco de giro: espiral
+          w.vy[i] += (ry + rx * 0.3) * acc * DT;
+          const drag = 1 - c.huntPullDrag * DT;     // pierde velocidad respecto de vos: no queda orbitando
+          w.vx[i] = s.vx + (w.vx[i] - s.vx) * drag; w.vy[i] = s.vy + (w.vy[i] - s.vy) * drag;
+        }
         if (d < holeR * c.huntSwallowFactor) { w.state[i] = DEAD; s.mass += massGain(w, i); }
         continue;
       }
@@ -356,6 +376,9 @@ export function step(w: World, intent: Intent): void {
         if (joins) { w.orbitTarget[i] = Math.min(d, bandHi + c.planetOrbitGap + ((i * 0.618034) % 1) * c.planetOrbitSpan); w.planetCaptures++; }
         else w.orbitTarget[i] = clamp(d * 0.9, bandLo, bandHi);
         w.orbitAngle[i] = Math.atan2(y - s.y, x - s.x);
+        // Giro con que venía, alrededor de la estrella: desde ahí se acopla de a poco (ver moveOrbiting).
+        w.orbitW[i] = clamp(((x - s.x) * (w.vy[i] - s.vy) - (y - s.y) * (w.vx[i] - s.vx)) / Math.max(d * d, 1e-6), -3, 3);
+        w.joinT[i] = 0;
         w.orbitingCount++;
         s.mass += massGain(w, i);
         w.captured[w.capturedCount++] = i;

@@ -88,6 +88,13 @@ export interface SimConfig {
   breakFragments: number;        // fragmentos rocosos (más grandes que un asteroide) que salen al partir un planeta
   orbitWidenK: number;           // la franja de órbita se ensancha esto por cada unidad de radio de la estrella
   huntStartMinDist: number;      // al empezar la caza, el rival nunca queda más cerca que esto
+  huntPullRange: number;         // tu agujero negro aspira lo que está a menos de (su radio × esto)
+  huntPullAccel: number;         // intensidad de la aspiración: a = esto × (radio / distancia)²
+  huntPullMax: number;           // tope de esa aceleración
+  huntPullDrag: number;          // frenado de lo aspirado (para que caiga en espiral y no quede orbitando)
+  planetJoinTime: number;        // segundos en que un planeta capturado acomoda su giro al de la órbita (se imanta)
+  bodyJoinTime: number;          // lo mismo para asteroides y lunas
+  planetInfallSpeed: number;     // velocidad radial máxima de un planeta al acomodarse en su órbita
   autoCollapse: boolean;         // colapsar solo al superar al rival siendo hipergigante (las pruebas lo pueden apagar)
   rivalMassScale: number;        // masa del rival en la carrera = esto × la masa física del agujero negro
   collapseTime: number;          // segundos de la cinemática del colapso (supernova y nacimiento)
@@ -186,11 +193,18 @@ export const DEFAULT_CONFIG: SimConfig = {
   abilityBoltBonus: 6,
   cometStealMin: 3,
   cometStealMax: 5,
-  planetMassGain: 0.1,
+  planetMassGain: 0.03,
   bodyMassGain: 0.75,
   boltPlanetDmg: 3,
   breakFragments: 6,
   orbitWidenK: 0.8,
   huntStartMinDist: 120,
+  huntPullRange: 8,
+  huntPullAccel: 900,
+  huntPullMax: 300,
+  huntPullDrag: 1.2,
+  planetJoinTime: 2.5,
+  bodyJoinTime: 0.7,
+  planetInfallSpeed: 5,
   autoCollapse: true,
 };
