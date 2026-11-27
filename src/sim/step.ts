@@ -3,7 +3,7 @@ import { breakPlanet } from './tidal';
 import { stepEncounters, stepStarFlybys } from './encounters';
 import { DT } from './config';
 import { stageFor } from './stages';
-import { graveHit, isPlanetKind, planetTier, TIER_CAPTURE, TIER_GRAVE, TIER_HURT } from './planetCapture';
+import { graveHit, isPlanetKind, stepPlanetHits, planetTier, TIER_CAPTURE, TIER_GRAVE, TIER_HURT } from './planetCapture';
 import { returnGathered, sling, slingAngle, stepBolts, stepLaunch } from './launch';
 import { canCollapse, playerHoleRadius, startCollapse, startHunt, startMerge, stepMerge } from './phase';
 import { ABSORBING, BOLT, CARRIED, captureRadiusFor, DEAD, FREE, GATHERING, KIND_GAS, KIND_ICE, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_DIMMED, OVER_ESCAPED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
@@ -336,6 +336,7 @@ export function step(w: World, intent: Intent): void {
   if (!hunting) stepComets(w);
   if (!hunting) {
     stepBolts(w, bandHi);
+    stepPlanetHits(w);
     if (intent.fire && w.slingCd <= 0 && w.orbitingCount > 0) {   // disparo directo (bot y pruebas)
       const a = slingAngle(w, intent);
       if (Number.isFinite(a)) sling(w, a);

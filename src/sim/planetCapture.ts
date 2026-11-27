@@ -1,6 +1,7 @@
 import { returnGathered } from './launch';
 import { STAGES, stageFor } from './stages';
-import { KIND_GAS, KIND_ROCKY, OVER_DIMMED, starSize, type World } from './world';
+import { breakPlanet, spawnDebris } from './tidal';
+import { BOLT, FREE, KIND_GAS, KIND_ROCKY, OVER_DIMMED, PROJECTILE, RETURNING, starSize, type World } from './world';
 
 // Escalones de los planetas según su tamaño comparado con el de tu estrella (E):
 // hasta la mitad entran solos; hasta E hay que partirlos; hasta 1,5·E dañan; más grandes, golpe grave.
@@ -30,4 +31,44 @@ export function graveHit(w: World, p: number): void {
   const width = st > 0 ? STAGES[st]!.mass - STAGES[st - 1]!.mass : s.mass * 0.5;
   s.mass = Math.max(c.starStartMass, s.mass - width);
   w.stage = stageFor(s.mass);
+}
+
+// Golpe a un planeta: sólo los que se pueden partir acumulan daño. Al llegar a su aguante se parte:
+// los rocosos y helados, en dos pedazos (el dibujo de planeta partido); los gaseosos pierden su envoltura.
+// Lo que queda mide la mitad: entra solo a tu órbita. Devuelve true si lo partió.
+export function hitPlanet(w: World, p: number, dmg: number): boolean {
+  const c = w.config;
+  if (w.state[p] !== FREE || planetTier(w.radius[p], w.star.mass) !== TIER_BREAK) return false;
+  w.planetDmg[p] = w.planetDmg[p]! + dmg;
+  if (w.planetDmg[p]! < Math.ceil(c.planetHpPerRadius * w.radius[p])) return false;
+  const R = w.radius[p];
+  let ax = w.x[p] - w.star.x, ay = w.y[p] - w.star.y;
+  const d = Math.hypot(ax, ay) || 1; ax /= d; ay /= d;
+  if (w.kind[p] === KIND_GAS) spawnDebris(w, w.x[p], w.y[p], w.vx[p], w.vy[p], R, ax, ay, c.tidalDebris);
+  else breakPlanet(w, p, ax, ay, false);
+  w.radius[p] = R * c.planetBreakKeep;
+  w.mass[p] = w.radius[p] ** 3;
+  w.planetDmg[p] = 0;
+  w.planetBreaks++;
+  return true;
+}
+
+// Honda y bólido contra planetas sueltos: la honda rebota (vuelve) y el bólido queda suelto donde pegó.
+export function stepPlanetHits(w: World): void {
+  const c = w.config, P = w.planets;
+  for (let i = 0; i < w.count; i++) {
+    const st = w.state[i];
+    if (st !== PROJECTILE && st !== BOLT) continue;
+    for (let k = 0; k < P.length; k++) {
+      const p = P[k]!;
+      if (w.state[p] !== FREE) continue;
+      const r = w.radius[p] + w.radius[i];
+      const dx = w.x[i] - w.x[p], dy = w.y[i] - w.y[p];
+      if (dx * dx + dy * dy >= r * r) continue;
+      if (st === PROJECTILE) w.state[i] = RETURNING;
+      else { w.state[i] = FREE; w.vx[i] *= 0.2; w.vy[i] *= 0.2; w.noCatch[i] = c.boltNoCatch; }
+      hitPlanet(w, p, 1);
+      break;
+    }
+  }
 }

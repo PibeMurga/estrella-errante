@@ -100,6 +100,7 @@ export interface World {
   readonly planetDmg: Float32Array;   // daño acumulado de cada planeta (para partirlo a golpes)
   planetCaptures: number;          // planetas que entraron a tu órbita (evento)
   graveHits: number;               // golpes graves (evento)
+  planetBreaks: number;            // planetas partidos a golpes (evento)
   readonly captured: Int32Array;   // índices capturados en el último paso
   capturedCount: number;
 }
@@ -127,6 +128,10 @@ export function addBody(w: World, b: BodySpec): number {
   w.orbitR[i] = 0; w.orbitTarget[i] = 0; w.orbitAngle[i] = 0; w.orbitW[i] = 0;
   w.parent[i] = -1;
   w.state[i] = FREE; w.kind[i] = b.kind; w.noCatch[i] = 0;
+  // Cada planeta entra en la lista de planetas de la pantalla (crea un arreglo: sólo al armar el mapa o en pruebas).
+  if (b.kind >= KIND_ROCKY && b.kind <= KIND_GAS) {
+    const pl = new Int32Array(w.planets.length + 1); pl.set(w.planets); pl[w.planets.length] = i; w.planets = pl;
+  }
   return i;
 }
 
@@ -198,7 +203,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     state: new Uint8Array(capacity), kind: new Uint8Array(capacity), noCatch: new Float32Array(capacity), life: new Float32Array(capacity),
     broken: new Float32Array(capacity), breakAx: new Float32Array(capacity), breakAy: new Float32Array(capacity), tidalBreaks: 0, planetCrashes: 0, crashX: 0, crashY: 0, crashR: 0,
     orbitingCount: 0, stage: 0, stageUps: 0, maxMass: config.starStartMass, absorbed: 0, captured: new Int32Array(capacity), capturedCount: 0,
-    planets: new Int32Array(0), planetDmg: new Float32Array(capacity), planetCaptures: 0, graveHits: 0,
+    planets: new Int32Array(0), planetDmg: new Float32Array(capacity), planetCaptures: 0, graveHits: 0, planetBreaks: 0,
   };
   const rng = createRng(seed);
   const hw = config.arenaHalfWidth, hh = config.arenaHalfHeight;
@@ -258,10 +263,6 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     w.broken[i] = 60; w.breakAx[i] = Math.cos(a); w.breakAy[i] = Math.sin(a);
     w.radius[i] *= 0.85; w.mass[i] = w.radius[i] ** 3;
   }
-  // Lista fija de los planetas de la pantalla (se arma una sola vez, con el mapa).
-  const pl: number[] = [];
-  for (let i = 0; i < w.count; i++) if (w.kind[i]! >= KIND_ROCKY && w.kind[i]! <= KIND_GAS) pl.push(i);
-  w.planets = Int32Array.from(pl);
   return w;
 }
 

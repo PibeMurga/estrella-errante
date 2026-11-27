@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG } from '../../src/sim/config';
-import { planetTier, TIER_BREAK, TIER_CAPTURE, TIER_GRAVE, TIER_HURT } from '../../src/sim/planetCapture';
+import { hitPlanet, planetTier, TIER_BREAK, TIER_CAPTURE, TIER_GRAVE, TIER_HURT } from '../../src/sim/planetCapture';
 import { STAGES } from '../../src/sim/stages';
 import { type Intent, step } from '../../src/sim/step';
-import { addBody, addSatellite, createWorld, FREE, KIND_ASTEROID, KIND_MOON, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_NONE, starSize, type World } from '../../src/sim/world';
+import { addBody, addSatellite, BOLT, createWorld, FREE, KIND_GAS, PROJECTILE, RETURNING, KIND_ASTEROID, KIND_MOON, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_NONE, starSize, type World } from '../../src/sim/world';
 
 const cfg = { ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, blackHole: false, cometFirst: 1e9 };
 const idle: Intent = { targetX: 0, targetY: 0, hasTarget: false };
@@ -76,5 +76,49 @@ describe('escalones de los planetas', () => {
     step(g, idle);
     expect(g.stage).toBe(0);
     expect(g.star.mass).toBeGreaterThanOrEqual(cfg.starStartMass);
+  });
+});
+
+describe('partir planetas a golpes', () => {
+  it('un planeta mediano aguanta golpes según su tamaño y al partirse queda un pedazo que entra solo', () => {
+    const w = guarded(100);
+    const E = starSize(w.star.mass);
+    const p = addBody(w, { x: 40, y: 0, vx: 0, vy: 0, radius: E * 0.8, kind: KIND_ROCKY });
+    const hp = Math.ceil(cfg.planetHpPerRadius * E * 0.8);
+    for (let k = 0; k < hp - 1; k++) expect(hitPlanet(w, p, 1)).toBe(false);
+    expect(hitPlanet(w, p, 1)).toBe(true);
+    expect(w.planetBreaks).toBe(1);
+    expect(w.broken[p]).toBeGreaterThan(0);
+    expect(planetTier(w.radius[p], w.star.mass)).toBe(TIER_CAPTURE);
+  });
+  it('a los que dañan no se los puede partir', () => {
+    const w = guarded(100);
+    const E = starSize(w.star.mass);
+    const p = addBody(w, { x: 40, y: 0, vx: 0, vy: 0, radius: E * 1.3, kind: KIND_ROCKY });
+    for (let k = 0; k < 100; k++) hitPlanet(w, p, 1);
+    expect(w.planetBreaks).toBe(0);
+  });
+  it('un gaseoso partido se achica y suelta escombros, pero no desaparece', () => {
+    const w = guarded(100);
+    const E = starSize(w.star.mass);
+    const p = addBody(w, { x: 40, y: 0, vx: 0, vy: 0, radius: E * 0.8, kind: KIND_GAS });
+    for (let i = 0; i < 20; i++) { const d = addBody(w, { x: 0, y: 0, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID }); w.state[d] = 3; }   // reserva de escombros
+    hitPlanet(w, p, 1000);
+    expect(w.state[p]).toBe(FREE);
+    expect(w.broken[p]).toBe(0);
+    expect(w.radius[p]).toBeCloseTo(E * 0.8 * cfg.planetBreakKeep, 6);
+  });
+  it('la honda golpea y rebota; el bólido golpea y queda suelto', () => {
+    const w = guarded(100);
+    const E = starSize(w.star.mass);
+    const p = addBody(w, { x: 40, y: 0, vx: 0, vy: 0, radius: E * 0.8, kind: KIND_ROCKY });
+    const a = addBody(w, { x: 40 - E * 0.8, y: 0, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID });
+    w.state[a] = PROJECTILE; w.life[a] = 1;
+    const b = addBody(w, { x: 40, y: E * 0.8, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID });
+    w.state[b] = BOLT; w.life[b] = 1;
+    step(w, idle);
+    expect(w.state[a]).toBe(RETURNING);
+    expect(w.state[b]).toBe(FREE);
+    expect(w.planetDmg[p]).toBe(2);
   });
 });
