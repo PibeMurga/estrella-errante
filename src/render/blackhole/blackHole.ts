@@ -46,7 +46,7 @@ export function createBlackHoleLayer(pipeline: Pipeline, role: 'rival' | 'player
   disk.rotation.x = -Math.PI / 2 + 0.18;
   group.add(disk);
   const lens = pipeline.lens.lensUniforms;
-  let diskBase = 4;
+  let diskBase = 4, diskT = 0, slowK = 0;   // slowK: 0 = normal, 1 = frenado por un bólido (disco apagado y lento)
 
   return {
     object: group,
@@ -70,8 +70,12 @@ export function createBlackHoleLayer(pipeline: Pipeline, role: 'rival' | 'player
       }
       group.position.copy(center);
       group.scale.setScalar(radius / HORIZON);
-      diskMat.uniforms['uTime']!.value = ctx.time;
-      diskMat.uniforms['uIntensity']!.value = diskBase * (role === 'player' ? ignition(w) : 1);
+      // Frenado por un bólido: el disco se apaga y gira más lento mientras dura (se ve que el golpe le hizo efecto).
+      const slowed = role === 'rival' && w.bhSlow > 0 ? 1 : 0;
+      slowK += (slowed - slowK) * Math.min(1, ctx.dt * 5);
+      diskT += ctx.dt * (1 - 0.7 * slowK);
+      diskMat.uniforms['uTime']!.value = diskT;
+      diskMat.uniforms['uIntensity']!.value = diskBase * (role === 'player' ? ignition(w) : 1) * (1 - 0.6 * slowK);
       // Hay una sola lente: cuando existe tu agujero negro, la maneja él (está en el centro de la pantalla).
       if (role === 'rival' && mine > 0.001) return;
 

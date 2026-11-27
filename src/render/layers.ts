@@ -14,6 +14,7 @@ import { createDangerMarksLayer, type DangerMarksLayer } from './fx/dangerMarks'
 import { createImpactLayer } from './fx/impact';
 import { createHitSparksLayer } from './fx/hitSparks';
 import { createBreakBurstLayer } from './fx/breakBurst';
+import { createGravityFieldLayer } from './fx/gravityField';
 import type { Layer } from './layer';
 import type { Pipeline } from './pipeline';
 import type { QualitySettings } from './quality';
@@ -35,6 +36,7 @@ export function buildLayers(deps: LayerDeps): BuiltLayers {
       createBrokenPlanetsLayer(deps.world, sunPos),
       createAsteroidLayer(deps.world, deps.rng),
       ambient,
+      createGravityFieldLayer(),
       createBlackHoleLayer(deps.pipeline),
       createBlackHoleLayer(deps.pipeline, 'player'),
       createBoltLayer(),
