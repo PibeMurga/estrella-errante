@@ -3,13 +3,15 @@ import { breakPlanet } from './tidal';
 import { stepEncounters, stepStarFlybys } from './encounters';
 import { DT } from './config';
 import { stageFor } from './stages';
-import { ABSORBING, CARRIED, captureRadiusFor, DEAD, FREE, KIND_GAS, KIND_ICE, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_DIMMED, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
+import { canCollapse, playerHoleRadius, startCollapse, startHunt, startMerge, stepMerge } from './phase';
+import { ABSORBING, CARRIED, captureRadiusFor, DEAD, FREE, KIND_GAS, KIND_ICE, KIND_ROCKY, ORBIT_PLANET, ORBITING, OVER_DIMMED, OVER_ESCAPED, PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, PROJECTILE, RETURNING, OVER_NONE, OVER_SWALLOWED, starSize, type World } from './world';
 
 // target: hacia dónde ir. aim: hacia dónde apuntar la honda (stick derecho); sin aim se apunta al objetivo.
 export interface Intent {
   targetX: number; targetY: number; hasTarget: boolean;
   fire?: boolean;
   aimX?: number; aimY?: number; hasAim?: boolean;
+  collapse?: boolean;   // apretó la tecla de colapso
 }
 
 const clamp = (v: number, lo: number, hi: number): number => (v < lo ? lo : v > hi ? hi : v);
@@ -172,6 +174,34 @@ function eclipse(w: World): void {
   w.beamTime = c.beamDuration;
 }
 
+// Se acomoda en su órbita (o cae a la estrella si la está absorbiendo) a velocidad limitada:
+// se lo ve acercarse e imantarse, no saltar. La franja sigue el tamaño de la estrella.
+function moveOrbiting(w: World, i: number, absorbing: boolean, size: number): void {
+  const c = w.config, s = w.star;
+  const target = absorbing ? size * 0.7 : clamp(w.orbitTarget[i], bandLo, bandHi);
+  const maxDr = c.orbitInfallSpeed * (absorbing ? 1.6 : 1) * DT;
+  const r = w.orbitR[i] + clamp((target - w.orbitR[i]) * c.orbitEase, -maxDr, maxDr);
+  w.orbitR[i] = r;
+  if (absorbing && r <= size * 0.8) { w.state[i] = DEAD; return; }
+  const a = w.orbitAngle[i] + c.orbitSpeedK * Math.pow(c.orbitMin / Math.max(r, 1e-6), 1.5) * DT;
+  w.orbitAngle[i] = a;
+  w.x[i] = s.x + Math.cos(a) * r;
+  w.y[i] = s.y + Math.sin(a) * r;
+}
+
+// Cinemáticas (colapso y fusión): guion fijo. Sólo gira lo que está en órbita; lo demás espera.
+function cinematic(w: World): void {
+  w.phaseTime += DT;
+  setOrbitBand(w);
+  const size = starSize(w.star.mass);
+  for (let i = 0; i < w.count; i++) {
+    const st = w.state[i];
+    if (st === ORBITING || st === ABSORBING) moveOrbiting(w, i, st === ABSORBING, size);
+  }
+  if (w.phase === PHASE_COLLAPSE) { if (w.phaseTime >= w.config.collapseTime) startHunt(w); }
+  else stepMerge(w);
+}
+
 export function step(w: World, intent: Intent): void {
   const c = w.config;
   const s = w.star;
@@ -190,6 +220,8 @@ export function step(w: World, intent: Intent): void {
   w.comets.prevY.set(w.comets.y);
   // Partida terminada: todo queda quieto (y sin interpolar) hasta que se reinicie.
   if (w.over !== OVER_NONE) return;
+  if (w.phase === PHASE_COLLAPSE || w.phase === PHASE_MERGE) { cinematic(w); w.tick++; return; }
+  const hunting = w.phase === PHASE_HUNT;
   if (w.invuln > 0) w.invuln = Math.max(0, w.invuln - DT);
   if (w.slingCd > 0) w.slingCd = Math.max(0, w.slingCd - DT);
   if (w.eclipseCd > 0) w.eclipseCd = Math.max(0, w.eclipseCd - DT);
@@ -200,10 +232,15 @@ export function step(w: World, intent: Intent): void {
   // Crece con la raíz de su masa: comer lo hace más peligroso, pero no imposible de esquivar.
   const G = c.bhPull * Math.sqrt(bh.mass);
   if (bh.active) {
-    bh.speed = Math.min(c.bhMaxSpeed, bh.speed + c.bhAccel * DT);
     const dx = s.x - bh.x, dy = s.y - bh.y;
     const d = Math.hypot(dx, dy);
-    if (d > 1e-6) { bh.vx = (dx / d) * bh.speed; bh.vy = (dy / d) * bh.speed; }
+    if (hunting) {
+      // En la caza huye de vos, a velocidad fija.
+      if (d > 1e-6) { bh.vx = (-dx / d) * c.huntFleeSpeed; bh.vy = (-dy / d) * c.huntFleeSpeed; }
+    } else {
+      bh.speed = Math.min(c.bhMaxSpeed, bh.speed + c.bhAccel * DT);
+      if (d > 1e-6) { bh.vx = (dx / d) * bh.speed; bh.vy = (dy / d) * bh.speed; }
+    }
     bh.x += bh.vx * DT;
     bh.y += bh.vy * DT;
     // Sin bordes: la vuelta del mapa se calcula alrededor de la estrella.
@@ -212,7 +249,7 @@ export function step(w: World, intent: Intent): void {
     // Su gravedad también tira de la estrella.
     const gx = bh.x - s.x, gy = bh.y - s.y;
     const g2 = gx * gx + gy * gy;
-    if (g2 < range2 && g2 > 1e-9) {
+    if (!hunting && g2 < range2 && g2 > 1e-9) {
       const a = c.bhStarPull * Math.min(c.bhMaxAccel, G / Math.max(g2, 1)) * DT / Math.sqrt(g2);
       s.vx += gx * a;
       s.vy += gy * a;
@@ -220,7 +257,7 @@ export function step(w: World, intent: Intent): void {
   }
 
   // Movimiento con inercia: acelera hacia una velocidad deseada y frena para llegar sin pasarse.
-  const acc = c.starAccel / (1 + c.starMassInertia * s.mass);
+  const acc = hunting ? c.starAccel : c.starAccel / (1 + c.starMassInertia * s.mass);   // siendo agujero negro ya no cargás con la inercia de la estrella
   let desX = 0;
   let desY = 0;
   let maxDv = acc * c.starBrake * DT;
@@ -245,10 +282,16 @@ export function step(w: World, intent: Intent): void {
   if (sp > c.starMaxSpeed) { s.vx *= c.starMaxSpeed / sp; s.vy *= c.starMaxSpeed / sp; }
   s.x += s.vx * DT;
   s.y += s.vy * DT;
-  if (bh.active && Math.hypot(s.x - bh.x, s.y - bh.y) < bh.radius + starSize(s.mass) * 0.5) {
-    w.over = OVER_SWALLOWED;
-    w.tick++;
-    return;
+  const holeR = hunting ? playerHoleRadius(w) : 0;
+  if (bh.active) {
+    const dd = Math.hypot(s.x - bh.x, s.y - bh.y);
+    if (hunting) {
+      if (dd < holeR + bh.radius) { startMerge(w); w.tick++; return; }
+    } else if (dd < bh.radius + starSize(s.mass) * 0.5) {
+      w.over = OVER_SWALLOWED;
+      w.tick++;
+      return;
+    }
   }
 
   setOrbitBand(w);
@@ -319,6 +362,11 @@ export function step(w: World, intent: Intent): void {
       w.x[i] = x;
       w.y[i] = y;
       const d = Math.hypot(x - s.x, y - s.y);
+      if (hunting) {
+        // Tu agujero negro traga lo que toca; no hay capturas ni choques.
+        if (d < holeR * c.huntSwallowFactor) { w.state[i] = DEAD; s.mass += w.mass[i]; }
+        continue;
+      }
       // Un planeta más grande que la estrella la daña al tocarla.
       const k = w.kind[i]!;
       if (st === FREE && k >= KIND_ROCKY && k <= KIND_GAS && w.radius[i] > size && d < size + w.radius[i] && hit < 0 && w.invuln <= 0) hit = i;
@@ -341,29 +389,16 @@ export function step(w: World, intent: Intent): void {
         s.mass += w.mass[i];
         w.captured[w.capturedCount++] = i;
       }
-    } else {
-      // Se acomoda en su órbita (o cae a la estrella si la está absorbiendo) a velocidad limitada:
-      // se lo ve acercarse e imantarse, no saltar. La franja sigue el tamaño de la estrella.
-      const absorbing = st === ABSORBING;
-      const target = absorbing ? size * 0.7 : clamp(w.orbitTarget[i], bandLo, bandHi);
-      const maxDr = c.orbitInfallSpeed * (absorbing ? 1.6 : 1) * DT;
-      const r = w.orbitR[i] + clamp((target - w.orbitR[i]) * c.orbitEase, -maxDr, maxDr);
-      w.orbitR[i] = r;
-      if (absorbing && r <= size * 0.8) { w.state[i] = DEAD; continue; }
-      const a = w.orbitAngle[i] + c.orbitSpeedK * Math.pow(c.orbitMin / Math.max(r, 1e-6), 1.5) * DT;
-      w.orbitAngle[i] = a;
-      w.x[i] = s.x + Math.cos(a) * r;
-      w.y[i] = s.y + Math.sin(a) * r;
-    }
+    } else moveOrbiting(w, i, st === ABSORBING, size);
   }
 
   stepEncounters(w);
-  stepStarFlybys(w);
+  if (!hunting) stepStarFlybys(w);
   if (hit >= 0) hurt(w, hit);
   if (w.over !== OVER_NONE) { w.tick++; return; }   // se apagó en este paso: no pasa nada más
-  if (w.eclipseCd <= 0 && w.orbitingCount >= c.eclipseMin) eclipse(w);
-  stepComets(w);
-  if (intent.fire && w.slingCd <= 0 && w.orbitingCount > 0) {
+  if (!hunting && w.eclipseCd <= 0 && w.orbitingCount >= c.eclipseMin) eclipse(w);
+  if (!hunting) stepComets(w);
+  if (!hunting && intent.fire && w.slingCd <= 0 && w.orbitingCount > 0) {
     const a = slingAngle(w, intent);
     if (Number.isFinite(a)) sling(w, a);
   }
@@ -372,5 +407,9 @@ export function step(w: World, intent: Intent): void {
   if (s.mass > w.maxMass) w.maxMass = s.mass;
   const st = stageFor(s.mass);
   if (st > w.stage) { w.stage = st; w.stageUps++; }
+  if (hunting) {
+    w.phaseTime += DT;
+    if (w.phaseTime >= c.huntTimeLimit) w.over = OVER_ESCAPED;
+  } else if (intent.collapse && canCollapse(w)) startCollapse(w);
   w.tick++;
 }

@@ -13,6 +13,12 @@ export const MAX_COMETS = 6;
 export const OVER_NONE = 0;
 export const OVER_SWALLOWED = 1; // la tragó el agujero negro
 export const OVER_DIMMED = 2;    // se apagó: chocó sin mundos que la protejan
+export const OVER_ESCAPED = 3;   // en la caza, el rival se escapó (se acabó el tiempo)
+export const OVER_WON = 4;       // te fusionaste con el rival: ganaste la pantalla
+export const PHASE_PLAY = 0;     // crecer
+export const PHASE_COLLAPSE = 1; // cinemática: supernova y nacimiento de tu agujero negro
+export const PHASE_HUNT = 2;     // sos el agujero negro y cazás al rival
+export const PHASE_MERGE = 3;    // cinemática: la fusión
 export const KIND_ASTEROID = 0;
 export const KIND_ROCKY = 1;
 export const KIND_ICE = 2;
@@ -55,6 +61,9 @@ export interface World {
   cometKills: number;  // cometas destruidos (evento)
   readonly rng: Rng;   // azar de la partida (cometas, escombros)
   over: number;        // OVER_NONE mientras se juega
+  phase: number;       // PHASE_*: en qué parte de la pantalla estás
+  phaseTime: number;   // segundos desde que empezó la fase
+  mergeR: number; mergeA: number;   // espiral de la fusión: distancia y ángulo del rival
   invuln: number;      // segundos de invulnerabilidad que quedan
   hits: number;        // choques con planetas (evento para el dibujo y la interfaz)
   slingCd: number;     // segundos hasta poder volver a disparar
@@ -175,7 +184,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       timer: new Float32Array(MAX_COMETS), carry: new Int32Array(MAX_COMETS).fill(-1), beamId: new Int32Array(MAX_COMETS),
     },
     cometClock: config.cometFirst, cometSteals: 0, cometKills: 0, rng: createRng(seed ^ 0x9e3779b9),
-    over: OVER_NONE, invuln: 0, hits: 0, slingCd: 0, shots: 0,
+    over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, shots: 0,
     eclipses: 0, eclipseAngle: 0, eclipseStrength: 0, eclipseCd: 0, beamTime: 0,
     x: f(), y: f(), prevX: f(), prevY: f(), vx: f(), vy: f(), radius: f(), mass: f(),
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
@@ -254,7 +263,7 @@ export function hashWorld(w: World): number {
     buf[0] = v;
     for (let k = 0; k < 8; k++) { h ^= bytes[k]; h = Math.imul(h, 0x01000193) >>> 0; }
   };
-  mix(w.star.x); mix(w.star.y); mix(w.star.mass); mix(w.bh.x); mix(w.bh.y); mix(w.bh.mass);
+  mix(w.star.x); mix(w.star.y); mix(w.star.mass); mix(w.bh.x); mix(w.bh.y); mix(w.bh.mass); mix(w.phase); mix(w.phaseTime);
   for (let i = 0; i < w.count; i++) { mix(w.x[i]); mix(w.y[i]); mix(w.state[i]); }
   return h >>> 0;
 }
