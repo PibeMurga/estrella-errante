@@ -1,20 +1,21 @@
 import './intro.css';
+import { drawThumb, type ThumbKind } from './entityThumbs';
 
 // Intro de la partida: la primera transmisión de la civilización, con la partida quieta. Te dice quién sos y qué tenés
 // que hacer; a la izquierda, lo que hay en el espacio, de lo más chico a lo más inmenso. Con un clic (o Enter) se
 // completa el texto; con otro, empieza la partida (y la guía te muestra cómo moverte).
 
-interface Entity { readonly name: string; readonly note: string; readonly size: number; readonly color: string; readonly you?: boolean; readonly danger?: boolean }
+interface Entity { readonly name: string; readonly note: string; readonly size: number; readonly kind: ThumbKind; readonly you?: boolean; readonly danger?: boolean }
 const ENTITIES: readonly Entity[] = [
-  { name: 'ASTEROIDE', note: 'ROCA SUELTA · SUMALA Y CRECÉS', size: 5, color: '#9a948c' },
-  { name: 'COMETA', note: 'CHICO, PERO TE ROBA LO QUE JUNTASTE', size: 6, color: '#bfe6ff', danger: true },
-  { name: 'LUNA', note: 'GIRA ALREDEDOR DE UN PLANETA', size: 8, color: '#c8c2b8' },
-  { name: 'PLANETA ROCOSO', note: 'SÓLIDO · SI ES MÁS CHICO, SE PARTE', size: 11, color: '#a8755a' },
-  { name: 'PLANETA HELADO', note: 'HIELO Y ROCA', size: 13, color: '#bcd8e8' },
-  { name: 'PLANETA GASEOSO', note: 'VOS, AL EMPEZAR', size: 16, color: '#d9b07c', you: true },
-  { name: 'ENANA MARRÓN', note: 'CASI UNA ESTRELLA', size: 18, color: '#8a3a3c' },
-  { name: 'ESTRELLA', note: 'ENCENDIDA · DE ROJA A HIPERGIGANTE', size: 22, color: '#ffd27a' },
-  { name: 'AGUJERO NEGRO', note: 'EL DEVORADOR · Y TU DESTINO', size: 24, color: '#000', danger: true },
+  { name: 'ASTEROIDE', note: 'ROCA SUELTA · SUMALA Y CRECÉS', size: 12, kind: 'asteroid' },
+  { name: 'COMETA', note: 'CHICO, PERO TE ROBA LO QUE JUNTASTE', size: 10, kind: 'comet', danger: true },
+  { name: 'LUNA', note: 'GIRA ALREDEDOR DE UN PLANETA', size: 16, kind: 'moon' },
+  { name: 'PLANETA ROCOSO', note: 'SÓLIDO · SI ES MÁS CHICO, SE PARTE', size: 20, kind: 'rocky' },
+  { name: 'PLANETA HELADO', note: 'HIELO Y ROCA', size: 23, kind: 'ice' },
+  { name: 'PLANETA GASEOSO', note: 'VOS, AL EMPEZAR', size: 28, kind: 'gas', you: true },
+  { name: 'ENANA MARRÓN', note: 'CASI UNA ESTRELLA', size: 31, kind: 'brown' },
+  { name: 'ESTRELLA', note: 'ENCENDIDA · DE ROJA A HIPERGIGANTE', size: 24, kind: 'star' },
+  { name: 'AGUJERO NEGRO', note: 'EL DEVORADOR · Y TU DESTINO', size: 20, kind: 'hole', danger: true },
 ];
 
 const LINES = (name: string): string[] => [
@@ -33,9 +34,10 @@ export function createIntro(parent: HTMLElement, onVoice: (syllables: number) =>
   const root = document.createElement('div');
   root.className = 'intro';
   root.innerHTML = `<div class="ilist"><div class="ih">LO QUE HAY EN EL ESPACIO · DE MENOR A MAYOR</div>${ENTITIES.map((e) =>
-    `<div class="ie${e.you ? ' you' : ''}${e.danger ? ' dng' : ''}"><em><i style="width:${e.size}px;height:${e.size}px;background:${e.color}"></i></em><div><b>${e.name}</b><span>${e.note}</span></div></div>`).join('')}</div>
+    `<div class="ie${e.you ? ' you' : ''}${e.danger ? ' dng' : ''}"><em></em><div><b>${e.name}</b><span>${e.note}</span></div></div>`).join('')}</div>
     <div class="itext"><pre></pre><div class="igo">CLIC O ENTER PARA EMPEZAR</div></div>`;
   parent.appendChild(root);
+  root.querySelectorAll('.ie em').forEach((em, k) => em.appendChild(drawThumb(ENTITIES[k]!.kind, ENTITIES[k]!.size)));
   const pre = root.querySelector('pre')!, go = root.querySelector<HTMLElement>('.igo')!;
   let active = false, lines: string[] = [], chars = 0, total = 0, shown = -1, t = 0;
 

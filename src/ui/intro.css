@@ -4,19 +4,17 @@
   font-family: 'Cascadia Mono', 'Consolas', 'DejaVu Sans Mono', 'Liberation Mono', monospace; }
 .intro.on { display: block; animation: introIn .8s ease-out; }
 @keyframes introIn { from { opacity: 0; } to { opacity: 1; } }
-.intro .ilist { position: absolute; left: 40px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px;
+.intro .ilist { position: absolute; left: 34px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 2px;
   color: #7af5c9; text-shadow: 0 0 4px #7af5c999; }
 .intro .ih { font-size: 10px; letter-spacing: 3px; opacity: .7; margin-bottom: 6px; }
 .intro .ie { display: flex; align-items: center; gap: 12px; }
-.intro .ie em { flex: none; width: 26px; display: flex; justify-content: center; }
-.intro .ie i { border-radius: 50%; box-shadow: 0 0 6px #ffffff33; }
+.intro .ie em { flex: none; width: 44px; height: 40px; display: flex; justify-content: center; align-items: center; }
 .intro .ie > div { display: flex; flex-direction: column; gap: 2px; width: 300px; }
 .intro .ie b { font-size: 12px; letter-spacing: 3px; }
 .intro .ie span { font-size: 9px; letter-spacing: 1.5px; opacity: .7; }
 .intro .ie.you b { color: #ffffff; }
 .intro .ie.dng b { color: #ff6a5a; text-shadow: 0 0 5px #ff4a3d99; }
-.intro .ie:last-child em i { box-shadow: 0 0 0 2px #ffb46a, 0 0 10px #ff8a3a; }
-.intro .itext { position: absolute; left: 470px; right: 60px; top: 50%; transform: translateY(-50%); color: #f3e2b8; text-shadow: 0 0 6px #f3e2b866; }
+.intro .itext { position: absolute; left: 480px; right: 60px; top: 50%; transform: translateY(-50%); color: #f3e2b8; text-shadow: 0 0 6px #f3e2b866; }
 .intro pre { margin: 0; font: inherit; font-size: 15px; line-height: 2; letter-spacing: 2px; white-space: pre-wrap; min-height: 15em; }
 .intro .igo { margin-top: 18px; font-size: 11px; letter-spacing: 4px; color: #7af5c9; opacity: 0; transition: opacity .4s; animation: igo 1.6s ease-in-out infinite; }
 @keyframes igo { 50% { text-shadow: 0 0 10px #7af5c9; } }
