@@ -27,7 +27,7 @@ export function createMinimap(parent: HTMLElement): Minimap {
 
   return {
     draw(w) {
-      if (++acc % 4 !== 0) return;   // unos 15 cuadros por segundo alcanzan
+      const fresh = ++acc % 6 === 0;   // la densidad de asteroides se recalcula cada tanto; el resto, en cada cuadro
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
       g.clearRect(0, 0, SIZE, SIZE);
       g.save();
@@ -40,13 +40,12 @@ export function createMinimap(parent: HTMLElement): Minimap {
       const s = w.star, size = starSize(s.mass);
       const X = (x: number): number => C + (x - s.x) * k, Y = (y: number): number => C - (y - s.y) * k;
       // Densidad de asteroides: una sombra suave por zonas (no cada punto).
-      dens.fill(0);
-      for (let i = 0; i < w.count; i++) {
+      if (fresh) { dens.fill(0); for (let i = 0; i < w.count; i++) {
         if (w.kind[i] !== KIND_ASTEROID || w.state[i] === DEAD) continue;
         const gx = Math.floor((w.x[i] - s.x + RANGE) / CELL), gy = Math.floor((s.y - w.y[i] + RANGE) / CELL);
         if (gx < 0 || gy < 0 || gx >= GRID || gy >= GRID) continue;
         dens[gy * GRID + gx]++;
-      }
+      } }
       for (let gy = 0; gy < GRID; gy++) for (let gx = 0; gx < GRID; gx++) {
         const v = dens[gy * GRID + gx]!;
         if (v === 0) continue;
