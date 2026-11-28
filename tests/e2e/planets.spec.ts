@@ -10,8 +10,8 @@ test('marcas de peligro alrededor de los planetas cercanos, y el visor del siste
     const set = (k: number, dx: number, dy: number, r: number): void => { const p = w.planets[k]!; w.x[p] = w.prevX[p] = s.x + dx; w.y[p] = w.prevY[p] = s.y + dy; w.vx[p] = 0; w.vy[p] = 0; w.radius[p] = r; w.mass[p] = r ** 3; };
     set(0, 22, 0, E * 0.8); set(1, -24, 0, E * 1.3); set(2, 0, 26, E * 1.8);
   });
-  await page.waitForTimeout(900);
-  expect(await page.evaluate(() => window.__GAME__!.diagnostics.dangerMarks)).toBeGreaterThanOrEqual(3);   // puede haber otro planeta cerca en el mapa
+  // Las marcas aparecen de a poco: se espera a que estén (con la máquina cargada puede tardar).
+  await page.waitForFunction(() => window.__GAME__!.diagnostics.dangerMarks >= 3, undefined, { timeout: 5_000 });   // puede haber otro planeta cerca en el mapa
   await page.screenshot({ path: 'artifacts/e2e/marcas-de-peligro.png' });
 });
 
