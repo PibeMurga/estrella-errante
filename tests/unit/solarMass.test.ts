@@ -18,6 +18,6 @@ describe('masa en masas solares', () => {
   it('el visor muestra masas de la Tierra, abreviadas', () => {
     expect(formatEarth(1)).toMatch(/^\d+ TIERRAS$/);          // al empezar: unos cientos
     expect(formatEarth(30)).toMatch(/^27 k TIERRAS$/);       // ignición: 0,08 soles
-    expect(formatEarth(310)).toMatch(/^33,3 M TIERRAS$/);      // hipergigante: 100 soles
+    expect(formatEarth(310)).toMatch(/^33 M TIERRAS$/);      // hipergigante: 100 soles
   });
 });
