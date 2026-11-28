@@ -3,6 +3,7 @@ import { playerName } from './playerName';
 import { formatLike, formatSolar, solarMasses } from './solarMass';
 import { starSize } from '../sim/world';
 import { createMinimap } from './minimap';
+import { createDangerAlert } from './dangerAlert';
 import { rivalMass } from '../sim/phase';
 import { MAX_COMETS, PHASE_COLLAPSE, PHASE_HUNT, PHASE_IGNITION, PHASE_MERGE, PHASE_PLAY, type World } from '../sim/world';
 import { STAGE_HYPER, STAGES, stageFor, stageProgress } from '../sim/stages';
@@ -55,6 +56,7 @@ export function createHud(parent: HTMLElement): Hud {
   const timeEl = q<HTMLElement>('.time'), massEl = q<HTMLElement>('.mass');
   const resEl = q<HTMLElement>('.vb.res'), resCover = q<HTMLElement>('.rcover');
   const minimap = createMinimap(root);
+  const dangerAlert = createDangerAlert(root);
   // Etiqueta del instrumento sobre tu cuerpo: tu nombre y tu etapa, un momento (al empezar, en la ignición y al subir
   // de etapa) y se desvanece. No queda fija: sería poco real.
   const tag = q<HTMLElement>('.tag'), tagN = q<HTMLElement>('.tn'), tagS = q<HTMLElement>('.ts');
@@ -101,6 +103,7 @@ export function createHud(parent: HTMLElement): Hud {
     },
     setVisible(on) { if (on !== visible) { visible = on; root.style.display = on ? '' : 'none'; } },
     update(w, view, dt, width, height) {
+      dangerAlert.update(w, view, dt, width, height);
       if (w.stage !== tagStage || w.ignitions !== tagIgn) { if (tagStage >= 0) tagT = 4; tagStage = w.stage; tagIgn = w.ignitions; }
       tagT = Math.max(0, tagT - Math.min(dt, 0.1));   // (el primer cuadro trae todo lo que tardó en cargar)
       const tagA = Math.min(1, tagT / 1.2) * (w.over === 0 && !w.choosing ? 1 : 0);

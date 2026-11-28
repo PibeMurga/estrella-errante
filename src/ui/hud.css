@@ -73,3 +73,11 @@
   padding-bottom: 8px; border-bottom: 1px solid #7af5c955; letter-spacing: 4px; white-space: nowrap; transition: opacity .3s; }
 .hud .tag .tn { font-size: 14px; }
 .hud .tag .ts { font-size: 10px; opacity: .7; letter-spacing: 3px; }
+
+/* Alarma de peligro: bordes rojos que laten y un cartel corto; flechas magenta hacia los cometas fuera de cuadro. */
+.hud .dvig { position: absolute; inset: 0; opacity: 0; pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, #ff28184d 80%, #ff2818aa 100%); }
+.hud .dmsg { position: absolute; left: 50%; top: 118px; transform: translateX(-50%); opacity: 0; color: var(--red); font-size: 15px; font-weight: 700;
+  letter-spacing: 5px; text-shadow: 0 0 6px #ff4a3dcc, 0 0 16px #ff4a3d88; white-space: nowrap; }
+.hud .carrow { position: absolute; left: 0; top: 0; opacity: 0; color: #ff5ab4; filter: drop-shadow(0 0 5px #ff5ab4) drop-shadow(0 0 10px #ff5ab488);
+  transition: opacity .25s; will-change: transform; }

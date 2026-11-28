@@ -716,7 +716,9 @@ export function step(w: World, intent: Intent): void {
       if (hunting) {
         // Tu agujero negro aspira: lo que entra en su zona de atracción cae en espiral, cada vez más rápido, y se lo traga.
         // Nada pasa de largo. No hay capturas ni choques.
-        if (d < holeR * c.huntPullRange) {
+        // Los planetas (grandes) se sienten desde más lejos y caen con más fuerza: se los ve arrancados hacia vos.
+        const isPl = isPlanetKind(w.kind[i]!), pr = isPl ? 1.6 : 1;
+        if (d < holeR * c.huntPullRange * pr + (isPl ? w.radius[i] : 0)) {
           if (st === ORBIT_PLANET) {
             // Arranca la luna de su planeta, con la velocidad que llevaba al girar.
             const p = w.parent[i]!, ang = w.orbitAngle[i], v = w.orbitW[i] * w.orbitR[i];
@@ -724,13 +726,13 @@ export function step(w: World, intent: Intent): void {
             w.state[i] = FREE; w.parent[i] = -1;
           }
           const nd = Math.max(d, 1e-6), rx = (s.x - x) / nd, ry = (s.y - y) / nd;
-          const acc = Math.min(c.huntPullMax, c.huntPullAccel * (holeR / Math.max(d, 1)) ** 2);
+          const acc = Math.min(c.huntPullMax * (isPl ? 2 : 1), c.huntPullAccel * (isPl ? 3 : 1) * (holeR / Math.max(d, 1)) ** 1.6);
           w.vx[i] += (rx - ry * 0.3) * acc * DT;   // hacia el centro, con un poco de giro: espiral
           w.vy[i] += (ry + rx * 0.3) * acc * DT;
           const drag = 1 - c.huntPullDrag * DT;     // pierde velocidad respecto de vos: no queda orbitando
           w.vx[i] = s.vx + (w.vx[i] - s.vx) * drag; w.vy[i] = s.vy + (w.vy[i] - s.vy) * drag;
         }
-        if (d < holeR * c.huntSwallowFactor) { w.state[i] = DEAD; s.mass += massGain(w, i); }
+        if (d < holeR * c.huntSwallowFactor + (isPlanetKind(w.kind[i]!) ? w.radius[i] * 0.4 : 0)) { w.state[i] = DEAD; s.mass += massGain(w, i); }
         continue;
       }
       // Escalón del planeta: los más grandes que la estrella la dañan al tocarla (o es un golpe grave).
