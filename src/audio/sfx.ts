@@ -16,6 +16,7 @@ export interface Sfx {
   fracture(): void;
   ignition(): void;
   cometDown(): void;
+  voice(syllables: number): void;   // la «voz» de la civilización: sílabas sin palabras, procesadas
   rumble(level: number): void;   // 0 a 1: el tirón del agujero negro (continuo)
 }
 
@@ -115,6 +116,31 @@ export function createSfx(): Sfx {
     // Ignición: una ráfaga que crece y se abre (la música sube aparte).
     ignition() { if (!ok('ign', 3)) return; burst('bandpass', 200, 3000, 2.4, 0.3, 1.5, 0, 1.2); tone(55, 110, 2.8, 0.3, 'triangle'); },
     // Un cometa destruido.
+    voice(syllables) {
+      if (!ok('voice', 0.4)) return;
+      const c = a!;
+      // Sílabas: dos osciladores apenas desafinados por dos formantes que se mueven (como vocales), con un vibrato lento
+      // y una caída de tono al final de cada una. No dice nada: suena a habla, de lejos y extraña.
+      let t = c.currentTime + 0.02;
+      const base = v(110, 0.15);
+      for (let k = 0; k < Math.min(18, syllables); k++) {
+        const dur = v(0.13, 0.4), f = base * (k === syllables - 1 ? 0.8 : v(1, 0.18));
+        const o1 = c.createOscillator(), o2 = c.createOscillator(), lfo = c.createOscillator(), lg = c.createGain();
+        o1.type = 'sawtooth'; o2.type = 'triangle';
+        o1.frequency.setValueAtTime(f, t); o1.frequency.exponentialRampToValueAtTime(f * 0.86, t + dur);
+        o2.frequency.setValueAtTime(f * 1.503, t); o2.frequency.exponentialRampToValueAtTime(f * 1.29, t + dur);
+        lfo.frequency.value = v(6); lg.gain.value = f * 0.03; lfo.connect(lg); lg.connect(o1.frequency); lg.connect(o2.frequency);
+        const f1 = c.createBiquadFilter(), f2 = c.createBiquadFilter(), g = c.createGain();
+        f1.type = 'bandpass'; f1.Q.value = 7; f1.frequency.setValueAtTime(v(600, 0.4), t); f1.frequency.linearRampToValueAtTime(v(700, 0.4), t + dur);
+        f2.type = 'bandpass'; f2.Q.value = 9; f2.frequency.setValueAtTime(v(1700, 0.35), t); f2.frequency.linearRampToValueAtTime(v(1500, 0.35), t + dur);
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.32, t + 0.025); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o1.connect(f1); o1.connect(f2); o2.connect(f1); f1.connect(g); f2.connect(g); g.connect(out);
+        for (const o of [o1, o2, lfo]) { o.start(t); o.stop(t + dur + 0.05); }
+        t += dur + (k % 4 === 3 ? v(0.2) : v(0.035, 0.5));
+      }
+      // Estática de la transmisión, al principio.
+      burst('bandpass', 2400, 1800, 0.35, 0.12, 0.8);
+    },
     cometDown() { if (!ok('comet', 0.3)) return; burst('bandpass', 3000, 600, 0.6, 0.2, 3); tone(400, 120, 0.5, 0.12, 'triangle'); },
     rumble(level) {
       if (!a) return;

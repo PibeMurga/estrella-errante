@@ -12,8 +12,8 @@ const SHOWS = 3;   // partidas en las que aparece
 const enum Target { PLAYER, ASTEROID, PLANET, BARS, RACE, MAP, SHOT, COMET }
 interface Step { target: Target; title: string; text: string; time: number }
 const STEPS: readonly Step[] = [
-  { target: Target.PLAYER, title: 'TU MUNDO', text: 'MANTENÉ EL CLIC IZQUIERDO PARA IR HACIA EL MOUSE · AL SOLTAR, TE LLEVA LA GRAVEDAD', time: 6.5 },
-  { target: Target.ASTEROID, title: 'ASTEROIDE', text: 'ROCA SUELTA · PASÁ CERCA Y QUEDA GIRANDO EN TU ÓRBITA · SUMA MASA', time: 6 },
+  { target: Target.PLAYER, title: 'TU MUNDO · UN PLANETA GASEOSO', text: 'MANTENÉ EL CLIC IZQUIERDO PARA IR HACIA EL MOUSE · AL SOLTAR, TE LLEVA LA GRAVEDAD', time: 6.5 },
+  { target: Target.ASTEROID, title: 'ASTEROIDE', text: 'ROCA SUELTA · PASÁ CERCA Y QUEDA GIRANDO EN TU ÓRBITA · CADA UNA QUE SUMÁS TE HACE CRECER', time: 6 },
   { target: Target.BARS, title: 'ETAPA Y RESISTENCIA', text: 'ETAPA: CUÁNTO TE FALTA PARA LA PRÓXIMA · RESIST.: TU INTEGRIDAD; BAJA AL PERDER MASA Y EN CERO TE FRACTURÁS', time: 8 },
   { target: Target.RACE, title: 'LA CARRERA', text: 'TU MASA CONTRA LA DEL RIVAL · CRECÉ HASTA LA IGNICIÓN Y SUPERALO', time: 6.5 },
   { target: Target.MAP, title: 'MAPA', text: 'VOS EN EL CENTRO · ESTRELLAS CERCANAS · EN ROJO, EL AGUJERO NEGRO', time: 6 },

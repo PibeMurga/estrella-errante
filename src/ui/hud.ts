@@ -84,6 +84,7 @@ export function createHud(parent: HTMLElement): Hud {
   let shownMode = -1, lastTx = NaN, lastTy = NaN, lastHalf = NaN, lastAng = NaN, visible = true;
   let acc = 1, lastSeg = -1, lastBhDist = Infinity, lastOrbit = 0;
   let lastFlip = false;
+  let seenCrash = 0;
   let seen = { ign: 0, stageUps: 0, bolts: 0, bh: 0, pcap: 0, pbrk: 0, grave: 0, aup: 0, adn: 0, steals: 0, kills: 0, hits: 0, comets: 0, tidal: 0, crashes: 0, phase: 0 };
 
   const log = (text: string): void => {
@@ -97,6 +98,7 @@ export function createHud(parent: HTMLElement): Hud {
     root,
     setName(name) { pnameEl.textContent = name; },
     reset(w) {
+      seenCrash = w.cometCrashes;
       seen = { ign: w.ignitions, stageUps: w.stageUps, bolts: w.bolts, bh: w.boltHitsBh, pcap: w.planetCaptures, pbrk: w.planetBreaks, grave: w.graveHits, aup: w.abilityUps, adn: w.abilityDowns, steals: w.cometSteals, kills: w.cometKills, hits: w.hits, comets: activeComets(w), tidal: w.tidalBreaks, crashes: w.planetCrashes, phase: w.phase };
       logText.length = 0; logAge.length = 0;
       lastSeg = -1; acc = 1; lastBhDist = Infinity; lastOrbit = w.orbitingCount; ignSeen = w.ignitions; tipT = 0;
@@ -233,7 +235,8 @@ export function createHud(parent: HTMLElement): Hud {
       if (w.abilityUps > seen.aup) log(`HABILIDAD: ${ABILITY_NAMES[w.ability]}`);
       if (w.abilityDowns > seen.adn) log('PERDISTE UNA HABILIDAD');
       seen.pcap = w.planetCaptures; seen.pbrk = w.planetBreaks; seen.grave = w.graveHits; seen.aup = w.abilityUps; seen.adn = w.abilityDowns;
-      if (w.cometKills > seen.kills) log('COMETA DESTRUIDO');
+      if (w.cometKills > seen.kills) log(w.cometCrashes > seenCrash ? 'COMETA DESTROZADO CONTRA UN PLANETA' : 'COMETA DESTRUIDO');
+      seenCrash = w.cometCrashes;
       if (w.bolts > seen.bolts) log(`BÓLIDO: SALIERON ${w.lastBoltSize} ASTEROIDES DE TU ÓRBITA`);
       if (w.boltHitsBh > seen.bh) log('EL BÓLIDO FRENÓ AL AGUJERO NEGRO, PERO LO ALIMENTÓ');
       if (w.hits > seen.hits) { const n = Math.max(1, lastOrbit - w.orbitingCount); log(`CHOQUE CON UN PLANETA: PERDISTE ${n} ${n === 1 ? 'CUERPO' : 'CUERPOS'} DE TU ÓRBITA`); }

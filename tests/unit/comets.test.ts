@@ -96,4 +96,26 @@ describe('cometa cazador', () => {
     for (let s = 0; s < 600; s++) step(w, IDLE);
     expect(active(w)).toBe(MAX_COMETS);
   });
+  it('si se cruza con un planeta suelto se destroza contra él (se lo puede llevar a chocar)', () => {
+    const w = createWorld(cfg({ cometFirst: 1e9 }), 2, 10);
+    const p = addBody(w, { x: 60, y: 0, vx: 0, vy: 0, radius: 6, kind: KIND_ROCKY });
+    w.planets = Int32Array.of(p);
+    const k = spawnComet(w, 120, 0);   // el planeta queda entre el cometa y vos
+    for (let t = 0; t < 240 && w.comets.mode[k] !== 0; t++) step(w, IDLE);
+    expect(w.comets.mode[k]).toBe(0);
+    expect(w.cometCrashes).toBe(1);
+  });
+
+  it('no te persigue como un misil: ya cerca deja de corregir y cruza de largo', () => {
+    const w = createWorld(cfg({ cometFirst: 1e9 }), 2, 10);
+    const k = spawnComet(w, 200, 40);
+    w.star.vx = 0; w.star.vy = 0;
+    // Te corrés de costado de golpe cuando ya lo tenés cerca: el cometa casi no gira.
+    for (let t = 0; t < 600 && Math.hypot(w.comets.x[k]! - w.star.x, w.comets.y[k]! - w.star.y) > 60; t++) step(w, IDLE);
+    const h0 = Math.atan2(w.comets.vy[k]!, w.comets.vx[k]!);
+    w.star.y += 40; w.star.prevY += 40;
+    for (let t = 0; t < 30; t++) step(w, IDLE);
+    const h1 = Math.atan2(w.comets.vy[k]!, w.comets.vx[k]!);
+    expect(Math.abs(h1 - h0)).toBeLessThan(0.3);
+  });
 });

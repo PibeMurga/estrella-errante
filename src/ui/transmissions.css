@@ -1,0 +1,8 @@
+/* Transmisiones de la civilización: otro color que el visor (no son instrumentos, es una voz de afuera). Blanco cálido
+   tenue, con una línea de cabecera y estática suave. */
+.tx { position: fixed; left: 50%; bottom: 74px; transform: translateX(-50%); max-width: 620px; opacity: 0; pointer-events: none; z-index: 3;
+  padding: 10px 16px 12px; border-left: 2px solid #f3e2b8aa; background: linear-gradient(90deg, #0a0805cc, #0a080566 80%, transparent);
+  font-family: 'Cascadia Mono', 'Consolas', 'DejaVu Sans Mono', 'Liberation Mono', monospace; color: #f3e2b8;
+  text-shadow: 0 0 5px #f3e2b866; letter-spacing: 1.5px; }
+.tx .txh { font-size: 9px; letter-spacing: 3px; opacity: .55; margin-bottom: 6px; }
+.tx .txb { font-size: 12px; line-height: 1.7; white-space: pre-line; }

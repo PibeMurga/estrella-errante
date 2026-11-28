@@ -28,13 +28,21 @@ void main(){
   // Deformación de las franjas: remolinos y festones a lo largo de los bordes.
   float warp = fbm(vec3(q.x * 2.6, lat * 9., q.z * 2.6) + uSeed, 4);
   float warp2 = fbm(vec3(q.x * 6., lat * 24., q.z * 6.) + uSeed * 1.7 + vec3(0., 0., uTime * .02), 3);
-  float y = lat + warp * .045 + warp2 * .018;
+  // Festones: olas que se enrollan en los bordes de las bandas, y remolinos chicos que viajan con la corriente.
+  float fest = sin(lonF * 9. + warp * 5. + uTime * .08) * smoothstep(.6, .95, sin(lat * 14. + uSeed) * .5 + .5);
+  float y = lat + warp * .045 + warp2 * .018 + fest * .012;
   // Perfil de bandas de ancho desparejo: zonas claras anchas y cinturones oscuros, con franjitas finas.
   float prof = fbm(vec3(0., y * 5.5, uSeed * .3), 4) * .5 + .5;
   float fine = sin(y * 85. + warp * 6.) * .5 + .5;
   vec3 alb = mix(uC, uA, smoothstep(.25, .5, prof));
   alb = mix(alb, uB, smoothstep(.52, .72, prof));
   alb *= .9 + .14 * fine;
+  // Vetas finas estiradas a lo largo de cada banda (nubes arrastradas por el viento).
+  float streak = fbm(vec3(q.x * 4., y * 70., q.z * 4.) + uSeed * 2.3 + vec3(uTime * .03, 0., 0.), 3) * .5 + .5;
+  alb *= .82 + .36 * streak;
+  // Nubes altas más claras sobre las zonas (manchas blancas sueltas).
+  float hiC = smoothstep(.62, .82, fbm(vec3(q.x * 5., y * 16., q.z * 5.) + uSeed * 4.1 + vec3(0., 0., uTime * .025), 4) * .5 + .5);
+  alb = mix(alb, uB * 1.18, hiC * .45 * smoothstep(.45, .7, prof));
   // Turbulencia en los bordes de las bandas (donde el perfil cambia rápido).
   float edge = abs(fract(prof * 3.) - .5);
   float turb = fbm(q * 9. + vec3(uTime * .04, 0., 0.) + uSeed, 3) * .5 + .5;
@@ -42,7 +50,9 @@ void main(){
   float band = prof * 2. - 1.;
   // Una gran tormenta oval y algunos óvalos blancos chicos.
   float storm = 1. - smoothstep(.0, .16, length(vec2((lon - 1.1 - uTime*.02)*.6, (lat + .28)*2.2)));
-  alb = mix(alb, uC * 1.15 + vec3(.06, .02, 0.), storm * .65);
+  float stormRim = smoothstep(.0, .5, storm) * (1. - smoothstep(.5, 1., storm));
+  alb = mix(alb, uB * 1.2, stormRim * .5);                          // borde claro alrededor de la tormenta
+  alb = mix(alb, uC * 1.1 + vec3(.1, .02, -.02), smoothstep(.45, 1., storm) * .8);
   for (int k = 0; k < 4; k++) {
     float fk = float(k);
     vec2 c = vec2(fract(uSeed * .37 + fk * .29) * 6.283 - 3.14, -.55 + fk * .32 + sin(uSeed + fk) * .05);
@@ -58,6 +68,8 @@ void main(){
   vec3 col = alb * uLight * lit * (.6 + .4 * pow(mu, .45)) + alb * .035;
   // Atmósfera en el borde, del lado iluminado.
   col += uA * pow(1. - mu, 3.) * (.15 + .85*max(ndl + .2, 0.)) * .35 * uLight;
+  // Bruma azulada muy fina en el borde iluminado (dispersión de la alta atmósfera).
+  col += vec3(.35, .5, .8) * pow(1. - mu, 6.) * max(ndl + .1, 0.) * .5 * uLight;
   // Gigantes calientes (magenta, brasa): brillan un poco por su propio calor, más en las bandas.
   col += vec3(.55, .1, .05) * uGlow * (.25 + .75*(band*.5+.5)) * (.5 + .5*turb) * .5;
   // Enana marrón: las bandas se calientan; brillo propio rojo oscuro que no depende de la luz de afuera.

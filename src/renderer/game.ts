@@ -15,6 +15,7 @@ import { step } from '../sim/step';
 import { createWorld, PHASE_COLLAPSE, PHASE_MERGE } from '../sim/world';
 import { createGameOver } from '../ui/gameOver';
 import { createGuide } from '../ui/guide';
+import { createTransmissions } from '../ui/transmissions';
 import { createHud } from '../ui/hud';
 import { createCinematic } from '../ui/cinematic';
 import { createPause } from '../ui/pause';
@@ -39,6 +40,8 @@ if (!view.ok) {
   const governor = new QualityGovernor('high');
   const hud = createHud(document.body);
   const guide = createGuide(document.body);
+  let txVoice = (_n: number): void => {};
+  const tx = createTransmissions(document.body, (n) => txVoice(n));
   const cine = createCinematic(document.body);
   hud.reset(world);
   // Nueva partida: se recarga con otra semilla (mapa nuevo). Las capas del dibujo arman sus índices al empezar.
@@ -68,6 +71,7 @@ if (!view.ok) {
   const params = new URLSearchParams(location.search);
   // Música de fondo: arranca con el primer gesto (el navegador no deja sonar antes). M la silencia.
   const music = createAmbient(), sfx = createSfx();
+  txVoice = (n) => sfx.voice(n);
   const startMusic = (): void => { music.start(); sfx.start(); };
   window.addEventListener('pointerdown', startMusic);
   window.addEventListener('keydown', (e) => { startMusic(); if ((e.key === 'm' || e.key === 'M') && named) sfx.setMuted(music.toggleMute()); });
@@ -117,7 +121,8 @@ if (!view.ok) {
     view.render();
     hud.setVisible(world.over === 0 && world.phase !== PHASE_COLLAPSE && world.phase !== PHASE_MERGE);
     hud.update(world, view, elapsed, window.innerWidth, window.innerHeight);
-    guide.update(world, view, elapsed, window.innerWidth, window.innerHeight, named && !pause.paused);
+    tx.update(world, elapsed, named && !pause.paused && !asStar);
+    guide.update(world, view, elapsed, window.innerWidth, window.innerHeight, named && !pause.paused && !tx.busy);
     music.setGrowth(stageFor(world.star.mass) / STAGE_HYPER);
     if (world.ignitions > lastIgn) { lastIgn = world.ignitions; music.swell(); }
     playEvents();

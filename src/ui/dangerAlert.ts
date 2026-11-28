@@ -1,4 +1,4 @@
-import { planetTier, TIER_GRAVE } from '../sim/planetCapture';
+import { planetTier, TIER_BREAK, TIER_GRAVE } from '../sim/planetCapture';
 import { COMET_HUNT } from '../sim/comets';
 import { FREE, MAX_COMETS, PHASE_PLAY, starSize, type World } from '../sim/world';
 import type { HudView } from './hud';
@@ -6,7 +6,11 @@ import type { HudView } from './hud';
 // Alarma de peligro en el visor:
 // - un planeta que te destruye viene encima (cerca y acercándose): los bordes de la pantalla se tiñen de rojo y late un
 //   cartel corto;
-// - cometas que vienen a robarte desde fuera de cuadro: una flecha magenta en el borde, hacia donde están.
+// - cometas que vienen a robarte desde fuera de cuadro: una flecha magenta en el borde, hacia donde están;
+// - debajo del planeta marcado más cercano de cada clase, qué pasa si lo chocás.
+
+const LABELS = ['', 'CHOCALO: LO PARTÍS Y SUS PEDAZOS SE SUMAN A TU ÓRBITA', 'CHOCARLO TE DAÑA', 'TE DESTRUYE · ESQUIVALO'];
+const LABEL_CLASS = ['', 'brk', 'hrt', 'grv'];
 
 const ARROWS = 4;
 
@@ -26,6 +30,13 @@ export function createDangerAlert(root: HTMLElement): DangerAlert {
     a.innerHTML = '<svg width="20" height="20" viewBox="-10 -10 20 20"><path d="M-5 -7 L7 0 L-5 7 Z" fill="currentColor"/></svg>';
     root.appendChild(a); arrows.push(a);
   }
+  const labels: HTMLElement[] = [];
+  for (let t = 1; t <= 3; t++) {
+    const l = document.createElement('div');
+    l.className = `plabel ${LABEL_CLASS[t]}`; l.textContent = LABELS[t]!;
+    root.appendChild(l); labels.push(l);
+  }
+  const best = new Int32Array(4), bestD = new Float32Array(4), lab = new Float32Array(4);
   const pt = { x: 0, y: 0, ahead: true };
   let level = 0, shownLevel = -1, time = 0;
   const arrowOn = new Uint8Array(ARROWS);
@@ -57,6 +68,26 @@ export function createDangerAlert(root: HTMLElement): DangerAlert {
         shownLevel = lv;
         vig.style.opacity = String(Math.min(1, lv * 1.1));
         msg.style.opacity = String(level > 0.35 ? Math.min(1, (level - 0.35) * 3) * pulse : 0);
+      }
+
+      // Rótulos: el planeta marcado más cercano de cada clase.
+      best.fill(-1); bestD.fill(Infinity);
+      if (playing) {
+        for (let q = 0; q < w.planets.length; q++) {
+          const p = w.planets[q]!;
+          if (w.state[p] !== FREE || w.parent[p] !== -1) continue;
+          const r = w.radius[p]!, t = planetTier(r, s.mass);
+          if (t < TIER_BREAK || (t === TIER_BREAK && w.broken[p]! > 0)) continue;
+          const gap = Math.hypot(w.x[p] - s.x, w.y[p] - s.y) - r - E;
+          if (gap < 50 + E * 3 && gap < bestD[t]!) { bestD[t] = gap; best[t] = p; }
+        }
+      }
+      for (let t = TIER_BREAK; t <= TIER_GRAVE; t++) {
+        const p = best[t]!, l = labels[t - 1]!;
+        const on = p >= 0 && view.worldToScreen(w.x[p], w.y[p] - w.radius[p]! * 1.6, pt);
+        lab[t] = lab[t]! + ((on ? 1 : 0) - lab[t]!) * Math.min(1, dt * 5);
+        l.style.opacity = lab[t]! > 0.02 ? lab[t]!.toFixed(2) : '0';   // (una vez quieto en 0, el texto no cambia)
+        if (on) l.style.transform = `translate(${Math.round(pt.x)}px, ${Math.round(pt.y + 6)}px) translateX(-50%)`;
       }
 
       // Cometas fuera de cuadro que vienen a cazarte.

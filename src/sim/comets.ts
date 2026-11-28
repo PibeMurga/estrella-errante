@@ -3,7 +3,7 @@ import { boltReach, returnGathered } from './launch';
 import { loseMass } from './integrity';
 import { U_REPEL, upg } from './upgrades';
 import { isPlanetKind } from './planetCapture';
-import { BOLT, CARRIED, DEAD, FREE, KIND_ASTEROID, MAX_COMETS, massGain, ORBITING, PROJECTILE, RETURNING, starSize, type World } from './world';
+import { BOLT, CARRIED, DEAD, FREE, KIND_ASTEROID, MAX_COMETS, massGain, ORBIT_PLANET, ORBITING, PROJECTILE, RETURNING, starSize, type World } from './world';
 
 export const COMET_OFF = 0;
 export const COMET_HUNT = 1;
@@ -107,14 +107,17 @@ export function stepComets(w: World): void {
 
     // Rumbo: hacia la estrella al cazar, en contra al huir, con giro limitado.
     const hunting = cm.mode[k] === COMET_HUNT;
-    // No va derecho como un misil: su rumbo hace un vaivén lento (más amplio de lejos) y corrige de a poco.
-    const sway = (0.25 + 0.55 * Math.min(1, d / 120)) * Math.sin(w.tick / 60 * 0.5 + cm.wander[k]!);
-    const want = (hunting ? Math.atan2(dy, dx) : Math.atan2(-dy, -dx)) + sway;
+    // No te persigue como un misil: apunta a donde vas a estar (adelante de tu camino) y, ya cerca, deja de corregir y
+    // cruza de largo. Si no te tocó, sigue de largo, da una vuelta amplia y vuelve a pasar.
+    const sp0 = c.cometSpeed * cm.speedMul[k]!, lead = Math.min(3, d / Math.max(1, sp0));
+    const px = dx + s.vx * lead, py = dy + s.vy * lead;
+    const sway = 0.15 * Math.min(1, d / 120) * Math.sin(w.tick / 60 * 0.5 + cm.wander[k]!);
+    const want = (hunting ? Math.atan2(py, px) : Math.atan2(-dy, -dx)) + sway;
     const heading = Math.atan2(cm.vy[k]!, cm.vx[k]!);
     let turn = want - heading;
     while (turn > Math.PI) turn -= Math.PI * 2;
     while (turn < -Math.PI) turn += Math.PI * 2;
-    const tr = c.cometTurn * cm.turnMul[k]!;
+    const tr = c.cometTurn * cm.turnMul[k]! * (hunting ? (d < 90 + size * 3 ? 0.08 : d < 220 ? 0.6 : 1) : 1);
     const h = heading + clamp(turn, -tr * DT, tr * DT);
     const sp = (hunting ? c.cometSpeed : c.cometFleeSpeed) * cm.speedMul[k]!;
     cm.vx[k] = Math.cos(h) * sp; cm.vy[k] = Math.sin(h) * sp;
@@ -184,16 +187,20 @@ export function stepComets(w: World): void {
   let any = false;
   for (let k = 0; k < MAX_COMETS; k++) if (cm.mode[k] !== COMET_OFF) any = true;
   if (!any) return;
-  // Un cometa que toca uno de tus planetas en órbita se destroza contra él.
-  for (let q = 0; q < w.planets.length; q++) {
-    const p = w.planets[q]!;
-    if (w.state[p] !== ORBITING) continue;
+  // Un cometa que toca un planeta (uno de los tuyos o uno suelto) o una estrella del mapa se destroza contra él: se los
+  // puede llevar a chocar (útil siendo planeta, cuando todavía no podés disparar). Suelta lo que robó.
+  const crash = (p: number): void => {
     for (let k = 0; k < MAX_COMETS; k++) {
       if (cm.mode[k] === COMET_OFF) continue;
-      const r = c.cometRadius + w.radius[p];
-      if ((w.x[p] - cm.x[k]!) ** 2 + (w.y[p] - cm.y[k]!) ** 2 < r * r) damage(w, k, c.cometHp);
+      const r = c.cometRadius * cm.size[k]! * 0.7 + w.radius[p];
+      if ((w.x[p] - cm.x[k]!) ** 2 + (w.y[p] - cm.y[k]!) ** 2 < r * r) { w.cometCrashes++; damage(w, k, 99); }
     }
+  };
+  for (let q = 0; q < w.planets.length; q++) {
+    const p = w.planets[q]!, st = w.state[p];
+    if (st === ORBITING || (st === FREE && w.parent[p] === -1) || st === ORBIT_PLANET) crash(p);
   }
+  for (let q = 0; q < w.mapStars.length; q++) { const p = w.mapStars[q]!; if (w.state[p] !== DEAD) crash(p); }
   for (let i = 0; i < w.count; i++) {
     if (w.state[i] !== PROJECTILE && w.state[i] !== BOLT) continue;
     for (let k = 0; k < MAX_COMETS; k++) {
