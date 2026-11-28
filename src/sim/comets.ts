@@ -24,7 +24,10 @@ export function spawnComet(w: World, x: number, y: number): number {
     cm.timer[k] = 0;
     cm.carry[k] = 0;
     // Cada uno distinto: los grandes son más lentos y giran peor; los chicos, ágiles y rápidos.
-    const r = w.rng, sz = 0.6 + 1.0 * r.next();
+    // Tamaños muy distintos (chiquitos y ágiles, o grandes y pesados) y dos maneras de cazar: algunos te persiguen
+    // (más lentos: se les puede escapar o llevarlos contra un planeta) y la mayoría cruza de largo.
+    const r = w.rng, sz = 0.4 + 1.8 * Math.pow(r.next(), 1.4);
+    cm.chase[k] = r.next() < 0.35 ? 1 : 0;
     cm.size[k] = sz;
     cm.speedMul[k] = (1.35 - 0.35 * sz) * r.range(0.85, 1.15);
     cm.turnMul[k] = (1.3 - 0.5 * sz) * r.range(0.7, 1.1);
@@ -106,20 +109,20 @@ export function stepComets(w: World): void {
     const d = Math.hypot(dx, dy);
 
     // Rumbo: hacia la estrella al cazar, en contra al huir, con giro limitado.
-    const hunting = cm.mode[k] === COMET_HUNT;
+    const hunting = cm.mode[k] === COMET_HUNT, chaser = cm.chase[k] === 1;
     // No te persigue como un misil: apunta a donde vas a estar (adelante de tu camino) y, ya cerca, deja de corregir y
     // cruza de largo. Si no te tocó, sigue de largo, da una vuelta amplia y vuelve a pasar.
     const sp0 = c.cometSpeed * cm.speedMul[k]!, lead = Math.min(3, d / Math.max(1, sp0));
     const px = dx + s.vx * lead, py = dy + s.vy * lead;
     const sway = 0.15 * Math.min(1, d / 120) * Math.sin(w.tick / 60 * 0.5 + cm.wander[k]!);
-    const want = (hunting ? Math.atan2(py, px) : Math.atan2(-dy, -dx)) + sway;
+    const want = (hunting ? (chaser ? Math.atan2(dy, dx) : Math.atan2(py, px)) : Math.atan2(-dy, -dx)) + sway;
     const heading = Math.atan2(cm.vy[k]!, cm.vx[k]!);
     let turn = want - heading;
     while (turn > Math.PI) turn -= Math.PI * 2;
     while (turn < -Math.PI) turn += Math.PI * 2;
-    const tr = c.cometTurn * cm.turnMul[k]! * (hunting ? (d < 90 + size * 3 ? 0.08 : d < 220 ? 0.6 : 1) : 1);
+    const tr = c.cometTurn * cm.turnMul[k]! * (hunting && !chaser ? (d < 90 + size * 3 ? 0.08 : d < 220 ? 0.6 : 1) : 1);
     const h = heading + clamp(turn, -tr * DT, tr * DT);
-    const sp = (hunting ? c.cometSpeed : c.cometFleeSpeed) * cm.speedMul[k]!;
+    const sp = (hunting ? c.cometSpeed * (chaser ? 0.72 : 1) : c.cometFleeSpeed) * cm.speedMul[k]!;
     cm.vx[k] = Math.cos(h) * sp; cm.vy[k] = Math.sin(h) * sp;
     x += cm.vx[k]! * DT;
     y += cm.vy[k]! * DT;

@@ -20,9 +20,11 @@ void main(){
 
 const CORE = new Color(2.2, 3.4, 4.2);   // por encima de 1: lo toma el bloom
 const CORE_HURT = new Color(4.5, 2.2, 1.6);
-const CORE_TINTS = [new Color(1.8, 3.6, 3.0), new Color(2.2, 3.4, 4.2), new Color(3.4, 3.5, 3.6), new Color(3.8, 3.3, 2.2)];
-const TAIL_A = [new Color(.45, .95, .8), new Color(.55, .85, 1.), new Color(.85, .9, 1.), new Color(1., .85, .55)];
-const TAIL_B = [new Color(.2, .55, .6), new Color(.25, .45, 1.), new Color(.45, .55, .85), new Color(.7, .5, .3)];
+// Seis colores de cometas reales: verde (carbono diatómico, como el 46P/Wirtanen), azul (iones, como el Hale-Bopp),
+// blanco (hielo), amarillento (polvo), dorado anaranjado (polvo rico en sodio) y celeste verdoso (cianógeno).
+const CORE_TINTS = [new Color(1.6, 3.8, 2.4), new Color(2.0, 3.0, 4.6), new Color(3.4, 3.5, 3.6), new Color(3.8, 3.3, 2.0), new Color(4.2, 2.6, 1.3), new Color(1.8, 3.6, 4.0)];
+const TAIL_A = [new Color(.4, 1., .6), new Color(.45, .7, 1.), new Color(.85, .9, 1.), new Color(1., .85, .5), new Color(1., .62, .3), new Color(.45, .95, 1.)];
+const TAIL_B = [new Color(.15, .6, .35), new Color(.2, .35, 1.), new Color(.45, .55, .85), new Color(.7, .5, .25), new Color(.75, .35, .12), new Color(.15, .55, .7)];
 
 export function createCometsLayer(): Layer {
   const group = new Group();
@@ -66,14 +68,14 @@ export function createCometsLayer(): Layer {
         const sz = c.size[k]!, tn = c.tint[k]!, br = c.bright[k]!;
         cores[k]!.scale.setScalar(ctx.world.config.cometRadius * 0.45 * flicker * (0.7 + 0.5 * sz));
         // Colores de cometas reales: verde azulado (carbono), azul (iones), blanco y alguno más amarillento (polvo).
-        const ti = tn < 0.3 ? 0 : tn < 0.6 ? 1 : tn < 0.85 ? 2 : 3;
+        const ti = Math.min(5, Math.floor(tn * 6));
         coreMats[k]!.color.copy(CORE_TINTS[ti]!).multiplyScalar(br).lerp(CORE_HURT, hurtT[k]!);
         (tailMats[k]!.uniforms['uTintA']!.value as Color).copy(TAIL_A[ti]!);
         (tailMats[k]!.uniforms['uTintB']!.value as Color).copy(TAIL_B[ti]!);
         tailMats[k]!.uniforms['uBright']!.value = br;
         tails[k]!.position.set(x, 0.35, -y);
         tails[k]!.rotation.y = Math.atan2(-c.vy[k]!, -c.vx[k]!);   // la cola apunta en contra del movimiento
-        tails[k]!.scale.set(14 + 14 * sz * br, 1, 4 + 3 * sz);
+        tails[k]!.scale.set(10 + 16 * sz * br, 1, 3 + 3.5 * sz);
         tailMats[k]!.uniforms['uTime']!.value = ctx.time + k * 3.1;
         tailMats[k]!.uniforms['uHurt']!.value = hurtT[k]!;
       }

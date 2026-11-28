@@ -56,6 +56,7 @@ export interface Comets {
   // Cada cometa es distinto: tamaño, velocidad, manera de girar, color y brillo, y el vaivén de su rumbo.
   readonly size: Float32Array; readonly speedMul: Float32Array; readonly turnMul: Float32Array;
   readonly tint: Float32Array; readonly bright: Float32Array; readonly wander: Float32Array;
+  readonly chase: Uint8Array;   // 1: te persigue (más lento); 0: cruza por donde vas a pasar y sigue de largo
 }
 
 export interface World {
@@ -268,7 +269,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       vx: new Float64Array(MAX_COMETS), vy: new Float64Array(MAX_COMETS), hp: new Float32Array(MAX_COMETS), mode: new Uint8Array(MAX_COMETS),
       timer: new Float32Array(MAX_COMETS), carry: new Int32Array(MAX_COMETS),
       size: new Float32Array(MAX_COMETS).fill(1), speedMul: new Float32Array(MAX_COMETS).fill(1), turnMul: new Float32Array(MAX_COMETS).fill(1),
-      tint: new Float32Array(MAX_COMETS), bright: new Float32Array(MAX_COMETS).fill(1), wander: new Float32Array(MAX_COMETS),
+      tint: new Float32Array(MAX_COMETS), bright: new Float32Array(MAX_COMETS).fill(1), wander: new Float32Array(MAX_COMETS), chase: new Uint8Array(MAX_COMETS),
     },
     cometClock: config.cometFirst, cometCrashes: 0, cometSteals: 0, cometKills: 0, rng: createRng(seed ^ 0x9e3779b9),
     over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, fireSlow: 0, fireSlowK: 0, fireSlowT: 1, breakFxCount: 0, breakFxX: 0, breakFxY: 0, breakFxR: 0, breakFxKind: 0, breakFxAx: 1, breakFxAy: 0, ignited: !config.planetStart, ignitions: 0, integrity: 1, fractures: 0, planetStripAcc: 0, planetSteals: 0, starBurns: 0, starsEaten: 0, coasting: false, starPullNow: 0, artifactsFound: 0, upg: new Uint8Array(12), offer: new Int8Array(3).fill(-1), choosing: false, upgradesTaken: 0, nextUpgrade: 0, spawnPool: new Int32Array(0), spawnNext: 0, spawnClock: 0, shielding: false, shieldAngle: 0, rockHits: 0, contactHits: 0, disintegrated: 0, diskGrazes: 0, inDisk: 0, tide: 0, diskStripAcc: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
