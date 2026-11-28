@@ -5,6 +5,8 @@ export interface SimConfig {
   arenaHalfWidth: number;
   arenaHalfHeight: number;
   asteroidCount: number;
+  asteroidBelts: number;
+  asteroidVoids: number;         // zonas grandes casi sin asteroides         // cinturones de asteroides sueltos por el mapa (0: ninguno)
   planetCount: number;
   planetMaxRadius: number;
   mapStars: number;
@@ -168,6 +170,8 @@ export const DEFAULT_CONFIG: SimConfig = {
   arenaHalfWidth: 1240,
   arenaHalfHeight: 800,
   asteroidCount: 5000,
+  asteroidBelts: 0,
+  asteroidVoids: 0,
   planetCount: 90,
   planetMaxRadius: 16,
   mapStars: 0,
@@ -330,4 +334,4 @@ export const DEFAULT_CONFIG: SimConfig = {
 // La partida de verdad: arranca como planeta gaseoso y se enciende con la ignición. (La base arranca como estrella, para
 // las pruebas y los bancos que miden otras cosas.)
 export const GAME_CONFIG: SimConfig = { ...DEFAULT_CONFIG, planetStart: true, mapStars: 3, artifacts: true, upgrades: true, respawn: true,
-  planetCount: 140, respawnPlanets: 7 };   // más planetas a la vista desde el principio
+  planetCount: 140, respawnPlanets: 7, asteroidBelts: 6, asteroidVoids: 4 };   // más planetas a la vista desde el principio

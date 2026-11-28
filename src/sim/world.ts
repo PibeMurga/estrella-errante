@@ -289,10 +289,22 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
   const density = makeDensity(rng, hw, hh);
 
   // Asteroides sueltos: se aceptan según el campo de densidad.
+  // Una parte va en cinturones (ver abajo); el resto, suelto.
+  const beltShare = config.asteroidBelts > 0 ? 0.32 : 0;
+  const loose = Math.round(config.asteroidCount * (1 - beltShare));
+  // Y algunos huecos: zonas grandes casi sin asteroides (sólo se acepta uno de cada veinte ahí).
+  const voids: [number, number, number][] = [];
+  for (let v = 0; v < config.asteroidVoids; v++) {
+    const vx = rng.range(-hw * 0.85, hw * 0.85), vy = rng.range(-hh * 0.85, hh * 0.85), vr = rng.range(140, 280);
+    if (Math.hypot(vx, vy) < vr + 120) { v--; continue; }   // nunca donde arrancás
+    voids.push([vx, vy, vr]);
+  }
+  const inVoid = (x: number, y: number): boolean => { for (const [vx, vy, vr] of voids) if ((x - vx) ** 2 + (y - vy) ** 2 < vr * vr) return true; return false; };
   let placed = 0;
-  for (let tries = 0; placed < config.asteroidCount && tries < config.asteroidCount * 60; tries++) {
+  for (let tries = 0; placed < loose && tries < config.asteroidCount * 60; tries++) {
     const px = rng.range(-hw, hw), py = rng.range(-hh, hh);
     if (Math.hypot(px, py) < config.spawnClearRadius) continue;
+    if (inVoid(px, py) && rng.next() > 0.05) continue;
     if (rng.next() * 3 > density(px, py)) continue;
     // Tamaños y velocidades desparejos: muchas piedras chicas, pocas grandes; la mayoría lentas y algunas veloces
     // (las chicas, en promedio, más rápidas).
@@ -300,6 +312,24 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     const speed = (0.4 + 6 * u * u) * (1.25 - 0.35 * (radius - 0.25) / 1.2);
     addBody(w, { x: px, y: py, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, radius, kind: KIND_ASTEROID });
     placed++;
+  }
+
+  // Cinturones de asteroides: arcos anchos y densos (parte de un anillo alrededor de un centro vacío), repartidos por el
+  // mapa. Todos derivan juntos, con un leve giro a lo largo del arco: se ven como una franja de rocas que se cruza.
+  for (let b = 0; b < config.asteroidBelts && placed < config.asteroidCount; b++) {
+    const cx = rng.range(-hw * 0.85, hw * 0.85), cy = rng.range(-hh * 0.85, hh * 0.85);
+    if (Math.hypot(cx, cy) < 260) { b--; continue; }
+    const R0 = rng.range(110, 260), width = rng.range(14, 34), a0 = rng.range(0, Math.PI * 2), span = rng.range(1.2, 3.4);
+    const da = rng.range(0, Math.PI * 2), dv = rng.range(0.3, 1.2), spin = (rng.next() < 0.5 ? -1 : 1) * rng.range(0.6, 1.6);
+    const n = Math.round((config.asteroidCount - loose) / config.asteroidBelts);
+    for (let q = 0; q < n && placed < config.asteroidCount; q++) {
+      const a = a0 + rng.next() * span, rr = R0 + (rng.next() + rng.next() - 1) * width;   // más denso en el medio de la franja
+      const px = cx + Math.cos(a) * rr, py = cy + Math.sin(a) * rr * 0.8;
+      const radius = 0.25 + 1.2 * Math.pow(rng.next(), 2.2);
+      const vx = Math.cos(da) * dv - Math.sin(a) * spin, vy = Math.sin(da) * dv + Math.cos(a) * spin;
+      if (addBody(w, { x: px, y: py, vx, vy, radius, kind: KIND_ASTEROID }) < 0) break;
+      placed++;
+    }
   }
 
   // Planetas, algunos con lunas y otros con su propio cinturón de escombros.
@@ -377,7 +407,9 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     if (k === 0) { const a = rng.range(0, Math.PI * 2), d = rng.range(220, 420); px = Math.cos(a) * d; py = Math.sin(a) * d * 0.7; }
     else do { px = rng.range(-hw * 0.9, hw * 0.9); py = rng.range(-hh * 0.9, hh * 0.9); } while (Math.hypot(px, py) < 120);
     const ang = rng.range(0, Math.PI * 2), sp = rng.range(0.3, 1.2);
-    addBody(w, { x: px, y: py, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, radius: 0.9, kind: KIND_ARTIFACT });
+    // Grandes (se ven de lejos), pero huecos: pesan poco y se pueden atrapar igual.
+    const ai = addBody(w, { x: px, y: py, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, radius: rng.range(2.4, 3.6), kind: KIND_ARTIFACT });
+    if (ai >= 0) w.mass[ai] = 2;
   }
   // Reserva de planetas para repoblar el espacio más adelante (muertos hasta que los revive el spawner).
   if (config.respawn) {

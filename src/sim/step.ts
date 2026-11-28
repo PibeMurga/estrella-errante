@@ -752,7 +752,7 @@ export function step(w: World, intent: Intent): void {
       // Para robarle algo a un planeta, la estrella tiene que ser claramente más grande que él.
       const canSteal = st === FREE || starSize(s.mass) >= w.radius[w.parent[i]!] * c.stealSizeRatio;
       const joins = tier >= 0 && joinsOrbit(w, i);   // planetas chicos, o medianos ya partidos: entran solos
-      const small = w.radius[i] <= c.maxCaptureSize || joins;
+      const small = w.radius[i] <= c.maxCaptureSize || joins || k === KIND_ARTIFACT;   // los restos, aunque grandes, se atrapan
       // A un planeta se lo atrapa ya desde el borde de su franja: se lo ve acercarse y caer en órbita.
       const reach = joins ? Math.max(captureR, bandHi + c.planetOrbitGap + c.planetOrbitSpan) : captureR;
       // Los planetas tienen su propia órbita: no cuentan para el tope (nunca se absorben).
