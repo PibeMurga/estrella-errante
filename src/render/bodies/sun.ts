@@ -207,7 +207,7 @@ export function createSunLayer(sunPos: Vector3): Layer {
   group.add(sun, halo, shell, front, light, far, far.target);
   const FAR = new Vector3(-620, 520, -740);   // dirección de la estrella lejana (relativa a vos)
   const starAt = new Vector3(), lamp = new Vector3(), lampT = new Vector3();
-  let lampInit = false, levelS = 0.38;
+  let lampInit = false, levelS = 0.62;
   let shownR = -1;   // radio que se ve: sigue al radio real con una curva suave, sin saltos
 
   return {
@@ -232,9 +232,9 @@ export function createSunLayer(sunPos: Vector3): Layer {
       if (!lampInit) { lamp.copy(lampT); lampInit = true; } else lamp.lerp(lampT, Math.min(1, ctx.dt * 1.2));
       // La luz de los cuerpos sale de esa estrella y pasa a la tuya con el encendido.
       sunPos.set(lamp.x + (starAt.x - lamp.x) * ign, lamp.y + (starAt.y - lamp.y) * ign, lamp.z + (starAt.z - lamp.z) * ign);
-      levelS += ((0.38 + 0.5 * closeness) - levelS) * Math.min(1, ctx.dt * 1.2);
+      levelS += ((0.62 + 0.35 * closeness) - levelS) * Math.min(1, ctx.dt * 1.2);   // siendo planeta se ve bien, aunque más tenue que con tu sol
       sceneLight.level = levelS * (1 - ign) + ign;
-      far.intensity = 1.1 * (1 - ign);
+      far.intensity = 1.7 * (1 - ign);
       far.position.copy(starAt).add(FAR); far.target.position.copy(starAt);
       if (w !== lastWorld) { lastWorld = w; seed.value = Math.floor(Math.random() * 1000); }   // partida nueva: otra secuencia
       // Tragada por el agujero negro, o ya convertida en agujero negro: no hay estrella.

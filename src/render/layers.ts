@@ -12,6 +12,7 @@ import { createPlayerPlanetLayer } from './bodies/playerPlanet';
 import { createMapStarsLayer } from './bodies/mapStars';
 import { createArtifactsLayer } from './bodies/artifacts';
 import { createIgnitionLayer } from './fx/ignition';
+import { createAimGuideLayer } from './fx/aimGuide';
 import { createBoltLayer } from './fx/bolt';
 import { createCometsLayer } from './fx/comets';
 import { createDangerMarksLayer, type DangerMarksLayer } from './fx/dangerMarks';
@@ -51,6 +52,7 @@ export function buildLayers(deps: LayerDeps): BuiltLayers {
       createImpactLayer(),
       createHitSparksLayer(),
       createIgnitionLayer(),
+      createAimGuideLayer(),
       createBreakBurstLayer(),
       marks,
     ],

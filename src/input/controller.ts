@@ -18,6 +18,7 @@ export class InputController {
   private pressPending = false;   // hubo un clic derecho desde el último poll (aunque ya se haya soltado)
   private moveHeld = false;       // clic izquierdo apretado: tu cuerpo va hacia el mouse
   private hadWorld = false;       // hubo al menos un punto válido del puntero
+  private shieldKey = false;      // barra espaciadora apretada: escudo de planetas
 
   constructor(el: HTMLElement, private readonly toWorld: ToWorld, private readonly reach = 40) {
     el.addEventListener('pointermove', (e: PointerEvent) => {
@@ -53,7 +54,11 @@ export class InputController {
     el.addEventListener('pointerup', release);
     el.addEventListener('pointercancel', drop);
     el.addEventListener('lostpointercapture', drop);
-    if (typeof window !== 'undefined') window.addEventListener('blur', drop);   // Alt+Tab con el botón apretado
+    if (typeof window !== 'undefined') {
+      window.addEventListener('blur', () => { drop(); this.shieldKey = false; });   // Alt+Tab con el botón apretado
+      window.addEventListener('keydown', (e) => { if (e.code === 'Space') { this.shieldKey = true; e.preventDefault(); } });
+      window.addEventListener('keyup', (e) => { if (e.code === 'Space') this.shieldKey = false; });
+    }
   }
 
   poll(starX: number, starY: number): Intent {
@@ -63,6 +68,10 @@ export class InputController {
     for (let k = 0; k < pads.length; k++) if (pads[k]?.buttons?.[7]?.pressed) trigger = true;
     // Mantenido carga el bólido. Un clic más rápido que un cuadro igual cuenta (pressPending).
     this.intent.hold = this.pointerHeld || this.pressPending || trigger;
+    // Escudo: barra espaciadora o el botón B del mando.
+    let padShield = false;
+    for (let k = 0; k < pads.length; k++) if (pads[k]?.buttons?.[1]?.pressed) padShield = true;
+    this.intent.shield = this.shieldKey || padShield;
     this.pressPending = false;
     this.intent.fire = false;
     // Stick derecho: mira propia de la honda (en el joystick, Y positivo es abajo).

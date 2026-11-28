@@ -1,6 +1,7 @@
 import { ABILITY_NAMES, planetsAlive } from '../sim/abilities';
 import { playerName } from './playerName';
 import { formatLike, formatSolar, solarMasses } from './solarMass';
+import { starSize } from '../sim/world';
 import { createMinimap } from './minimap';
 import { rivalMass } from '../sim/phase';
 import { MAX_COMETS, PHASE_COLLAPSE, PHASE_HUNT, PHASE_IGNITION, PHASE_MERGE, PHASE_PLAY, type World } from '../sim/world';
@@ -31,7 +32,6 @@ export function createHud(parent: HTMLElement): Hud {
   const root = document.createElement('div');
   root.className = 'hud';
   root.innerHTML = `
-    <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
     <div class="stage"><span class="name"></span> · <span class="pct"></span></div>
     <div class="vbars">
       <div class="vb"><div class="seg">${'<i class="o"></i>'.repeat(SEGMENTS)}</div><span>ETAPA</span></div>
@@ -39,6 +39,7 @@ export function createHud(parent: HTMLElement): Hud {
     </div>
     <div class="race"><span class="me"><span class="pname">TU ESTRELLA</span> <b class="mv">0000</b></span><div class="bar"><i class="mb"></i><i class="rb"></i></div><span class="rv"><b class="rvv">0000</b> RIVAL</span></div>
     <div class="note am"></div>
+    <div class="tag"><b class="tn"></b><span class="ts"></span></div>
     <div class="banner"><b>SOS UN AGUJERO NEGRO</b><span>ATRAPÁ AL RIVAL ANTES DE QUE ESCAPE</span></div>
     <div class="clock"><span class="time">00:00</span><br><span class="dim mass">MASA 0 M☉</span></div>
     <div class="bhinfo">AGUJERO NEGRO<br><span class="bhdist"></span></div>
@@ -54,6 +55,11 @@ export function createHud(parent: HTMLElement): Hud {
   const timeEl = q<HTMLElement>('.time'), massEl = q<HTMLElement>('.mass');
   const resEl = q<HTMLElement>('.vb.res'), resCover = q<HTMLElement>('.rcover');
   const minimap = createMinimap(root);
+  // Etiqueta del instrumento sobre tu cuerpo: tu nombre y tu etapa, un momento (al empezar, en la ignición y al subir
+  // de etapa) y se desvanece. No queda fija: sería poco real.
+  const tag = q<HTMLElement>('.tag'), tagN = q<HTMLElement>('.tn'), tagS = q<HTMLElement>('.ts');
+  let tagT = 4.5, tagStage = -1, tagIgn = 0;
+  const tagScr = { x: 0, y: 0 }, tagTop = { x: 0, y: 0 };
   let lastRes = -1, lastFrac = 0, lastArt = 0;
   const bhDistEl = q<HTMLElement>('.bhdist'), bhInfo = q<HTMLElement>('.bhinfo');
   const slingEl = q<HTMLElement>('.sling'), worldsEl = q<HTMLElement>('.worlds');
@@ -95,6 +101,14 @@ export function createHud(parent: HTMLElement): Hud {
     },
     setVisible(on) { if (on !== visible) { visible = on; root.style.display = on ? '' : 'none'; } },
     update(w, view, dt, width, height) {
+      if (w.stage !== tagStage || w.ignitions !== tagIgn) { if (tagStage >= 0) tagT = 4; tagStage = w.stage; tagIgn = w.ignitions; }
+      tagT = Math.max(0, tagT - Math.min(dt, 0.1));   // (el primer cuadro trae todo lo que tardó en cargar)
+      const tagA = Math.min(1, tagT / 1.2) * (w.over === 0 && !w.choosing ? 1 : 0);
+      if (tagA > 0.01 && view.worldToScreen(w.star.x, w.star.y, tagScr) && view.worldToScreen(w.star.x, w.star.y + starSize(w.star.mass) * 1.5, tagTop)) {
+        tagN.textContent = pnameEl.textContent ?? ''; tagS.textContent = STAGES[w.stage]!.name;
+        tag.style.opacity = String(tagA);
+        tag.style.transform = `translate(${tagTop.x}px, ${tagTop.y}px) translate(-50%, -100%)`;
+      } else tag.style.opacity = '0';
       const s = w.star, bh = w.bh;
 
       // Rumbo al agujero negro (cada cuadro).
@@ -181,7 +195,7 @@ export function createHud(parent: HTMLElement): Hud {
       const bText = huntOn ? 1 : tipOn ? 2 : 0;
       if (bText !== bannerKind && bText > 0) {
         bannerB.textContent = bText === 1 ? 'SOS UN AGUJERO NEGRO' : 'YA PODÉS DISPARAR';
-        bannerS.textContent = bText === 1 ? 'ATRAPÁ AL RIVAL ANTES DE QUE ESCAPE' : 'CLIC DERECHO: UN TOQUE ES LA HONDA · MANTENELO PARA JUNTAR ASTEROIDES Y SOLTALO PARA LANZARLOS';
+        bannerS.textContent = bText === 1 ? 'ATRAPÁ AL RIVAL ANTES DE QUE ESCAPE' : 'CLIC DERECHO: UN TOQUE ES LA HONDA · MANTENELO PARA CARGAR · ESPACIO: ESCUDO DE PLANETAS';
       }
       if (bText !== bannerKind) bannerKind = bText;
       const bOn = bText > 0;
@@ -197,7 +211,7 @@ export function createHud(parent: HTMLElement): Hud {
         lastBhDist = d;
       } else bhInfo.style.display = 'none';
 
-      slingEl.textContent = !w.ignited ? 'HONDA · SE ENCIENDE CON LA IGNICIÓN' : w.charge >= w.config.tapTime ? `BÓLIDO ×${w.gathered}` : w.slingCd > 0 ? 'HONDA ○' : 'HONDA ●';
+      slingEl.textContent = w.shielding ? 'ESCUDO DE PLANETAS' : !w.ignited ? 'HONDA · SE ENCIENDE CON LA IGNICIÓN' : w.charge >= w.config.tapTime ? `BÓLIDO ×${w.gathered}` : w.slingCd > 0 ? 'HONDA ○' : 'HONDA ●';
       slingEl.className = w.orbitingCount > 0 ? 'sling' : 'sling off';
       worldsEl.textContent = `EN ÓRBITA ${pad(w.orbitingCount, 3)}`;
       // Tu sistema: planetas en órbita contra el próximo umbral de habilidad, y la habilidad activa.

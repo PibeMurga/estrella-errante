@@ -21,6 +21,7 @@ export interface Intent {
   aimX?: number; aimY?: number; hasAim?: boolean;
   collapse?: boolean;   // pide el colapso a mano (sólo pruebas; en el juego es automático, ver config.autoCollapse)
   hold?: boolean;       // el botón de lanzar está apretado (mantener carga el bólido)
+  shield?: boolean;     // escudo: tus planetas se juntan en un arco hacia donde apuntás
 }
 
 const clamp = (v: number, lo: number, hi: number): number => (v < lo ? lo : v > hi ? hi : v);
@@ -219,7 +220,7 @@ function mapStarsAct(w: World): void {
     const R = w.radius[st], gx = w.x[st] - s.x, gy = w.y[st] - s.y, g2 = gx * gx + gy * gy, g = Math.sqrt(g2) || 1;
     const reach = R * 8 + me;   // con estrellas grandes, un alcance moderado (si no, tiran desde media pantalla)
     if (g < reach) {
-      const a = Math.min(14, c.starGravity * R * R * R / Math.max(g2, (R + me) * (R + me))) * (1 - g / reach) * (w.coasting ? c.coastPullMul : 1);
+      const a = Math.min(8 + R * 0.8, c.starGravity * R * R * R / Math.max(g2, (R + me) * (R + me))) * (1 - g / reach) * (w.coasting ? c.coastPullMul : 1);
       s.vx += (gx / g) * a * DT; s.vy += (gy / g) * a * DT;
       w.starPullNow = Math.max(w.starPullNow, a);
     }
@@ -360,7 +361,7 @@ function moveOrbiting(w: World, i: number, absorbing: boolean, size: number, hol
   if (absorbing && r <= size * 0.8) { w.state[i] = DEAD; return; }
   // Cuanto más crecés, más fuerte gira tu sistema: todo lo que te orbita va un poco más rápido.
   // Y gira más rápido cuanto más crecés y cuantos más cuerpos lo forman: se siente la intensidad.
-  const wOrbit = c.orbitSpeedK * Math.pow(c.orbitMin / Math.max(r, 1e-6), 1.5) * (1 + c.orbitSpinGrowth * Math.min(1, Math.sqrt(Math.max(0, s.mass) / 310))) * (1 + 0.5 * Math.min(1, w.orbitingCount / 140)) * (1 + 0.25 * upg(w, U_SPIN));
+  const wOrbit = c.orbitSpeedK * Math.pow(c.orbitMin / Math.max(r, 1e-6), 1.5) * (1 + c.orbitSpinGrowth * Math.min(1, Math.sqrt(Math.max(0, s.mass) / 310))) * (1 + 0.5 * Math.min(1, w.orbitingCount / 140)) * (1 + 0.25 * upg(w, U_SPIN)) * (w.ignited ? 1.4 : 1);   // siendo estrella, todo gira más rápido
   // Al entrar se frena (gira más lento) y recupera el ritmo de la órbita al acoplarse.
   const a = w.orbitAngle[i] + (k >= 1 ? wOrbit : w.orbitW[i] + (wOrbit - w.orbitW[i]) * k) * DT;
   w.orbitAngle[i] = a;
@@ -369,6 +370,29 @@ function moveOrbiting(w: World, i: number, absorbing: boolean, size: number, hol
 }
 
 
+
+// Escudo: mientras lo mantenés, tus planetas dejan su órbita y se juntan en un arco cerca tuyo, del lado hacia donde
+// apuntás, uno al lado del otro. Frenan (y destrozan) lo que viene por ahí. Al soltarlo vuelven a sus órbitas.
+function shieldPlanets(w: World): void {
+  if (!w.shielding) return;
+  const n = ownPlanets(w);
+  if (n === 0) return;
+  const s = w.star, size = starSize(s.mass);
+  let avgR = 0;
+  for (let k = 0; k < n; k++) avgR += w.radius[OWN_LIST()[k]!];
+  avgR /= n;
+  const R = size * 1.25 + avgR * 1.6, step = (avgR * 2.2) / R;
+  const k = Math.min(1, DT * 4);
+  for (let q = 0; q < n; q++) {
+    const i = OWN_LIST()[q]!;
+    const want = w.shieldAngle + (q - (n - 1) / 2) * step;
+    const da = Math.atan2(Math.sin(want - w.orbitAngle[i]), Math.cos(want - w.orbitAngle[i]));
+    w.orbitAngle[i] += da * k;
+    w.orbitR[i] += (R - w.orbitR[i]) * k;
+    w.x[i] = s.x + Math.cos(w.orbitAngle[i]) * w.orbitR[i];
+    w.y[i] = s.y + Math.sin(w.orbitAngle[i]) * w.orbitR[i];
+  }
+}
 
 // Tus planetas no se enciman: si dos se tocan en la órbita, se van separando de a poco a lo largo de ella
 // (el de adelante se adelanta y el de atrás se atrasa). También los dos pedazos de un partido.
@@ -513,6 +537,7 @@ export function step(w: World, intent: Intent): void {
   let desY = 0;
   // Sin el clic izquierdo, vas suelto: casi no frenás y te llevan las fuerzas de lo que tenés cerca (mucho más fuerte).
   const coasting = !hunting && !intent.hasTarget;
+  const shieldSlow = w.shielding ? 0.7 : 1;   // con el escudo puesto te movés más lento
   w.coasting = coasting;
   let maxDv = acc * c.starBrake * DT * (coasting ? 0.15 : 1);
   if (intent.hasTarget && Number.isFinite(intent.targetX) && Number.isFinite(intent.targetY)) {
@@ -521,7 +546,7 @@ export function step(w: World, intent: Intent): void {
     const dist = Math.hypot(dx, dy);
     if (dist > 1e-6) {
       // Siendo agujero negro en la caza no frenás al acercarte: vas a fondo hacia lo que apuntás.
-      const vmax = c.starMaxSpeed * (1 + 0.12 * upg(w, U_WAKE)) * bigK;   // estela
+      const vmax = c.starMaxSpeed * (1 + 0.12 * upg(w, U_WAKE)) * bigK * shieldSlow;   // estela
       const speed = hunting ? (dist > 1 ? vmax : 0) : Math.min(vmax, Math.sqrt(2 * acc * 0.8 * dist), (vmax * dist) / c.starSlowRadius);
       // Recién disparaste: la marcha deseada vuelve de a poco a la normal.
       const slow = w.fireSlow > 0 ? 1 - w.fireSlowK * (w.fireSlow / w.fireSlowT) : 1;
@@ -548,7 +573,8 @@ export function step(w: World, intent: Intent): void {
       if (w.state[p] !== FREE) continue;
       const r = w.radius[p], gx = w.x[p] - s.x, gy = w.y[p] - s.y, g2 = gx * gx + gy * gy, reach = r * 7 + me;
       if (g2 > reach * reach || g2 < 1e-6) continue;
-      const g = Math.sqrt(g2), a = Math.min(6, c.planetGravity * r * r * r / Math.max(g2, (r + me) * (r + me))) * (1 - g / reach) * (coasting ? c.coastPullMul : 1);
+      // Los grandes tiran bastante más: el tope crece con el tamaño.
+      const g = Math.sqrt(g2), a = Math.min(4 + r * 0.7, c.planetGravity * r * r * r / Math.max(g2, (r + me) * (r + me))) * (1 - g / reach) * (coasting ? c.coastPullMul : 1);
       s.vx += (gx / g) * a * DT; s.vy += (gy / g) * a * DT;
       // El que más tira (y es más grande que vos) te acopla a su órbita si vas suelto.
       if (r > me * 1.1 && a > strongestA) { strongestA = a; strongest = p; }
@@ -597,6 +623,8 @@ export function step(w: World, intent: Intent): void {
   }
 
   setOrbitBand(w);
+  w.shielding = !!intent.shield && w.phase === PHASE_PLAY;
+  if (intent.hasAim && Number.isFinite(intent.aimX) && Number.isFinite(intent.aimY)) w.shieldAngle = Math.atan2(intent.aimY! - s.y, intent.aimX! - s.x);
   const captureR = s.captureRadius;
   const size = starSize(s.mass);
   let hit = -1;
@@ -750,6 +778,7 @@ export function step(w: World, intent: Intent): void {
     } else moveOrbiting(w, i, st === ABSORBING, size, hunting && st === ORBITING ? holeR : 0);
   }
 
+  shieldPlanets(w);
   separateOwnPlanets(w);
   stepEncounters(w);
   stepSpawner(w);

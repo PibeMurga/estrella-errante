@@ -68,3 +68,7 @@
   background: linear-gradient(to top, #ff3a2a 0%, #ff7a3a 18%, #7af5c9 55%, #bff7ff 82%, #ffffff 100%); box-shadow: 0 0 8px #7af5c955; }
 .hud .vb.res .rcover { position: absolute; left: 0; right: 0; top: 0; height: 0; background: #020806; transition: height .15s linear; }
 .hud .vb.res.low span { color: #ff5a46; }
+.hud .tag { position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding-bottom: 8px; border-bottom: 1px solid #7af5c955; letter-spacing: 4px; white-space: nowrap; transition: opacity .3s; }
+.hud .tag .tn { font-size: 14px; }
+.hud .tag .ts { font-size: 10px; opacity: .7; letter-spacing: 3px; }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG } from '../../src/sim/config';
 import { type Intent, step } from '../../src/sim/step';
+import { starSize } from '../../src/sim/world';
 import { addBody, addSatellite, BOLT, createWorld, DEAD, FREE, KIND_ASTEROID, KIND_MOON, KIND_ROCKY, ORBITING, PROJECTILE, type World } from '../../src/sim/world';
 
 const cfg = { ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, blackHole: false, cometFirst: 1e9, rockShatterChance: 0 };
@@ -89,5 +90,20 @@ describe('las lunas de tus planetas', () => {
     expect(w.state[m]).toBe(ORBITING);
     expect(w.parent[m]).toBe(-1);
     expect(w.star.mass).toBeGreaterThan(m0);
+  });
+});
+
+describe('escudo de planetas', () => {
+  it('mientras lo mantenés, tus planetas se juntan en un arco cerca tuyo, hacia donde apuntás', () => {
+    const { w, p } = withOwnPlanet();
+    const q = addBody(w, { x: -30, y: 0, vx: 0, vy: 0, radius: 3, kind: KIND_ROCKY });
+    w.state[q] = ORBITING; w.orbitR[q] = 30; w.orbitTarget[q] = 30; w.orbitAngle[q] = Math.PI; w.orbitingCount++;
+    const it: Intent = { targetX: 0, targetY: 0, hasTarget: false, shield: true, aimX: w.star.x, aimY: w.star.y + 100, hasAim: true };
+    for (let k = 0; k < 120; k++) step(w, it);
+    for (const b of [p, q]) {
+      const a = Math.atan2(w.y[b] - w.star.y, w.x[b] - w.star.x);
+      expect(Math.abs(Math.atan2(Math.sin(a - Math.PI / 2), Math.cos(a - Math.PI / 2)))).toBeLessThan(0.8);   // del lado de arriba
+      expect(w.orbitR[b]).toBeLessThan(starSize(w.star.mass) * 1.25 + 6);   // pegados a vos
+    }
   });
 });
