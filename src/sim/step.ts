@@ -598,8 +598,9 @@ export function step(w: World, intent: Intent): void {
       // agujero negro): conviene alejarse.
       const strip = r > me * 1.3 ? Math.max(0, 1 - (g - r - me) / (r * 1.6)) : 0;
       if (strip > 0 && w.orbitingCount > 0) {
-        // De a uno y despacio (como mucho un par por segundo): se ve cada cuerpo que sale volando hacia el planeta.
-        w.planetStripAcc += c.planetStrip * strip * strip * Math.min(1.5, r / me - 1) * DT;
+        // Las fuerzas más grandes roban más: según cuánto más grande es que vos y cuánto te le acercás (de lejos, de a uno;
+        // rozándolo, unos cuantos por segundo). Cada cuerpo sale volando hacia el planeta: se ve.
+        w.planetStripAcc += c.planetStrip * strip * strip * Math.min(3, r / me - 1) * Math.pow(w.orbitingCount, 0.25) * DT;
         while (w.planetStripAcc >= 1 && w.orbitingCount > 0) {
           w.planetStripAcc -= 1;
           let best = -1, bestD = Infinity;
