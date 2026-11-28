@@ -4,6 +4,7 @@ import { formatLike, formatSolar, solarMasses } from './solarMass';
 import { starSize } from '../sim/world';
 import { createMinimap } from './minimap';
 import { createDangerAlert } from './dangerAlert';
+import { createPathTrack } from './pathTrack';
 import { rivalMass } from '../sim/phase';
 import { MAX_COMETS, PHASE_COLLAPSE, PHASE_HUNT, PHASE_IGNITION, PHASE_MERGE, PHASE_PLAY, type World } from '../sim/world';
 import { STAGE_HYPER, STAGES, stageFor, stageProgress } from '../sim/stages';
@@ -57,6 +58,7 @@ export function createHud(parent: HTMLElement): Hud {
   const resEl = q<HTMLElement>('.vb.res'), resCover = q<HTMLElement>('.rcover');
   const minimap = createMinimap(root);
   const dangerAlert = createDangerAlert(root);
+  const pathTrack = createPathTrack(root);
   // Etiqueta del instrumento sobre tu cuerpo: tu nombre y tu etapa, un momento (al empezar, en la ignición y al subir
   // de etapa) y se desvanece. No queda fija: sería poco real.
   const tag = q<HTMLElement>('.tag'), tagN = q<HTMLElement>('.tn'), tagS = q<HTMLElement>('.ts');
@@ -106,6 +108,7 @@ export function createHud(parent: HTMLElement): Hud {
     setVisible(on) { if (on !== visible) { visible = on; root.style.display = on ? '' : 'none'; } },
     update(w, view, dt, width, height) {
       dangerAlert.update(w, view, dt, width, height);
+      pathTrack.update(w, dt);
       if (w.stage !== tagStage || w.ignitions !== tagIgn) { if (tagStage >= 0) tagT = 4; tagStage = w.stage; tagIgn = w.ignitions; }
       tagT = Math.max(0, tagT - Math.min(dt, 0.1));   // (el primer cuadro trae todo lo que tardó en cargar)
       const tagA = Math.min(1, tagT / 1.2) * (w.over === 0 && !w.choosing ? 1 : 0);
@@ -216,7 +219,7 @@ export function createHud(parent: HTMLElement): Hud {
         lastBhDist = d;
       } else bhInfo.style.display = 'none';
 
-      slingEl.textContent = w.shielding ? 'ESCUDO DE PLANETAS' : !w.ignited ? 'DISPARO · SE ENCIENDE CON LA IGNICIÓN' : w.charge >= w.config.tapTime ? `BÓLIDO ×${w.gathered}` : w.slingCd > 0 ? 'DISPARO ○' : 'DISPARO ●';
+      slingEl.textContent = w.shielding ? 'ESCUDO DE PLANETAS' : !w.ignited ? 'CRECÉ HASTA SER ESTRELLA · AHÍ VAS A PODER ATACAR CON LOS ASTEROIDES DE TU ÓRBITA' : w.charge >= w.config.tapTime ? `BÓLIDO ×${w.gathered}` : w.slingCd > 0 ? 'DISPARO ○' : 'DISPARO ●';
       slingEl.className = w.orbitingCount > 0 ? 'sling' : 'sling off';
       worldsEl.textContent = `EN ÓRBITA ${pad(w.orbitingCount, 3)}`;
       // Tu sistema: planetas en órbita contra el próximo umbral de habilidad, y la habilidad activa.

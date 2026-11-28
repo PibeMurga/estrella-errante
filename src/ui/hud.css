@@ -27,7 +27,7 @@
 .hud .bottom { position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%); display: flex; gap: 30px; align-items: center; }
 .hud .bottom .off { opacity: .35; }
 
-.hud .log { position: absolute; left: 30px; bottom: 70px; display: flex; flex-direction: column-reverse; gap: 4px; font-size: 11px; }
+.hud .log { position: absolute; left: 30px; bottom: 118px; display: flex; flex-direction: column-reverse; gap: 4px; font-size: 11px; }
 
 /* Rumbo al agujero negro: flecha en el borde cuando está fuera de pantalla, corchetes cuando está a la vista. */
 .hud .arrow { position: absolute; left: 0; top: 0; display: none; align-items: center; gap: 8px; will-change: transform; color: var(--bh); font-size: 15px; font-weight: 700; letter-spacing: 3px;
@@ -85,3 +85,21 @@
 .hud .plabel.brk { color: #ffd633; text-shadow: 0 0 5px #ffd633aa; }
 .hud .plabel.hrt { color: #ff8a2a; text-shadow: 0 0 5px #ff8a2aaa; }
 .hud .plabel.grv { color: #ff4a3d; text-shadow: 0 0 6px #ff4a3dcc; font-size: 11px; }
+/* Tu camino: de planeta gaseoso a agujero negro. */
+.hud .path { position: absolute; left: 30px; bottom: 30px; display: flex; flex-direction: column; gap: 6px; }
+.hud .path .ph { font-size: 9px; letter-spacing: 3px; opacity: .6; }
+.hud .path .pr { display: flex; align-items: center; gap: 0; }
+.hud .path .pr s { display: block; width: 12px; height: 1px; background: #7af5c955; }
+.hud .path .pr i { border-radius: 50%; background: var(--c); opacity: .22; box-shadow: none; transition: opacity .6s, box-shadow .6s; }
+.hud .path .pr i.done { opacity: .75; }
+.hud .path .pr i.now { opacity: 1; box-shadow: 0 0 0 2px #7af5c9, 0 0 10px var(--c); animation: pnow 1.4s ease-in-out infinite; }
+.hud .path .pr i.bh { background: #000; opacity: .6; box-shadow: 0 0 0 1.5px #ff8a3a88; }
+.hud .path .pr i.bh.now { box-shadow: 0 0 0 2px #ffb46a, 0 0 12px #ff8a3a; }
+@keyframes pnow { 50% { transform: scale(1.25); } }
+.hud .path .pn { font-size: 10px; letter-spacing: 2px; }
+.hud .tform { position: absolute; left: 50%; top: 150px; transform: translateX(-50%) scale(.96); opacity: 0; transition: opacity .5s, transform .5s;
+  display: flex; flex-direction: column; align-items: center; gap: 6px; white-space: nowrap; }
+.hud .tform.on { opacity: 1; transform: translateX(-50%) scale(1); }
+.hud .tform span { font-size: 10px; letter-spacing: 6px; opacity: .7; }
+.hud .tform b { font-size: 22px; letter-spacing: 6px; color: #fff; text-shadow: 0 0 8px #7af5c9, 0 0 22px #7af5c988; }
+.hud .tform i { font-style: normal; font-size: 11px; letter-spacing: 3px; opacity: .85; }

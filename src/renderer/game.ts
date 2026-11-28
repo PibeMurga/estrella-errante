@@ -16,6 +16,7 @@ import { createWorld, PHASE_COLLAPSE, PHASE_MERGE } from '../sim/world';
 import { createGameOver } from '../ui/gameOver';
 import { createGuide } from '../ui/guide';
 import { createTransmissions } from '../ui/transmissions';
+import { createIntro } from '../ui/intro';
 import { createHud } from '../ui/hud';
 import { createCinematic } from '../ui/cinematic';
 import { createPause } from '../ui/pause';
@@ -42,6 +43,8 @@ if (!view.ok) {
   const guide = createGuide(document.body);
   let txVoice = (_n: number): void => {};
   const tx = createTransmissions(document.body, (n) => txVoice(n));
+  // Intro: la primera transmisión, con la partida quieta (sólo al venir de la pantalla del nombre).
+  const intro = createIntro(document.body, (n) => txVoice(n), () => { last = performance.now(); input.poll(world.star.x, world.star.y); });
   const cine = createCinematic(document.body);
   hud.reset(world);
   // Nueva partida: se recarga con otra semilla (mapa nuevo). Las capas del dibujo arman sus índices al empezar.
@@ -103,14 +106,15 @@ if (!view.ok) {
   let lastIgn = world.ignitions;
   let named = asStar || params.get('n') === '1';
   playerLook.planetType = savedPlanetType();
-  if (!named) createNameScreen(document.body, (name, type) => { named = true; playerLook.planetType = type; hud.setName(name); last = performance.now(); });
+  if (!named) createNameScreen(document.body, (name, type) => { named = true; playerLook.planetType = type; hud.setName(name); last = performance.now(); intro.start(name); });
   let last = performance.now();
   const frame = (now: number): void => {
     const elapsed = (now - last) / 1000;
     last = now;
     pause.pollPad(canPause());
     if (!pause.paused) pollZoomPad(elapsed);
-    const steps = pause.paused || !named ? 0 : stepper.advance(elapsed);
+    intro.update(elapsed);
+    const steps = pause.paused || !named || intro.active ? 0 : stepper.advance(elapsed);
     // El control se lee sólo en los cuadros que avanzan la simulación: así un clic muy corto no se pierde
     // en un cuadro sin pasos (a más de 60 cuadros por segundo los hay).
     if (steps > 0) {
@@ -119,10 +123,10 @@ if (!view.ok) {
     }
     view.update(world, stepper.alpha, now / 1000);
     view.render();
-    hud.setVisible(world.over === 0 && world.phase !== PHASE_COLLAPSE && world.phase !== PHASE_MERGE);
+    hud.setVisible(!intro.active && world.over === 0 && world.phase !== PHASE_COLLAPSE && world.phase !== PHASE_MERGE);
     hud.update(world, view, elapsed, window.innerWidth, window.innerHeight);
-    tx.update(world, elapsed, named && !pause.paused && !asStar);
-    guide.update(world, view, elapsed, window.innerWidth, window.innerHeight, named && !pause.paused && !tx.busy);
+    tx.update(world, elapsed, named && !pause.paused && !asStar && !intro.active);
+    guide.update(world, view, elapsed, window.innerWidth, window.innerHeight, named && !pause.paused && !tx.busy && !intro.active);
     music.setGrowth(stageFor(world.star.mass) / STAGE_HYPER);
     if (world.ignitions > lastIgn) { lastIgn = world.ignitions; music.swell(); }
     playEvents();

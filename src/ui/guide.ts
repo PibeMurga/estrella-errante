@@ -17,7 +17,7 @@ const STEPS: readonly Step[] = [
   { target: Target.BARS, title: 'ETAPA Y RESISTENCIA', text: 'ETAPA: CUÁNTO TE FALTA PARA LA PRÓXIMA · RESIST.: TU INTEGRIDAD; BAJA AL PERDER MASA Y EN CERO TE FRACTURÁS', time: 8 },
   { target: Target.RACE, title: 'LA CARRERA', text: 'TU MASA CONTRA LA DEL RIVAL · CRECÉ HASTA LA IGNICIÓN Y SUPERALO', time: 6.5 },
   { target: Target.MAP, title: 'MAPA', text: 'VOS EN EL CENTRO · ESTRELLAS CERCANAS · EN ROJO, EL AGUJERO NEGRO', time: 6 },
-  { target: Target.SHOT, title: 'DISPARO', text: 'SE ACTIVA EN LA IGNICIÓN (AL VOLVERTE ESTRELLA) · CLIC DERECHO: UN TOQUE DISPARA, MANTENIDO CARGA UN BÓLIDO', time: 7 },
+  { target: Target.SHOT, title: 'DISPARO', text: 'PRIMERO CRECÉ HASTA SER ESTRELLA · DESPUÉS VAS A PODER ATACAR CON LOS ASTEROIDES DE TU ÓRBITA: CLIC DERECHO', time: 7 },
 ];
 const PLANET_STEP: Step = { target: Target.PLANET, title: 'PLANETA', text: '', time: 8 };
 const COMET_STEP: Step = { target: Target.COMET, title: 'COMETA', text: 'VIENE A ROBARTE CUERPOS DE LA ÓRBITA · DISPARALE: LO QUE SE LLEVA QUEDA SUELTO', time: 7 };
@@ -36,7 +36,7 @@ export function createGuide(parent: HTMLElement): Guide {
   parent.appendChild(root);
   const line = root.querySelector<HTMLElement>('.gline')!, ring = root.querySelector<HTMLElement>('.gring')!;
   const box = root.querySelector<HTMLElement>('.gbox')!, boxT = box.querySelector('b')!, boxS = box.querySelector('span')!;
-  let idx = -1, t = -4.5;   // espera a que se apague el cartel con tu nombre
+  let idx = -1, t = -1.2;   // un respiro después de la intro
   let cur: Step | null = null, cometDone = false, planetDone = false, alpha = 0, shownTitle = '';
   const pt = { x: 0, y: 0, ahead: true }, top = { x: 0, y: 0 };
   let target = -1;
@@ -99,7 +99,7 @@ export function createGuide(parent: HTMLElement): Guide {
         case Target.BARS: pt.x = 88; pt.y = height / 2; break;
         case Target.RACE: pt.x = width / 2; pt.y = 76; break;
         case Target.MAP: pt.x = width - 165; pt.y = height - 120; break;
-        case Target.SHOT: pt.x = width / 2 - 180; pt.y = height - 40; break;
+        case Target.SHOT: pt.x = width / 2 - 260; pt.y = height - 40; break;
       }
       if (!ok) { t = Math.max(t, cur.time - 0.4); return; }
       // Título del planeta según su tipo y su tamaño respecto de vos.

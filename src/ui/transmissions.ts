@@ -1,5 +1,4 @@
 import { MAX_COMETS, PHASE_COLLAPSE, PHASE_HUNT, PHASE_PLAY, type World } from '../sim/world';
-import { playerName } from './playerName';
 import './transmissions.css';
 
 // Transmisiones de la civilización que te observa desde un planeta de este sistema. Nunca se la ve: sólo llegan sus
@@ -12,11 +11,7 @@ interface Msg { readonly id: string; readonly lines: readonly string[] }
 const RIVAL = 'HD 141569 A';   // designación de catálogo real de una estrella joven
 
 const msg = (id: string, ...lines: string[]): Msg => ({ id, lines });
-const INTRO = (name: string): Msg => msg('intro',
-  'TE VEMOS, ' + name + '.',
-  'SOS UN PLANETA GASEOSO, JOVEN Y CHICO, PERDIDO ENTRE GIGANTES.',
-  'JUNTÁ MATERIA: CADA ROCA QUE ATRAPÁS TE HACE CRECER.',
-  'SI CRECÉS LO SUFICIENTE, TE VAS A ENCENDER. TE NECESITAMOS ENCENDIDO.');
+// (La primera transmisión es la intro de la partida: ver intro.ts.)
 const MSGS = {
   firstOrbit: msg('orb', 'ASÍ. CADA UNA SUMA MASA. SEGUÍ JUNTANDO.'),
   giant: msg('giant', 'YA SOS UN GIGANTE.', 'LOS PLANETAS MÁS CHICOS QUE VOS SE PARTEN SI LOS CHOCÁS: SUS PEDAZOS PASAN A SER TUYOS.'),
@@ -53,7 +48,6 @@ export function createTransmissions(parent: HTMLElement, onVoice: (syllables: nu
       if (active && w.over === 0) {
         clock += t;
         // Disparadores (cada uno, una vez).
-        if (clock > 0.8) say(INTRO(playerName() || 'MUNDO'));
         if (w.orbitingCount >= 6) say(MSGS.firstOrbit);
         if (w.stage >= 1) say(MSGS.giant);
         if (!w.ignited) for (let k = 0; k < MAX_COMETS; k++) if (w.comets.mode[k] !== 0) { say(MSGS.comet); break; }

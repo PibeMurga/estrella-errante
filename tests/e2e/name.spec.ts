@@ -17,6 +17,12 @@ test('al empezar elegís el nombre de tu mundo; aparece en el visor y se recuerd
   await page.keyboard.press('Enter');
   await expect(screen).toBeHidden();
   await expect(page.locator('.hud .pname')).toHaveText('TÁURIDE');
+  // Primero, la intro (la primera transmisión) con la partida quieta; con Enter se completa y con otro, empieza.
+  await expect(page.locator('.intro.on')).toBeVisible();
+  await expect(page.locator('.intro pre')).toContainText('TE VEMOS, TÁURIDE', { timeout: 10_000 });
+  expect(await page.evaluate(() => window.__GAME__!.world.tick)).toBe(0);
+  await page.keyboard.press('Enter'); await page.waitForTimeout(200); await page.keyboard.press('Enter');
+  await expect(page.locator('.intro.on')).toHaveCount(0);
   await page.waitForFunction(() => window.__GAME__!.world.tick > 30);
   // La próxima vez aparece ya escrito.
   await page.goto('/?seed=20261124');
