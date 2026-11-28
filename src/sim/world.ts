@@ -309,7 +309,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     if (rng.next() * 3 > density(px, py)) continue;
     // Tamaños y velocidades desparejos: muchas piedras chicas, pocas grandes; la mayoría lentas y algunas veloces
     // (las chicas, en promedio, más rápidas).
-    const ang = rng.range(0, Math.PI * 2), u = rng.next(), radius = 0.25 + 1.2 * Math.pow(rng.next(), 2.2);
+    const ang = rng.range(0, Math.PI * 2), u = rng.next(), radius = 0.22 + 1.2 * Math.pow(rng.next(), 3.2);
     const speed = (0.4 + 6 * u * u) * (1.25 - 0.35 * (radius - 0.25) / 1.2);
     addBody(w, { x: px, y: py, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, radius, kind: KIND_ASTEROID });
     placed++;
@@ -326,7 +326,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     for (let q = 0; q < n && placed < config.asteroidCount; q++) {
       const a = a0 + rng.next() * span, rr = R0 + (rng.next() + rng.next() - 1) * width;   // más denso en el medio de la franja
       const px = cx + Math.cos(a) * rr, py = cy + Math.sin(a) * rr * 0.8;
-      const radius = 0.25 + 1.2 * Math.pow(rng.next(), 2.2);
+      const radius = 0.22 + 1.2 * Math.pow(rng.next(), 3.2);
       const vx = Math.cos(da) * dv - Math.sin(a) * spin, vy = Math.sin(da) * dv + Math.cos(a) * spin;
       if (addBody(w, { x: px, y: py, vx, vy, radius, kind: KIND_ASTEROID }) < 0) break;
       placed++;

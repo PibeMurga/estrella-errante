@@ -336,4 +336,4 @@ export const DEFAULT_CONFIG: SimConfig = {
 // La partida de verdad: arranca como planeta gaseoso y se enciende con la ignición. (La base arranca como estrella, para
 // las pruebas y los bancos que miden otras cosas.)
 export const GAME_CONFIG: SimConfig = { ...DEFAULT_CONFIG, planetStart: true, mapStars: 3, artifacts: true, upgrades: true, respawn: true,
-  planetCount: 140, respawnPlanets: 7, asteroidBelts: 6, asteroidVoids: 4, starPhaseGain: 0.82 };   // más planetas a la vista desde el principio
+  planetCount: 140, respawnPlanets: 7, asteroidBelts: 6, asteroidVoids: 4, planetPhaseGain: 0.9, starPhaseGain: 1.22 };   // más planetas a la vista desde el principio
