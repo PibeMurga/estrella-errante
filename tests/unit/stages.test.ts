@@ -11,18 +11,18 @@ describe('etapas: de planeta gaseoso a hipergigante', () => {
     expect(STAGES[stageFor(18)]!.name).toBe('ENANA MARRÓN');
     expect(stageFor(IGNITION_MASS)).toBe(STAGE_IGNITION);
     expect(STAGES[STAGE_IGNITION]!.name).toBe('ENANA ROJA');
-    expect(STAGES[stageFor(70)]!.name).toBe('ENANA AMARILLA');
-    expect(STAGES[stageFor(120)]!.name).toBe('ESTRELLA BLANCA');   // una enana blanca es una estrella muerta: no va
-    expect(STAGES[stageFor(175)]!.name).toBe('GIGANTE AZUL');
-    expect(STAGES[stageFor(235)]!.name).toBe('SUPERGIGANTE');
+    expect(STAGES[stageFor(80)]!.name).toBe('ENANA AMARILLA');
+    expect(STAGES[stageFor(150)]!.name).toBe('ESTRELLA BLANCA');   // una enana blanca es una estrella muerta: no va
+    expect(STAGES[stageFor(250)]!.name).toBe('GIGANTE AZUL');
+    expect(STAGES[stageFor(380)]!.name).toBe('SUPERGIGANTE');
     expect(stageFor(1e9)).toBe(STAGES.length - 1);
   });
 
-  it('la hipergigante es la última etapa, desde masa 310', () => {
+  it('la hipergigante es la última etapa, desde masa 540', () => {
     expect(STAGES[STAGE_HYPER]!.name).toBe('HIPERGIGANTE');
     expect(STAGES.length - 1).toBe(STAGE_HYPER);
-    expect(stageFor(309.9)).toBe(STAGE_HYPER - 1);
-    expect(stageFor(310)).toBe(STAGE_HYPER);
+    expect(stageFor(539.9)).toBe(STAGE_HYPER - 1);
+    expect(stageFor(540)).toBe(STAGE_HYPER);
   });
 
   it('el tamaño crece sin saltos hacia atrás: planeta chico, estrella después', () => {

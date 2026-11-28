@@ -149,6 +149,13 @@ function smallness(w: World): number {
 
 // Un asteroide veloz o grande golpea la estrella: se funde en ella (suma su masa), la empuja un poco y le arranca uno o
 // dos cuerpos de la órbita (dos si es grande). Destello en la superficie, en el punto del golpe.
+// Una roca que te golpea en lugar de sumarse: las grandes. (Antes también las rápidas, pero las rocas naturales nunca van
+// tan rápido: la regla sólo atrapaba las que tu propia gravedad aceleraba, y una estrella grande que cruzaba un cinturón
+// recibía decenas de golpes invisibles por segundo y se fracturaba en cadena.)
+function isHitter(w: World, i: number, _x: number, _y: number): boolean {
+  return w.radius[i] > w.config.rockHitSize;
+}
+
 function rockHitsStar(w: World, i: number, dx: number, dy: number): void {
   const c = w.config, s = w.star;
   // Apenas un sacudón: una estrella pesa muchísimo más que una roca.
@@ -161,7 +168,8 @@ function rockHitsStar(w: World, i: number, dx: number, dy: number): void {
   w.impacts[slot] = -1; w.impacts[slot + 1] = Math.atan2(dy, dx); w.impacts[slot + 2] = 0.5 + 0.5 * Math.min(1, w.radius[i]); w.impactCount++;
   w.rockHits++;
   // El golpe de una roca también te cuesta un poquito de resistencia (más si es grande o venía rápido).
-  if (w.invuln <= 0) damageBody(w, c.rockHitIntegrity * (0.6 + Math.min(1.4, w.radius[i])) * Math.min(1.6, Math.hypot(w.vx[i] - s.vx, w.vy[i] - s.vy) / c.rockHitSpeed));
+  // (a una estrella grande, una roca le hace menos)
+  if (w.invuln <= 0) damageBody(w, c.rockHitIntegrity * (0.6 + Math.min(1.4, w.radius[i])) * Math.max(0.25, Math.min(1.6, Math.hypot(w.vx[i] - s.vx, w.vy[i] - s.vy) / c.rockHitSpeed)) * smallness(w));
   let lose = Math.round((w.radius[i] > c.rockHitSize ? 2 : 1) * smallness(w));   // más si sos chico
   for (let j = 0; j < w.count && lose > 0; j++) {
     if (w.state[j] !== ORBITING || isPlanetKind(w.kind[j]!)) continue;
@@ -368,7 +376,7 @@ function moveOrbiting(w: World, i: number, absorbing: boolean, size: number, hol
   // La distancia se mide en relación con tu tamaño: al crecer, tu órbita se abre pero no se vuelve lenta; y cuanto más
   // grande, más rápido (los asteroides más que los planetas, que son pesados).
   const sizeK = Math.pow(Math.max(1, size / SIZE_1), planet ? 0.25 : 0.5);
-  const grow = 1 + c.orbitSpinGrowth * Math.min(1, Math.sqrt(Math.max(0, s.mass) / 310)) * (planet ? 0.7 : 1);
+  const grow = 1 + c.orbitSpinGrowth * Math.min(1, Math.sqrt(Math.max(0, s.mass) / 540)) * (planet ? 0.7 : 1);
   const wOrbit = c.orbitSpeedK * Math.pow(c.orbitMin * sizeK / Math.max(r, 1e-6), 1.5) * grow * (1 + 0.5 * Math.min(1, w.orbitingCount / 140)) * (1 + 0.25 * upg(w, U_SPIN)) * (w.ignited ? 1.4 : 1);   // siendo estrella, todo gira más rápido
   // Al entrar se frena (gira más lento) y recupera el ritmo de la órbita al acoplarse.
   const a = w.orbitAngle[i] + (k >= 1 ? wOrbit : w.orbitW[i] + (wOrbit - w.orbitW[i]) * k) * DT;
@@ -590,7 +598,8 @@ export function step(w: World, intent: Intent): void {
       // agujero negro): conviene alejarse.
       const strip = r > me * 1.3 ? Math.max(0, 1 - (g - r - me) / (r * 1.6)) : 0;
       if (strip > 0 && w.orbitingCount > 0) {
-        w.planetStripAcc += c.planetStrip * strip * strip * Math.min(2, r / me - 1) * DT * Math.sqrt(w.orbitingCount);
+        // De a uno y despacio (como mucho un par por segundo): se ve cada cuerpo que sale volando hacia el planeta.
+        w.planetStripAcc += c.planetStrip * strip * strip * Math.min(1.5, r / me - 1) * DT;
         while (w.planetStripAcc >= 1 && w.orbitingCount > 0) {
           w.planetStripAcc -= 1;
           let best = -1, bestD = Infinity;
@@ -654,7 +663,7 @@ export function step(w: World, intent: Intent): void {
         // La gravedad de tu sistema: los asteroides y lunas sueltas cercanas se curvan hacia vos y caen a tu órbita.
         const pieceOfPlanet = w.broken[i]! > 0 && w.kind[i] !== KIND_GAS;   // los pedazos de un partido también caen hacia vos
         if (!hunting && w.kind[i] !== KIND_STAR && (pieceOfPlanet || (w.kind[i] !== KIND_ROCKY && w.kind[i] !== KIND_ICE && w.kind[i] !== KIND_GAS)) && w.noCatch[i]! <= 0
-            && w.radius[i] <= c.rockHitSize && w.vx[i] * w.vx[i] + w.vy[i] * w.vy[i] <= c.rockHitSpeed * c.rockHitSpeed) {   // los que te golpean, no: pasan derecho
+            && !isHitter(w, i, x, y)) {   // los que te golpean, no: pasan derecho
           const ex = s.x - x, ey = s.y - y, e2 = ex * ex + ey * ey, R = captureR * c.starPullReach;
           if (e2 < R * R && e2 > 1e-6) {
             // Siendo planeta tu gravedad es mucho más débil: atrae poco y de cerca.
@@ -751,7 +760,7 @@ export function step(w: World, intent: Intent): void {
       if (tier >= TIER_HURT && d < size + w.radius[i] && hit < 0 && w.invuln <= 0) hit = i;
       if (w.noCatch[i]! > 0) { w.noCatch[i] = w.noCatch[i]! - DT; continue; }
       // Los asteroides veloces o grandes no se suman: si te tocan, te golpean.
-      if (st === FREE && k === KIND_ASTEROID && (w.radius[i] > c.rockHitSize || Math.hypot(w.vx[i], w.vy[i]) > c.rockHitSpeed)) {
+      if (st === FREE && k === KIND_ASTEROID && isHitter(w, i, x, y)) {
         if (d < size + w.radius[i]) rockHitsStar(w, i, x - s.x, y - s.y);
         continue;
       }

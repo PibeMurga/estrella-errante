@@ -8,11 +8,13 @@ export const STAGES: readonly Stage[] = [
   { name: 'GIGANTE GASEOSO', mass: 8 },
   { name: 'ENANA MARRÓN', mass: 18 },
   { name: 'ENANA ROJA', mass: 30 },
-  { name: 'ENANA AMARILLA', mass: 70 },
-  { name: 'ESTRELLA BLANCA', mass: 120 },
-  { name: 'GIGANTE AZUL', mass: 175 },
-  { name: 'SUPERGIGANTE', mass: 235 },
-  { name: 'HIPERGIGANTE', mass: 310 },
+  // Siendo estrella, cada etapa pide bastante más masa que la anterior: comerte un cinturón te hace crecer (en
+  // tamaño) sin saltar de etapa en etapa.
+  { name: 'ENANA AMARILLA', mass: 80 },
+  { name: 'ESTRELLA BLANCA', mass: 150 },
+  { name: 'GIGANTE AZUL', mass: 250 },
+  { name: 'SUPERGIGANTE', mass: 380 },
+  { name: 'HIPERGIGANTE', mass: 540 },
 ];
 
 // Masa en la que se enciende la fusión (la enana roja) y su índice de etapa.

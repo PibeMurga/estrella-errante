@@ -65,7 +65,7 @@ describe('un planeta que se suma se imanta', () => {
     const a1 = w.orbitAngle[p]; step(w, idle);
     // (planeta: la distancia se mide relativa a tu tamaño con exponente 0,25, y el crecimiento pesa un 70 %)
     const sizeK = Math.pow(Math.max(1, starSize(w.star.mass) / starSize(1)), 0.25);
-    const wOrbit = w.config.orbitSpeedK * Math.pow(w.config.orbitMin * sizeK / w.orbitR[p], 1.5) * (1 + w.config.orbitSpinGrowth * Math.min(1, Math.sqrt(w.star.mass / 310)) * 0.7) * (1 + 0.5 * Math.min(1, w.orbitingCount / 140)) * (w.ignited ? 1.4 : 1);
+    const wOrbit = w.config.orbitSpeedK * Math.pow(w.config.orbitMin * sizeK / w.orbitR[p], 1.5) * (1 + w.config.orbitSpinGrowth * Math.min(1, Math.sqrt(w.star.mass / 540)) * 0.7) * (1 + 0.5 * Math.min(1, w.orbitingCount / 140)) * (w.ignited ? 1.4 : 1);
     expect((w.orbitAngle[p] - a1) * 60).toBeCloseTo(wOrbit, 3);       // ya acoplado a la órbita
   });
 });

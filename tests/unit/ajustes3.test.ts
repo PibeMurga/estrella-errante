@@ -126,7 +126,7 @@ describe('marcas de peligro', () => {
 describe('la caza se puede ganar persiguiendo', () => {
   it('apuntando directo al rival lo alcanzás antes del límite (no frenás al acercarte)', () => {
     const w = createWorld({ ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, cometFirst: 1e9 }, 3, 50);
-    w.star.mass = 330; w.bh.mass = 2;   // la masa con la que el bot perdía cazas
+    w.star.mass = 560; w.bh.mass = 2;   // hipergigante justa (la masa con la que el bot perdía cazas)
     w.bh.x = w.bh.prevX = 200; w.bh.y = w.bh.prevY = 0;
     step(w, idle);
     step(w, { ...idle, collapse: true });

@@ -5,11 +5,13 @@ import { FREE, ORBITING, type World } from './world';
 // Resistencia de tu cuerpo (0 a 1): cada impacto la baja rápido y se recarga despacio. Si llega a cero, te fracturás:
 // perdés una buena parte de la masa y de lo que tenés en órbita (sale despedido), y la barra vuelve a cargar desde abajo.
 export function damageBody(w: World, amount: number): void {
+  if (w.fractureGrace > 0) return;   // recién fracturado: unos segundos de gracia (nada de fracturas en cadena)
   w.integrity -= amount;
   if (w.integrity > 0) return;
   const c = w.config, s = w.star;
   w.fractures++;
   w.integrity = c.integrityAfterFracture;
+  w.fractureGrace = c.fractureGrace;
   s.mass = Math.max(c.starStartMass, s.mass * (1 - c.fractureMassLoss));
   let lose = Math.ceil(w.orbitingCount * c.fractureOrbitLoss);
   for (let j = 0; j < w.count && lose > 0; j++) {
@@ -33,5 +35,6 @@ export function loseMass(w: World, amount: number): void {
 
 // Se recarga despacio.
 export function stepIntegrity(w: World, dt: number): void {
+  if (w.fractureGrace > 0) w.fractureGrace = Math.max(0, w.fractureGrace - dt);
   if (w.integrity < 1) w.integrity = Math.min(1, w.integrity + w.config.integrityRegen * (1 + 0.6 * upg(w, U_REGEN)) * dt);
 }

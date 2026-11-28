@@ -112,7 +112,8 @@ export interface SimConfig {
   planetStrip: number;           // cuerpos por segundo que te roba un planeta grande de cerca (escala con √ de tu órbita)         // cuánto te tira un planeta suelto: a = esto × radio³ / distancia²       // cuánto más rápido gira tu sistema siendo hipergigante (0,8 = 80 % más)
   integrityRegen: number;
   lossIntegrity: number;
-  smallHitIntegrity: number;     // resistencia que te cuesta partir un planeta más chico al chocarlo
+  smallHitIntegrity: number;
+  fractureGrace: number;         // segundos de gracia después de una fractura     // resistencia que te cuesta partir un planeta más chico al chocarlo
   moonTransfer: number;          // por segundo: probabilidad de que una luna o un escombro de un planeta tuyo pase a ser tuyo         // resistencia que baja por cada fracción de tu masa que perdés (0,1 de la masa = 0,1 × esto)        // resistencia que recuperás por segundo
   integrityAfterFracture: number; // con cuánta resistencia quedás después de fracturarte
   fractureMassLoss: number;      // fracción de la masa que perdés al fracturarte
@@ -283,10 +284,11 @@ export const DEFAULT_CONFIG: SimConfig = {
   starGravity: 5,
   starCouple: 1.6,
   coastPullMul: 3,
-  planetStrip: 1.4,
+  planetStrip: 1.6,
   integrityRegen: 0.045,
   lossIntegrity: 1.6,
   smallHitIntegrity: 0.1,
+  fractureGrace: 3,
   moonTransfer: 0.08,
   integrityAfterFracture: 0.35,
   fractureMassLoss: 0.3,
@@ -302,8 +304,8 @@ export const DEFAULT_CONFIG: SimConfig = {
   bhDiskStrip: 1.2,
   bhDiskDrain: 0.25,
   bhDiskDrag: 1.6,
-  rockHitSpeed: 22,
-  rockHitSize: 1.25,
+  rockHitSpeed: 16,          // (sólo escala el daño del golpe)
+  rockHitSize: 1.15,
   rockHitIntegrity: 0.035,
   rockBounceChance: 0.05,
   rockShatterChance: 0.9,
@@ -338,4 +340,4 @@ export const DEFAULT_CONFIG: SimConfig = {
 // La partida de verdad: arranca como planeta gaseoso y se enciende con la ignición. (La base arranca como estrella, para
 // las pruebas y los bancos que miden otras cosas.)
 export const GAME_CONFIG: SimConfig = { ...DEFAULT_CONFIG, planetStart: true, mapStars: 3, artifacts: true, upgrades: true, respawn: true,
-  planetCount: 140, respawnPlanets: 7, asteroidBelts: 6, asteroidVoids: 4, planetPhaseGain: 0.9, starPhaseGain: 1.5, starGainFalloff: 110 };   // más planetas a la vista desde el principio
+  planetCount: 140, respawnPlanets: 7, asteroidBelts: 6, asteroidVoids: 4, planetPhaseGain: 0.9, starPhaseGain: 1.3 };   // más planetas a la vista desde el principio

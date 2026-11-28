@@ -4,7 +4,7 @@
 // supergigante 25 y hipergigante 100 o más. Tramos lineales entre los umbrales de las etapas; más allá, crece en proporción.
 const IGN = 30;
 const AT_P = [0, 8, 18, 30], JUP = [0.3, 4, 13, 80];
-const AT = [30, 70, 120, 175, 235, 310];
+const AT = [30, 80, 150, 250, 380, 540];   // (las masas de las etapas de estrella: stages.ts)
 const SUN = [0.08, 0.8, 1.4, 10, 25, 100];
 
 const lerp = (at: readonly number[], val: readonly number[], m: number): number => {
