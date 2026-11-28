@@ -1,4 +1,4 @@
-import { AmbientLight, Vector3 } from 'three';
+import { HemisphereLight, Vector3 } from 'three';
 import type { Rng } from '../sim/rng';
 import type { World } from '../sim/world';
 import { createSky } from './background/sky';
@@ -31,7 +31,8 @@ export function buildLayers(deps: LayerDeps): BuiltLayers {
   const sunPos = new Vector3();
   const planets = createPlanetsLayer(deps.world, deps.quality.planetSegments, deps.quality.planetOctaves, deps.rng, sunPos);
   const marks = createDangerMarksLayer(deps.world);
-  const ambient: Layer = { object: new AmbientLight(0x1a2233, 0.03), update() {} };
+  // Relleno muy tenue (cielo frío arriba, casi nada abajo): el lado oscuro de las cosas no es negro absoluto.
+  const ambient: Layer = { object: new HemisphereLight(0x3a4866, 0x0c0907, 0.35), update() {} };
   return {
     layers: [
       createSky(deps.quality, deps.rng),

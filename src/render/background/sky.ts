@@ -13,7 +13,13 @@ void main(){
   vec3 col = mix(vec3(.02,.03,.08), vec3(.10,.035,.08), smoothstep(.3,.8,n1*.5+.5));
   col = mix(col, vec3(.22,.11,.05), smoothstep(.65,.98,dens)); col *= dens * .3;
   col *= 1. - .75*smoothstep(.48,.78, fbm(d*7., max(uOctaves - 1, 1))*.5+.5);
-  gl_FragColor = vec4(col * uIntensity, 1.);
+  // Vía Láctea: una banda de luz difusa (millones de estrellas lejanas) con franjas de polvo oscuro en el medio.
+  vec3 N = normalize(vec3(.35, .82, .45));
+  float lat = dot(d, N), band = exp(-pow(lat / .2, 2.)), core = exp(-pow(lat / .07, 2.));
+  float grain = fbm(d * 6. + 2., uOctaves) * .5 + .5, cloud = fbm(d * 2.2 + 9., uOctaves) * .5 + .5;
+  float dust = smoothstep(.45, .75, fbm(d * 4.5 + vec3(3., 1., 7.), uOctaves) * .5 + .5) * core;
+  vec3 milky = mix(vec3(.55, .6, .75), vec3(1., .88, .7), cloud) * (band * .07 * (.5 + .9 * grain) + core * .06) * (1. - .85 * dust);
+  gl_FragColor = vec4((col + milky) * uIntensity, 1.);
 }`;
 const STAR_VERT = /* glsl */ `uniform float uPR; attribute vec3 aCol; attribute float aSize; varying vec3 vC;
 void main(){ vC = aCol; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); gl_PointSize = aSize * uPR; }`;
@@ -33,9 +39,17 @@ export function createSky(quality: QualitySettings, rng: Rng): Layer {
 
   const N = quality.starCount;
   const pos = new Float32Array(N * 3), col = new Float32Array(N * 3), size = new Float32Array(N);
+  // La mitad de las estrellas, concentradas en la banda de la Vía Láctea (como en el cielo real).
+  const bn = [0.35, 0.82, 0.45], bl = Math.hypot(bn[0]!, bn[1]!, bn[2]!);
   for (let i = 0; i < N; i++) {
     const u = rng.next() * 2 - 1, th = rng.next() * Math.PI * 2, r = 2300, s = Math.sqrt(1 - u * u);
-    pos[i * 3] = Math.cos(th) * s * r; pos[i * 3 + 1] = u * r; pos[i * 3 + 2] = Math.sin(th) * s * r;
+    let x = Math.cos(th) * s, y = u, z = Math.sin(th) * s;
+    if (i % 2 === 0) {
+      const dd = (x * bn[0]! + y * bn[1]! + z * bn[2]!) / bl, keep = (rng.next() - 0.5) * 0.35;   // se la acerca a la banda
+      x -= (bn[0]! / bl) * (dd - keep); y -= (bn[1]! / bl) * (dd - keep); z -= (bn[2]! / bl) * (dd - keep);
+      const l = Math.hypot(x, y, z) || 1; x /= l; y /= l; z /= l;
+    }
+    pos[i * 3] = x * r; pos[i * 3 + 1] = y * r; pos[i * 3 + 2] = z * r;
     const b = 0.08 + Math.pow(rng.next(), 8) * 3.2;
     const t = TINTS[Math.floor(rng.next() * TINTS.length)]!;
     col[i * 3] = t[0] * b; col[i * 3 + 1] = t[1] * b; col[i * 3 + 2] = t[2] * b;

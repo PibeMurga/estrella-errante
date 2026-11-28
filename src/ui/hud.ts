@@ -124,7 +124,7 @@ export function createHud(parent: HTMLElement): Hud {
           if (tx !== lastTx || ty !== lastTy) { brackets.style.transform = `translate(${tx}px, ${ty}px)`; lastTx = tx; lastTy = ty; }
         } else {
           // Dirección real en pantalla (con la perspectiva de la cámara); si quedó detrás de la cámara, se invierte.
-          const cx = width / 2, cy = height / 2, mx = cx - 70, my = cy - 60;
+          const cx = width / 2, cy = height / 2, mx = cx - 170, my = cy - 60;   // lejos de las barras de la izquierda
           let ex = scr.x - cx, ey = scr.y - cy;
           if (!scr.ahead) { ex = -ex; ey = -ey; }
           const len = Math.hypot(ex, ey) || 1;
