@@ -108,6 +108,7 @@ export interface SimConfig {
   planetStrip: number;           // cuerpos por segundo que te roba un planeta grande de cerca (escala con √ de tu órbita)         // cuánto te tira un planeta suelto: a = esto × radio³ / distancia²       // cuánto más rápido gira tu sistema siendo hipergigante (0,8 = 80 % más)
   integrityRegen: number;
   lossIntegrity: number;
+  smallHitIntegrity: number;     // resistencia que te cuesta partir un planeta más chico al chocarlo
   moonTransfer: number;          // por segundo: probabilidad de que una luna o un escombro de un planeta tuyo pase a ser tuyo         // resistencia que baja por cada fracción de tu masa que perdés (0,1 de la masa = 0,1 × esto)        // resistencia que recuperás por segundo
   integrityAfterFracture: number; // con cuánta resistencia quedás después de fracturarte
   fractureMassLoss: number;      // fracción de la masa que perdés al fracturarte
@@ -276,6 +277,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   planetStrip: 1.4,
   integrityRegen: 0.045,
   lossIntegrity: 1.6,
+  smallHitIntegrity: 0.1,
   moonTransfer: 0.08,
   integrityAfterFracture: 0.35,
   fractureMassLoss: 0.3,

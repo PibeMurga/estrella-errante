@@ -79,11 +79,11 @@ if (!view.ok) {
   window.addEventListener('pointerdown', startMusic);
   window.addEventListener('keydown', (e) => { startMusic(); if ((e.key === 'm' || e.key === 'M') && named) sfx.setMuted(music.toggleMute()); });
   // Efectos: se disparan cuando cambian los contadores de eventos de la simulación.
-  const ev = { orb: 0, shots: 0, bolts: 0, imp: 0, brk: 0, hits: 0, grave: 0, rock: 0, frac: 0, ign: 0, kills: 0, dis: 0 };
+  const ev = { orb: 0, shots: 0, bolts: 0, imp: 0, brk: 0, hits: 0, grave: 0, rock: 0, frac: 0, ign: 0, kills: 0, dis: 0, small: 0 };
   const syncEv = (): void => {
     ev.orb = world.orbitingCount; ev.shots = world.shots; ev.bolts = world.bolts; ev.imp = world.impactCount; ev.brk = world.breakFxCount;
     ev.hits = world.hits; ev.grave = world.graveHits; ev.rock = world.rockHits; ev.frac = world.fractures; ev.ign = world.ignitions;
-    ev.kills = world.cometKills; ev.dis = world.disintegrated;
+    ev.kills = world.cometKills; ev.dis = world.disintegrated; ev.small = world.smallHits;
   };
   syncEv();
   const playEvents = (): void => {
@@ -98,6 +98,7 @@ if (!view.ok) {
     if (w.fractures > ev.frac) sfx.fracture();
     if (w.ignitions > ev.ign) sfx.ignition();
     if (w.cometKills > ev.kills) sfx.cometDown();
+    if (w.smallHits > ev.small) sfx.rockHit();
     // El rugido del agujero negro: crece al acercarte a su zona de marea.
     const bh = w.bh, d = Math.hypot(bh.x - w.star.x, bh.y - w.star.y), reach = bh.radius * w.config.bhTidalR * 2.2;
     sfx.rumble(bh.active && w.ignited && w.phase === 0 && w.over === 0 ? Math.max(w.tide, 1 - d / reach) : 0);

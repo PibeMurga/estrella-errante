@@ -1,3 +1,4 @@
+import { damageBody } from './integrity';
 import { DT } from './config';
 import { hitPlanet, joinsOrbit, planetTier, TIER_BREAK } from './planetCapture';
 import { ownPlanet, ownPlanets } from './ownPlanets';
@@ -240,6 +241,8 @@ export function stepStarFlybys(w: World): void {
         // El impacto contra una estrella es demasiado para un planeta más chico que ella: se parte en el acto.
         mark(w, i, Math.atan2(-ny, -nx), Math.min(1.6, 0.8 - vn / 4));
         hitPlanet(w, i, 1e6);
+        // A vos también te cuesta un poco: la resistencia baja según el tamaño del planeta y la fuerza del golpe.
+        if (w.invuln <= 0) { damageBody(w, Math.min(0.3, w.config.smallHitIntegrity * (0.4 + r / size) * Math.min(1.5, 0.4 - vn / 6))); w.smallHits++; }
       }
     }
   }
