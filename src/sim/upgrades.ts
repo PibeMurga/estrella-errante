@@ -16,15 +16,15 @@ export const UPGRADES: readonly UpgradeInfo[] = [
   { name: 'IMÁN', desc: 'Tu gravedad atrae más fuerte y desde más lejos' },
   { name: 'CINTURÓN VELOZ', desc: 'Tu órbita gira un 25 % más rápido' },
   { name: 'BÓLIDO MAYOR', desc: '8 asteroides más en cada bólido' },
-  { name: 'CARGA RÁPIDA', desc: 'Juntás asteroides un 40 % más rápido' },
-  { name: 'CORAZA', desc: 'Perdés un 22 % menos en los choques' },
+  { name: 'CARGA RÁPIDA', desc: 'Reúnes asteroides un 40 % más rápido' },
+  { name: 'CORAZA', desc: 'Pierdes un 22 % menos en los choques' },
   { name: 'REGENERACIÓN', desc: 'La resistencia se recarga un 60 % más rápido' },
   { name: 'DISPARO PESADO', desc: 'Cada disparo simple hace el doble de daño' },
-  { name: 'MASA DENSA', desc: 'Cada cuerpo que atrapás suma un 15 % más de masa' },
-  { name: 'ESTELA', desc: 'Te movés un 12 % más rápido' },
+  { name: 'MASA DENSA', desc: 'Cada cuerpo que atrapas suma un 15 % más de masa' },
+  { name: 'ESTELA', desc: 'Te mueves un 12 % más rápido' },
   { name: 'ANCLA', desc: 'El agujero negro te tira un 20 % menos' },
   { name: 'REPELENTE', desc: 'Los cometas tardan más en llegar y roban menos' },
-  { name: 'MAREA PROPIA', desc: 'Les robás lunas y anillos a tus planetas el doble de rápido' },
+  { name: 'MAREA PROPIA', desc: 'Les robas satélites y anillos a tus planetas el doble de rápido' },
 ];
 
 // Nivel de una mejora (0 a 3).

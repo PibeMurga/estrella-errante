@@ -3,14 +3,14 @@ import { drawPlanetPreview } from './planetPreview';
 import { GAS_TYPES } from '../render/playerLook';
 import { NAME_MAX, savedName, savedPlanetType, setPlanetType, setPlayerName, suggestName } from './playerName';
 
-// «NOMBRÁ TU MUNDO»: antes de la partida. Enter (o A en el mando) empieza; «SUGERIR» (o X) propone un nombre.
+// «NOMBRA TU MUNDO»: antes de la partida. Enter (o A en el mando) empieza; «SUGERIR» (o X) propone un nombre.
 // Lo guardado aparece ya escrito. Vacío: se usa una sugerencia.
 export function createNameScreen(parent: HTMLElement, onStart: (name: string, planetType: number) => void): void {
   const root = document.createElement('div');
   root.className = 'namescreen';
   root.innerHTML = `
     <div class="panel">
-      <div class="title">NOMBRÁ TU MUNDO</div>
+      <div class="title">NOMBRA TU MUNDO</div>
       <div class="sub">NACE COMO PLANETA · SE ENCIENDE COMO ESTRELLA · TERMINA COMO AGUJERO NEGRO</div>
       <input type="text" maxlength="${NAME_MAX}" spellcheck="false" autocomplete="off">
       <div class="carousel"><button class="nav prev">‹</button><div class="ring">${GAS_TYPES.map((_, i) => `<canvas class="pl" data-t="${i}" width="120" height="120"></canvas>`).join('')}</div><button class="nav next">›</button></div>

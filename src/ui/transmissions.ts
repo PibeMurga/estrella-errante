@@ -13,17 +13,17 @@ const RIVAL = 'HD 141569 A';   // designación de catálogo real de una estrella
 const msg = (id: string, ...lines: string[]): Msg => ({ id, lines });
 // (La primera transmisión es la intro de la partida: ver intro.ts.)
 const MSGS = {
-  firstOrbit: msg('orb', 'ASÍ. CADA UNA SUMA MASA. SEGUÍ JUNTANDO.'),
-  giant: msg('giant', 'YA SOS UN GIGANTE.', 'LOS PLANETAS MÁS CHICOS QUE VOS SE PARTEN SI LOS CHOCÁS: SUS PEDAZOS PASAN A SER TUYOS.'),
-  comet: msg('comet', 'UN COMETA. VIENE POR LO QUE JUNTASTE.', 'NO PODÉS DETENERLO TODAVÍA: LLEVALO CONTRA UN PLANETA.'),
-  rival: msg('rival', 'HAY OTRA ESTRELLA JOVEN CERCA. EN SUS CATÁLOGOS ES ' + RIVAL + '.', 'NOSOTROS LE DECIMOS «LA ÁVIDA». CRECE MÁS RÁPIDO QUE VOS.'),
+  firstOrbit: msg('orb', 'ASÍ. CADA UNA SUMA MASA. SIGUE REUNIENDO.'),
+  giant: msg('giant', 'YA ERES UN GIGANTE.', 'LOS PLANETAS MÁS CHICOS QUE TÚ SE PARTEN SI LOS CHOCAS: SUS PEDAZOS PASAN A SER TUYOS.'),
+  comet: msg('comet', 'UN COMETA. VIENE POR LO QUE REUNISTE.', 'NO PUEDES DETENERLO TODAVÍA: LLÉVALO CONTRA UN PLANETA.'),
+  rival: msg('rival', 'HAY OTRA ESTRELLA JOVEN CERCA. EN SUS CATÁLOGOS ES ' + RIVAL + '.', 'NOSOTROS LE DECIMOS «LA ÁVIDA». CRECE MÁS RÁPIDO QUE TÚ.'),
   brown: msg('brown', 'TU CENTRO SE CALIENTA. YA CASI.'),
-  ignition: msg('ign', 'TE ENCENDISTE. NUESTRO MUNDO TE AGRADECE LA LUZ.', 'AHORA PODÉS DISPARAR: CLIC DERECHO.'),
+  ignition: msg('ign', 'TE ENCENDISTE. NUESTRO MUNDO TE AGRADECE LA LUZ.', 'AHORA PUEDES DISPARAR: CLIC DERECHO.'),
   devourer: msg('bh', 'EL DEVORADOR SE MUEVE.', 'NO DEJES QUE TE TRAGUE. TODAVÍA NO.'),
-  artifact: msg('art', 'ESO ERA NUESTRO. UNA SONDA DE CUANDO ÉRAMOS MÁS.', 'GUARDALA CERCA.'),
-  yellow: msg('yel', 'NUESTRO MUNDO NUNCA TUVO TANTA LUZ.', 'SEGUÍ CRECIENDO. MÁS GRANDE. MÁS PESADA.'),
+  artifact: msg('art', 'ESO ERA NUESTRO. UNA SONDA DE CUANDO ÉRAMOS MÁS.', 'GUÁRDALA CERCA.'),
+  yellow: msg('yel', 'NUESTRO MUNDO NUNCA TUVO TANTA LUZ.', 'SIGUE CRECIENDO. MÁS GRANDE. MÁS PESADA.'),
   collapse: msg('col', 'ESO ES. NO TENGAS MIEDO.', 'ESTO ESTABA PREVISTO.'),
-  hunt: msg('hunt', 'AHORA SOS LO QUE ÉL ERA.', 'ALCANZALA. LA NECESITAMOS CERCA DE VOS.'),
+  hunt: msg('hunt', 'AHORA ERES LO QUE ÉL ERA.', 'ALCÁNZALA. LA NECESITAMOS CERCA DE TI.'),
 };
 
 const CHARS_PER_S = 38, HOLD = 3.2;

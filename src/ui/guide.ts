@@ -12,15 +12,15 @@ const SHOWS = 3;   // partidas en las que aparece
 const enum Target { PLAYER, ASTEROID, PLANET, BARS, RACE, MAP, SHOT, COMET }
 interface Step { target: Target; title: string; text: string; time: number }
 const STEPS: readonly Step[] = [
-  { target: Target.PLAYER, title: 'TU MUNDO · UN PLANETA GASEOSO', text: 'MANTENÉ EL CLIC IZQUIERDO PARA IR HACIA EL MOUSE · AL SOLTAR, TE LLEVA LA GRAVEDAD', time: 6.5 },
-  { target: Target.ASTEROID, title: 'ASTEROIDE', text: 'ROCA SUELTA · PASÁ CERCA Y QUEDA GIRANDO EN TU ÓRBITA · CADA UNA QUE SUMÁS TE HACE CRECER', time: 6 },
-  { target: Target.BARS, title: 'ETAPA Y RESISTENCIA', text: 'ETAPA: CUÁNTO TE FALTA PARA LA PRÓXIMA · RESIST.: TU INTEGRIDAD; BAJA AL PERDER MASA Y EN CERO TE FRACTURÁS', time: 8 },
-  { target: Target.RACE, title: 'LA CARRERA', text: 'TU MASA CONTRA LA DEL RIVAL · CRECÉ HASTA LA IGNICIÓN Y SUPERALO', time: 6.5 },
-  { target: Target.MAP, title: 'MAPA', text: 'VOS EN EL CENTRO · ESTRELLAS CERCANAS · EN ROJO, EL AGUJERO NEGRO', time: 6 },
-  { target: Target.SHOT, title: 'DISPARO', text: 'PRIMERO CRECÉ HASTA SER ESTRELLA · DESPUÉS VAS A PODER ATACAR CON LOS ASTEROIDES DE TU ÓRBITA: CLIC DERECHO', time: 7 },
+  { target: Target.PLAYER, title: 'TU MUNDO · UN PLANETA GASEOSO', text: 'MANTÉN EL CLIC IZQUIERDO PARA IR HACIA EL MOUSE · AL SOLTAR, TE LLEVA LA GRAVEDAD', time: 6.5 },
+  { target: Target.ASTEROID, title: 'ASTEROIDE', text: 'ROCA SUELTA · PASA CERCA Y QUEDA GIRANDO EN TU ÓRBITA · CADA UNA QUE SUMAS TE HACE CRECER', time: 6 },
+  { target: Target.BARS, title: 'ETAPA Y RESISTENCIA', text: 'ETAPA: CUÁNTO TE FALTA PARA LA PRÓXIMA · RESIST.: TU INTEGRIDAD; BAJA AL PERDER MASA Y EN CERO TE FRACTURAS', time: 8 },
+  { target: Target.RACE, title: 'LA CARRERA', text: 'TU MASA CONTRA LA DEL RIVAL · CRECE HASTA LA IGNICIÓN Y SUPÉRALO', time: 6.5 },
+  { target: Target.MAP, title: 'MAPA', text: 'TÚ EN EL CENTRO · ESTRELLAS CERCANAS · EN ROJO, EL AGUJERO NEGRO', time: 6 },
+  { target: Target.SHOT, title: 'DISPARO', text: 'PRIMERO CRECE HASTA SER ESTRELLA · DESPUÉS VAS A PODER ATACAR CON LOS ASTEROIDES DE TU ÓRBITA: CLIC DERECHO', time: 7 },
 ];
 const PLANET_STEP: Step = { target: Target.PLANET, title: 'PLANETA', text: '', time: 8 };
-const COMET_STEP: Step = { target: Target.COMET, title: 'COMETA', text: 'VIENE A ROBARTE CUERPOS DE LA ÓRBITA · DISPARALE: LO QUE SE LLEVA QUEDA SUELTO', time: 7 };
+const COMET_STEP: Step = { target: Target.COMET, title: 'COMETA', text: 'VIENE A ROBARTE CUERPOS DE LA ÓRBITA · DISPÁRALE: LO QUE SE LLEVA QUEDA SUELTO', time: 7 };
 
 const PLANET_NAME: Record<number, string> = { [KIND_ROCKY]: 'PLANETA ROCOSO', [KIND_ICE]: 'PLANETA HELADO', [KIND_GAS]: 'PLANETA GASEOSO', [KIND_MOON]: 'SATÉLITE' };
 
@@ -107,7 +107,7 @@ export function createGuide(parent: HTMLElement): Guide {
       if (cur.target === Target.PLANET) {
         title = PLANET_NAME[w.kind[target]!] ?? 'PLANETA';
         const r = w.radius[target]!, me = starSize(w.star.mass);
-        text = (r < me ? 'MÁS CHICO QUE VOS: LO PODÉS CAPTURAR' : r > me * 2 ? 'TE DOBLA EN TAMAÑO: SI LO CHOCÁS, TE DESTRUYE' : 'PARECIDO A VOS: UN CHOQUE TE DAÑA')
+        text = (r < me ? 'MÁS CHICO QUE TÚ: LO PUEDES CAPTURAR' : r > me * 2 ? 'TE DOBLA EN TAMAÑO: SI LO CHOCAS, TE DESTRUYE' : 'PARECIDO A TI: UN CHOQUE TE DAÑA')
           + ' · HAY ROCOSOS, HELADOS Y GASEOSOS; LOS SATÉLITES GIRAN A SU ALREDEDOR';
       }
       if (title !== shownTitle) { boxT.textContent = title; boxS.textContent = text; shownTitle = title; }

@@ -174,7 +174,7 @@ export function createHud(parent: HTMLElement): Hud {
       // Resistencia: baja rápido con los golpes, se recarga despacio; roja cuando queda poca.
       const res = Math.round(w.integrity * 100);
       if (res !== lastRes) { resCover.style.height = `${100 - res}%`; resEl.classList.toggle('low', res < 30); lastRes = res; }
-      if (w.artifactsFound > lastArt) { lastArt = w.artifactsFound; log('RESTOS ARTIFICIALES · NO SON NATURALES · ALGUIEN ESTUVO ACÁ'); }
+      if (w.artifactsFound > lastArt) { lastArt = w.artifactsFound; log('RESTOS ARTIFICIALES · NO SON NATURALES · ALGUIEN ESTUVO AQUÍ'); }
       if (w.fractures > lastFrac) { lastFrac = w.fractures; log('TU CUERPO SE FRACTURÓ · PERDISTE MASA Y ÓRBITA'); }
 
       // La carrera: tu masa contra la del rival (en la caza, tu ventaja).
@@ -185,12 +185,12 @@ export function createHud(parent: HTMLElement): Hud {
       const f = Math.round((sm / Math.max(1e-9, sm + sr)) * 1000) / 10;
       if (f !== lastRace) { mb.style.width = `${f}%`; rb.style.width = `${100 - f}%`; lastRace = f; }
       mvEl.textContent = formatSolar(me); rvEl.textContent = formatLike(rv, me);
-      if (w.stage !== mkStage) { mkStage = w.stage; mkEl.textContent = 'VOS: ' + STAGES[w.stage]!.name; }   // las dos en la misma unidad
+      if (w.stage !== mkStage) { mkStage = w.stage; mkEl.textContent = 'TÚ: ' + STAGES[w.stage]!.name; }   // las dos en la misma unidad
       let nt = '';
       if (w.phase === PHASE_HUNT) {
         const left = Math.max(0, w.config.huntTimeLimit - w.phaseTime);
-        nt = `CAZA · ALCANZALO ANTES DE ${pad(left / 60, 2)}:${pad(left % 60, 2)}`;
-      } else if (w.phase === 0 && w.stage >= STAGE_HYPER) nt = 'HIPERGIGANTE · SUPERÁ AL RIVAL Y COLAPSÁS';
+        nt = `CAZA · ALCÁNZALO ANTES DE ${pad(left / 60, 2)}:${pad(left % 60, 2)}`;
+      } else if (w.phase === 0 && w.stage >= STAGE_HYPER) nt = 'HIPERGIGANTE · SUPERA AL RIVAL Y COLAPSAS';
       if (nt !== lastNote) { note.textContent = nt; note.className = nt.startsWith('COLAPSO') ? 'note am blink' : 'note am'; lastNote = nt; }
       const asHole = w.phase === PHASE_HUNT || w.phase === PHASE_MERGE;   // (la ignición no: ahí todavía sos planeta)
       if (asHole) nameEl.textContent = 'AGUJERO NEGRO';
@@ -206,8 +206,8 @@ export function createHud(parent: HTMLElement): Hud {
       const tipOn = !huntOn && tipT > 0 && w.phase === PHASE_PLAY && w.over === 0;
       const bText = huntOn ? 1 : tipOn ? 2 : 0;
       if (bText !== bannerKind && bText > 0) {
-        bannerB.textContent = bText === 1 ? 'SOS UN AGUJERO NEGRO' : 'YA PODÉS DISPARAR';
-        bannerS.textContent = bText === 1 ? 'ATRAPÁ AL RIVAL ANTES DE QUE ESCAPE' : 'CLIC DERECHO: UN TOQUE DISPARA · MANTENELO PARA CARGAR UN BÓLIDO · ESPACIO: ESCUDO DE PLANETAS';
+        bannerB.textContent = bText === 1 ? 'ERES UN AGUJERO NEGRO' : 'YA PUEDES DISPARAR';
+        bannerS.textContent = bText === 1 ? 'ATRAPA AL RIVAL ANTES DE QUE ESCAPE' : 'CLIC DERECHO: UN TOQUE DISPARA · MANTENLO PARA CARGAR UN BÓLIDO · ESPACIO: ESCUDO DE PLANETAS';
       }
       if (bText !== bannerKind) bannerKind = bText;
       const bOn = bText > 0;
@@ -217,13 +217,13 @@ export function createHud(parent: HTMLElement): Hud {
         const d = Math.max(0, Math.hypot(bh.x - s.x, bh.y - s.y) - bh.radius);
         bhInfo.style.display = '';
         // Dentro del disco: el aviso cambia y late (te está arrancando materia).
-        bhDistEl.textContent = w.tide > 0 && w.orbitingCount === 0 ? 'MAREA · TE ESTÁ DESHACIENDO' : w.inDisk > 0 ? 'DISCO DE ACRECIÓN · PERDÉS MATERIA' : w.bhSlow > 0 ? `FRENADO POR TU BÓLIDO · ${w.bhSlow.toFixed(1).replace('.', ',')} s` : `A ${ua(d)} UA · ${d < lastBhDist - 0.05 ? 'SE ACERCA' : 'SE ALEJA'}`;   // UA: unidades astronómicas
+        bhDistEl.textContent = w.tide > 0 && w.orbitingCount === 0 ? 'MAREA · TE ESTÁ DESHACIENDO' : w.inDisk > 0 ? 'DISCO DE ACRECIÓN · PIERDES MATERIA' : w.bhSlow > 0 ? `FRENADO POR TU BÓLIDO · ${w.bhSlow.toFixed(1).replace('.', ',')} s` : `A ${ua(d)} UA · ${d < lastBhDist - 0.05 ? 'SE ACERCA' : 'SE ALEJA'}`;   // UA: unidades astronómicas
         bhInfo.classList.toggle('disk', w.inDisk > 0 || (w.tide > 0 && w.orbitingCount === 0));
         arrowDist.textContent = `AGUJERO NEGRO · ${ua(d)} UA`;
         lastBhDist = d;
       } else bhInfo.style.display = 'none';
 
-      slingEl.textContent = w.shielding ? 'ESCUDO DE PLANETAS' : !w.ignited ? 'CRECÉ HASTA SER ESTRELLA · DESPUÉS ATACÁS CON TU ÓRBITA' : w.charge >= w.config.tapTime ? `BÓLIDO ×${w.gathered}` : w.slingCd > 0 ? 'DISPARO ○' : 'DISPARO ●';
+      slingEl.textContent = w.shielding ? 'ESCUDO DE PLANETAS' : !w.ignited ? 'CRECE HASTA SER ESTRELLA · DESPUÉS ATACAS CON TU ÓRBITA' : w.charge >= w.config.tapTime ? `BÓLIDO ×${w.gathered}` : w.slingCd > 0 ? 'DISPARO ○' : 'DISPARO ●';
       slingEl.className = w.orbitingCount > 0 ? 'sling' : 'sling off';
       worldsEl.textContent = `EN ÓRBITA ${pad(w.orbitingCount, 3)}`;
       // Tu sistema: planetas en órbita contra el próximo umbral de habilidad, y la habilidad activa.
@@ -253,7 +253,7 @@ export function createHud(parent: HTMLElement): Hud {
       if (ac > seen.comets) log('COMETA CAZADOR A LA VISTA');
       if (w.phase !== seen.phase) {
         if (w.phase === PHASE_COLLAPSE) log('SUPERNOVA');
-        if (w.phase === PHASE_HUNT) log('NACISTE COMO AGUJERO NEGRO · ALCANZÁ AL RIVAL');
+        if (w.phase === PHASE_HUNT) log('NACISTE COMO AGUJERO NEGRO · ALCANZA AL RIVAL');
         if (w.phase === PHASE_MERGE) log('FUSIÓN');
         seen.phase = w.phase;
       }

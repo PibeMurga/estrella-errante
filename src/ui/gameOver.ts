@@ -56,7 +56,7 @@ export function createGameOver(parent: HTMLElement, onRestart: () => void): Game
         [OVER_SWALLOWED]: ['ESTRELLA TRAGADA', 'EL AGUJERO NEGRO TE ALCANZÓ'],
         [OVER_ESCAPED]: ['EL RIVAL SE ESCAPÓ', 'NO LO ALCANZASTE A TIEMPO'],
         [OVER_WON]: ['FUSIÓN', 'TE COMISTE AL AGUJERO NEGRO RIVAL · GANASTE LA PANTALLA'],
-        [OVER_SHATTERED]: ['HECHO PEDAZOS', 'CHOCASTE CONTRA ALGO MUCHÍSIMO MÁS GRANDE QUE VOS'],
+        [OVER_SHATTERED]: ['HECHO PEDAZOS', 'CHOCASTE CONTRA ALGO MUCHÍSIMO MÁS GRANDE QUE TÚ'],
       };
       const [tt, wy] = titles[w.over] ?? ['ESTRELLA APAGADA', 'CHOCASTE CONTRA UN PLANETA SIN NADA EN ÓRBITA QUE TE PROTEJA'];
       title.textContent = tt; why.textContent = `${playerName()} · ${wy}`;

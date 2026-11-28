@@ -45,7 +45,7 @@ export function createPathTrack(root: HTMLElement): PathTrack {
       if (at === shown) return;
       // Subiste de etapa (no al empezar, ni en la ignición: esa tiene su propia cinemática y su cartel).
       if (shown >= 0 && at > shown && at !== 3) {
-        tfName.textContent = hole ? 'AHORA SOS UN AGUJERO NEGRO' : 'AHORA SOS ' + (at === 1 || at === 6 ? 'UN ' : 'UNA ') + STAGES[at]!.name;
+        tfName.textContent = hole ? 'AHORA ERES UN AGUJERO NEGRO' : 'AHORA ERES ' + (at === 1 || at === 6 ? 'UN ' : 'UNA ') + STAGES[at]!.name;
         tfWhat.textContent = hole ? 'TODO LO QUE SE ACERQUE, CAE' : WHAT[at] ?? '';
         tf.classList.add('on'); tfT = 3.6;
       }

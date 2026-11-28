@@ -9,7 +9,7 @@ import type { HudView } from './hud';
 // - cometas que vienen a robarte desde fuera de cuadro: una flecha magenta en el borde, hacia donde están;
 // - debajo del planeta marcado más cercano de cada clase, qué pasa si lo chocás.
 
-const LABELS = ['', 'CHOCALO: LO PARTÍS Y SUS PEDAZOS SE SUMAN A TU ÓRBITA', 'CHOCARLO TE DAÑA', 'TE DESTRUYE · ESQUIVALO'];
+const LABELS = ['', 'CHÓCALO: LO PARTES Y SUS PEDAZOS SE SUMAN A TU ÓRBITA', 'CHOCARLO TE DAÑA', 'TE DESTRUYE · ESQUÍVALO'];
 const LABEL_CLASS = ['', 'brk', 'hrt', 'grv'];
 
 const ARROWS = 4;

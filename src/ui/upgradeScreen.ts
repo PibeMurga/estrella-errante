@@ -9,7 +9,7 @@ export interface UpgradeScreen { update(w: World): void; readonly open: boolean 
 export function createUpgradeScreen(parent: HTMLElement, onPick?: () => void): UpgradeScreen {
   const root = document.createElement('div');
   root.className = 'upgrades';
-  root.innerHTML = `<div class="title">MEJORA</div><div class="sub">SUBISTE DE ETAPA · ELEGÍ UNA</div>
+  root.innerHTML = `<div class="title">MEJORA</div><div class="sub">SUBISTE DE ETAPA · ELIGE UNA</div>
     <div class="cards">${[0, 1, 2].map((k) => `<div class="card" data-k="${k}"><div class="k">[${k + 1}]</div><div class="n"></div><div class="d"></div><div class="lv"></div></div>`).join('')}</div>`;
   parent.appendChild(root);
   const cards = Array.from(root.querySelectorAll<HTMLElement>('.card'));

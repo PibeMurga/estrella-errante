@@ -21,7 +21,7 @@ test('supernova, caza, fusión y cartel de victoria', async ({ page }) => {
   await page.screenshot({ path: 'artifacts/e2e/nacimiento.png' });
   await page.waitForFunction(() => window.__GAME__!.world.phase === 2, undefined, { timeout: 8_000 });
   await expect(page.locator('.hud .note')).toContainText('CAZA');
-  await expect(page.locator('.hud .banner.on')).toContainText('ATRAPÁ AL RIVAL');   // aviso claro al empezar la caza
+  await expect(page.locator('.hud .banner.on')).toContainText('ATRAPA AL RIVAL');   // aviso claro al empezar la caza
   await expect(page.locator('.hud.hunting')).toHaveCount(1);   // las alertas del rival pasan a verde
   await page.waitForTimeout(800);
   await page.screenshot({ path: 'artifacts/e2e/caza.png' });

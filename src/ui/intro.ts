@@ -7,12 +7,12 @@ import { drawThumb, type ThumbKind } from './entityThumbs';
 
 interface Entity { readonly name: string; readonly note: string; readonly size: number; readonly kind: ThumbKind; readonly you?: boolean; readonly danger?: boolean }
 const ENTITIES: readonly Entity[] = [
-  { name: 'ASTEROIDE', note: 'ROCA SUELTA · SUMALA Y CRECÉS', size: 12, kind: 'asteroid' },
-  { name: 'COMETA', note: 'CHICO, PERO TE ROBA LO QUE JUNTASTE', size: 10, kind: 'comet', danger: true },
+  { name: 'ASTEROIDE', note: 'ROCA SUELTA · SÚMALA Y CRECES', size: 12, kind: 'asteroid' },
+  { name: 'COMETA', note: 'CHICO, PERO TE ROBA LO QUE REUNISTE', size: 10, kind: 'comet', danger: true },
   { name: 'SATÉLITE', note: 'GIRA ALREDEDOR DE UN PLANETA', size: 16, kind: 'moon' },
   { name: 'PLANETA ROCOSO', note: 'SÓLIDO · SI ES MÁS CHICO, SE PARTE', size: 20, kind: 'rocky' },
   { name: 'PLANETA HELADO', note: 'HIELO Y ROCA', size: 23, kind: 'ice' },
-  { name: 'PLANETA GASEOSO', note: 'VOS, AL EMPEZAR', size: 28, kind: 'gas', you: true },
+  { name: 'PLANETA GASEOSO', note: 'TÚ, AL EMPEZAR', size: 28, kind: 'gas', you: true },
   { name: 'ENANA MARRÓN', note: 'CASI UNA ESTRELLA', size: 31, kind: 'brown' },
   { name: 'ESTRELLA', note: 'ENCENDIDA · DE ROJA A HIPERGIGANTE', size: 24, kind: 'star' },
   { name: 'AGUJERO NEGRO', note: 'EL DEVORADOR · Y TU DESTINO', size: 20, kind: 'hole', danger: true },
@@ -22,9 +22,9 @@ const LINES = (name: string): string[] => [
   'TRANSMISIÓN INTERCEPTADA · ORIGEN: EL TERCER MUNDO DE ESTE SISTEMA',
   '',
   'TE VEMOS, ' + name + '.',
-  'SOS UN PLANETA GASEOSO, JOVEN Y CHICO, PERDIDO ENTRE GIGANTES.',
-  'JUNTÁ MATERIA: CADA ROCA QUE ATRAPÁS TE HACE CRECER.',
-  'SI CRECÉS LO SUFICIENTE, TE VAS A ENCENDER COMO ESTRELLA.',
+  'ERES UN PLANETA GASEOSO, JOVEN Y CHICO, PERDIDO ENTRE GIGANTES.',
+  'REÚNE MATERIA: CADA ROCA QUE ATRAPAS TE HACE CRECER.',
+  'SI CRECES LO SUFICIENTE, TE VAS A ENCENDER COMO ESTRELLA.',
   'TE NECESITAMOS ENCENDIDO.',
 ];
 
