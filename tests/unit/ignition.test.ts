@@ -24,7 +24,7 @@ describe('arranque como planeta', () => {
     expect(w.charge).toBe(0);
   });
 
-  it('el agujero negro duerme: no se mueve ni traga; y no salen cometas', () => {
+  it('el agujero negro duerme: no se mueve ni traga; los cometas llegan más despacio que siendo estrella', () => {
     const w = createWorld(cfg(), 2, 40);
     const bx = w.bh.x, by = w.bh.y;
     const i = addBody(w, { x: bx + 2, y: by, vx: 0, vy: 0, radius: 0.5, kind: KIND_ASTEROID });
@@ -32,7 +32,8 @@ describe('arranque como planeta', () => {
     expect(w.bh.x).toBe(bx); expect(w.bh.y).toBe(by);
     expect(w.state[i]).not.toBe(3);
     let comets = 0; for (let k = 0; k < w.comets.mode.length; k++) if (w.comets.mode[k] !== 0) comets++;
-    expect(comets).toBe(0);
+    expect(comets).toBeGreaterThan(0);   // siendo planeta también vienen
+    expect(w.cometClock).toBeGreaterThan(0);
   });
 
   it('al llegar a la masa de ignición: cinemática una sola vez, y al terminar se desbloquea todo', () => {

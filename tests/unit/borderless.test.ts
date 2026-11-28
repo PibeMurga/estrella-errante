@@ -72,7 +72,7 @@ describe('espacio sin bordes', () => {
     for (let c = 0; c < MAX_COMETS; c++) if (w.comets.mode[c] !== 0) k = c;
     expect(k).toBeGreaterThanOrEqual(0);
     const dx = Math.abs(w.comets.x[k]! - 5000), dy = Math.abs(w.comets.y[k]! - 4000);
-    expect(Math.max(dx / hw, dy / hh)).toBeGreaterThan(0.9);
+    expect(Math.hypot(dx, dy)).toBeGreaterThan(150);   // fuera de cuadro
     const d0 = Math.hypot(dx, dy);
     for (let s = 0; s < 120; s++) step(w, NO_INPUT);
     expect(Math.hypot(w.comets.x[k]! - w.star.x, w.comets.y[k]! - w.star.y)).toBeLessThan(d0);

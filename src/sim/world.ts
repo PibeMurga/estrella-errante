@@ -300,7 +300,11 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
   // Planetas, algunos con lunas y otros con su propio cinturón de escombros.
   for (let k = 0; k < config.planetCount; k++) {
     let px = 0, py = 0;
-    do { px = rng.range(-hw, hw); py = rng.range(-hh, hh); } while (Math.hypot(px, py) < config.spawnClearRadius * 3);
+    if (config.planetStart && k < 7) {
+      // Arrancando como planeta, algunos cerca, a la vista desde el principio.
+      const a0 = (k / 7) * Math.PI * 2 + rng.range(-0.3, 0.3), d0 = rng.range(70, 190);
+      px = Math.cos(a0) * d0 * 1.5; py = Math.sin(a0) * d0;
+    } else do { px = rng.range(-hw, hw); py = rng.range(-hh, hh); } while (Math.hypot(px, py) < config.spawnClearRadius * 3);
     const ang = rng.range(0, Math.PI * 2), speed = 0.5 + 2.6 * Math.pow(rng.next(), 1.7);   // derivan pesados, cada uno a su ritmo
     // Tamaños muy desparejos: muchos medianos y chicos, pocos inmensos (hasta 16).
     const r = 2 + (config.planetMaxRadius - 2) * Math.pow(rng.next(), 2.4);

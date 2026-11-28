@@ -14,7 +14,8 @@ export function stepSpawner(w: World): void {
   if (w.spawnClock > 0) return;
   w.spawnClock = 0.6;
   const R = Math.min(c.arenaHalfWidth, c.arenaHalfHeight) * 0.9, me = starSize(s.mass);
-  const far0 = 420 + me * 8, far1 = Math.min(R, far0 + 300);
+  // Aparecen justo fuera de cuadro (no lejísimos): así entran a la vista enseguida.
+  const far0 = 150 + me * 9, far1 = Math.min(R, far0 + 160);
   // Asteroides: si escasean cerca, un cúmulo nuevo fuera de cuadro.
   let ast = 0;
   for (let i = 0; i < w.count; i++) {
@@ -37,17 +38,20 @@ export function stepSpawner(w: World): void {
   }
   // Planetas: si quedan pocos sueltos cerca, uno nuevo (de la reserva), con un tamaño que acompaña el tuyo.
   if (w.spawnNext >= w.spawnPool.length) return;
+  // Se cuentan los planetas de tu zona (unas pocas pantallas a la redonda), no los de todo el mapa.
   let pl = 0;
+  const near = 260 + me * 14;
   for (let q = 0; q < w.planets.length; q++) {
     const p = w.planets[q]!;
     if (w.state[p] !== FREE || w.parent[p] !== -1) continue;
-    if (Math.abs(w.x[p] - s.x) < R && Math.abs(w.y[p] - s.y) < R) pl++;
+    if (Math.abs(w.x[p] - s.x) < near && Math.abs(w.y[p] - s.y) < near) pl++;
   }
   if (pl >= c.respawnPlanets) return;
   const p = w.spawnPool[w.spawnNext++]!, r = w.rng;
   const big = r.next() < 0.12;
   const rad = Math.max(2, Math.min(34, me * (big ? r.range(1.6, 2.4) : r.range(0.3, 1.3))));
-  const a = r.range(0, Math.PI * 2), d = r.range(far0, far1), va = r.range(0, Math.PI * 2), vs = r.range(0.4, 2.4);
+  // Entra a tu zona: viene más o menos hacia vos (sin apuntarte exacto), así se cruza con lo que ves.
+  const a = r.range(0, Math.PI * 2), d = r.range(far0, far1), va = a + Math.PI + r.range(-0.6, 0.6), vs = r.range(2, 4.5);
   w.x[p] = w.prevX[p] = s.x + Math.cos(a) * d; w.y[p] = w.prevY[p] = s.y + Math.sin(a) * d;
   w.vx[p] = Math.cos(va) * vs; w.vy[p] = Math.sin(va) * vs;
   w.radius[p] = rad; w.mass[p] = rad * rad * rad;

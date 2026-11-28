@@ -35,14 +35,10 @@ export function spawnComet(w: World, x: number, y: number): number {
   return -1;
 }
 
-// Aparece lejos, en un punto al azar del borde de la zona que rodea a la estrella (siempre fuera de cámara).
+// Aparece fuera de cámara pero no lejos (unos segundos de viaje), en una dirección al azar.
 function spawnOnEdge(w: World): void {
-  const hw = w.config.arenaHalfWidth, hh = w.config.arenaHalfHeight, r = w.rng;
-  const side = Math.floor(r.next() * 4);
-  const t = r.range(-1, 1);
-  const x = side === 0 ? -hw : side === 1 ? hw : t * hw;
-  const y = side === 2 ? -hh : side === 3 ? hh : t * hh;
-  spawnComet(w, w.star.x + x * 0.98, w.star.y + y * 0.98);
+  const r = w.rng, a = r.range(0, Math.PI * 2), d = 190 + starSize(w.star.mass) * 10;
+  spawnComet(w, w.star.x + Math.cos(a) * d, w.star.y + Math.sin(a) * d);
 }
 
 // Revive asteroides de la reserva (cuerpos DEAD de tipo asteroide) alrededor de (x, y).
@@ -93,8 +89,8 @@ function steal(w: World, k: number, i: number): void {
 // Cometas cazadores: aparecen por los bordes, persiguen a la estrella, le roban cuerpos y huyen.
 export function stepComets(w: World): void {
   const c = w.config, s = w.star, cm = w.comets;
-  if (!w.ignited) return;   // los cometas llegan después de la ignición
-  w.cometClock -= DT;
+  // También siendo planeta (menos seguido): te roban de la órbita y te obligan a moverte.
+  w.cometClock -= DT * (w.ignited ? 1 : 0.6);
   if (w.cometClock <= 0) {
     // Más seguido a medida que crecés (una estrella grande atrae más cometas), y a veces llegan de a dos.
     spawnOnEdge(w);

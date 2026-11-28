@@ -20,15 +20,15 @@ function withOrbit(w: World, n: number): void {
 const active = (w: World): number => { let n = 0; for (let k = 0; k < MAX_COMETS; k++) if (w.comets.mode[k] !== 0) n++; return n; };
 
 describe('cometa cazador', () => {
-  it('el primero aparece al minuto, en un borde del mapa', () => {
+  it('el primero aparece a su tiempo, fuera de cuadro pero no lejos', () => {
     const w = createWorld(cfg(), 2, 10);
     for (let k = 0; k < DEFAULT_CONFIG.cometFirst * 60 - 2; k++) step(w, IDLE);
     expect(active(w)).toBe(0);
     for (let k = 0; k < 4; k++) step(w, IDLE);
     expect(active(w)).toBe(1);
     const x = w.comets.x[0]!, y = w.comets.y[0]!;
-    const onEdge = Math.abs(x) > DEFAULT_CONFIG.arenaHalfWidth * 0.9 || Math.abs(y) > DEFAULT_CONFIG.arenaHalfHeight * 0.9;
-    expect(onEdge).toBe(true);
+    const d = Math.hypot(x - w.star.x, y - w.star.y);
+    expect(d).toBeGreaterThan(150); expect(d).toBeLessThan(400);
   });
 
   it('persigue a la estrella', () => {
