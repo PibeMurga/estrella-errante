@@ -37,7 +37,7 @@ test('la flecha apunta hacia donde está el agujero negro en pantalla', async ({
   await page.waitForTimeout(300);
   const up = await page.locator('.hud .arrow').boundingBox();
   expect(up!.y).toBeLessThan(120);
-  expect(Math.abs(up!.x + up!.width / 2 - 640)).toBeLessThan(120);
+  expect(Math.abs(up!.x + up!.width / 2 - 640)).toBeLessThan(170);   // (el aviso es más ancho)
   // Abajo a la izquierda: la flecha queda en la mitad izquierda e inferior.
   await page.evaluate(() => { const w = window.__GAME__!.world; w.bh.x = w.bh.prevX = w.star.x - 1000; w.bh.y = w.bh.prevY = w.star.y - 700; });
   await page.waitForTimeout(300);
