@@ -41,13 +41,17 @@ describe('habilidades por cantidad de planetas', () => {
     const E = starSize(w.star.mass);
     (w.config as { planetStrip: number }).planetStrip = 0;   // que el planeta grande no robe por cercanía: se mide el escudo
     // Tus planetas lejos del golpe (si no, el grande también rompe alguno de ellos al pasar).
-    for (let i = 0; i < w.count; i++) if (w.state[i] === ORBITING && w.kind[i] !== KIND_ASTEROID) { w.orbitR[i] = 120; w.orbitTarget[i] = 120; w.orbitAngle[i] = Math.PI; w.x[i] = w.star.x - 120; w.y[i] = w.star.y; }
+    let q = 0;
+    for (let i = 0; i < w.count; i++) if (w.state[i] === ORBITING && w.kind[i] !== KIND_ASTEROID) { const a = Math.PI + (q++ - 2.5) * 0.4; w.orbitR[i] = 120; w.orbitTarget[i] = 120; w.orbitAngle[i] = a; w.x[i] = w.star.x + Math.cos(a) * 120; w.y[i] = w.star.y + Math.sin(a) * 120; }
+    // Sin planetas sueltos alrededor que puedan chocar con los tuyos: se mide sólo el escudo.
+    for (let i = 0; i < w.count; i++) if (w.state[i] === FREE && w.kind[i] >= KIND_ROCKY && w.kind[i] <= 3) w.state[i] = DEAD;
+    const held0 = planetsInOrbit(w);
     const big = addBody(w, { x: w.star.x + E * 2.1, y: 0, vx: 0, vy: 0, radius: E * 1.2, kind: KIND_ROCKY });   // daña pero no es grave
     void big;
     step(w, idle);
     expect(w.hits).toBe(1);
     expect(countAst()).toBeGreaterThanOrEqual(ast0);   // no se perdió ningún asteroide
-    expect(planetsInOrbit(w)).toBe(5);
+    expect(planetsInOrbit(w)).toBe(held0 - 1);   // el escudo entregó uno
   });
   it('bólido mayor: el tope sube; al perder la habilidad, lo ya juntado sale igual', () => {
     const w = system(9);

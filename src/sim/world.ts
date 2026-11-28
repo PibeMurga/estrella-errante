@@ -94,6 +94,7 @@ export interface World {
   offer: Int8Array;    // las tres mejoras ofrecidas ahora (-1 = ninguna)
   choosing: boolean;   // la partida está en pausa esperando que elijas una mejora
   upgradesTaken: number;
+  nextUpgrade: number;   // índice del próximo hito de masa con mejora
   rockHits: number;
   contactHits: number;
   disintegrated: number;   // planetas o pedazos que se desintegraron contra la estrella (evento)  // choques pesados entre planetas (evento)    // asteroides veloces o grandes que golpearon la estrella (evento)
@@ -264,7 +265,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       tint: new Float32Array(MAX_COMETS), bright: new Float32Array(MAX_COMETS).fill(1), wander: new Float32Array(MAX_COMETS),
     },
     cometClock: config.cometFirst, cometSteals: 0, cometKills: 0, rng: createRng(seed ^ 0x9e3779b9),
-    over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, fireSlow: 0, fireSlowK: 0, fireSlowT: 1, breakFxCount: 0, breakFxX: 0, breakFxY: 0, breakFxR: 0, breakFxKind: 0, breakFxAx: 1, breakFxAy: 0, ignited: !config.planetStart, ignitions: 0, integrity: 1, fractures: 0, planetStripAcc: 0, planetSteals: 0, starBurns: 0, starsEaten: 0, coasting: false, starPullNow: 0, artifactsFound: 0, upg: new Uint8Array(12), offer: new Int8Array(3).fill(-1), choosing: false, upgradesTaken: 0, rockHits: 0, contactHits: 0, disintegrated: 0, diskGrazes: 0, inDisk: 0, tide: 0, diskStripAcc: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
+    over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, fireSlow: 0, fireSlowK: 0, fireSlowT: 1, breakFxCount: 0, breakFxX: 0, breakFxY: 0, breakFxR: 0, breakFxKind: 0, breakFxAx: 1, breakFxAy: 0, ignited: !config.planetStart, ignitions: 0, integrity: 1, fractures: 0, planetStripAcc: 0, planetSteals: 0, starBurns: 0, starsEaten: 0, coasting: false, starPullNow: 0, artifactsFound: 0, upg: new Uint8Array(12), offer: new Int8Array(3).fill(-1), choosing: false, upgradesTaken: 0, nextUpgrade: 0, rockHits: 0, contactHits: 0, disintegrated: 0, diskGrazes: 0, inDisk: 0, tide: 0, diskStripAcc: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
     x: f(), y: f(), prevX: f(), prevY: f(), vx: f(), vy: f(), radius: f(), mass: f(),
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
     parent: new Int32Array(capacity).fill(-1),

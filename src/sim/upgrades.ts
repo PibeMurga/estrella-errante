@@ -7,6 +7,8 @@ export const U_MAGNET = 0, U_SPIN = 1, U_BOLT = 2, U_CHARGE = 3, U_ARMOR = 4, U_
   U_WAKE = 8, U_ANCHOR = 9, U_REPEL = 10, U_TIDE = 11;
 export const UPGRADE_COUNT = 12;
 export const UPGRADE_MAX = 3;
+// Masas en las que se ofrece una mejora: repartidas para que salgan más o menos parejas en el tiempo.
+export const UPGRADE_AT: readonly number[] = [6, 14, 26, 42, 62, 86, 115, 150, 190, 240, 300, 370, 450, 540, 650];
 
 export interface UpgradeInfo { readonly name: string; readonly desc: string }
 export const UPGRADES: readonly UpgradeInfo[] = [

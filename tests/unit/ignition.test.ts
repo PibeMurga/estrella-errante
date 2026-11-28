@@ -3,7 +3,7 @@ import { GAME_CONFIG, type SimConfig } from '../../src/sim/config';
 import { type Intent, step } from '../../src/sim/step';
 import { addBody, createWorld, KIND_ASTEROID, ORBITING, PHASE_IGNITION, PHASE_PLAY, type World } from '../../src/sim/world';
 
-const cfg = (o: Partial<SimConfig> = {}): SimConfig => ({ ...GAME_CONFIG, asteroidCount: 0, planetCount: 0, cometFirst: 1, ...o });
+const cfg = (o: Partial<SimConfig> = {}): SimConfig => ({ ...GAME_CONFIG, asteroidCount: 0, planetCount: 0, cometFirst: 1, upgrades: false, ...o });
 const idle: Intent = { targetX: 0, targetY: 0, hasTarget: false };
 const run = (w: World, secs: number, it: Intent = idle): void => { for (let k = 0; k < Math.round(secs * 60); k++) step(w, it); };
 function withOrbit(w: World, n: number): void {

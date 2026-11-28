@@ -2,7 +2,7 @@ import { stepComets } from './comets';
 import { breakPlanet } from './tidal';
 import { damageBody, loseMass, stepIntegrity } from './integrity';
 import { stepRockImpacts } from './rockImpacts';
-import { offerUpgrades, U_ANCHOR, U_DENSE, U_MAGNET, U_SPIN, U_TIDE, U_WAKE, upg } from './upgrades';
+import { offerUpgrades, UPGRADE_AT, U_ANCHOR, U_DENSE, U_MAGNET, U_SPIN, U_TIDE, U_WAKE, upg } from './upgrades';
 import { OWN_LIST, ownPlanets } from './ownPlanets';
 import { stepEncounters, stepOwnPlanetRams, stepStarFlybys } from './encounters';
 import { DT, type SimConfig } from './config';
@@ -504,7 +504,8 @@ export function step(w: World, intent: Intent): void {
 
   if (w.fireSlow > 0) w.fireSlow = Math.max(0, w.fireSlow - DT);
   // Movimiento con inercia: acelera hacia una velocidad deseada y frena para llegar sin pasarse.
-  const acc = hunting ? c.starAccel : c.starAccel / (1 + c.starMassInertia * s.mass);   // siendo agujero negro ya no cargás con la inercia de la estrella
+  // La masa te hace más pesado, pero con tope: siendo enorme seguís siendo manejable.
+  const acc = hunting ? c.starAccel : c.starAccel / (1 + c.starMassInertia * Math.min(s.mass, 220));   // siendo agujero negro ya no cargás con la inercia de la estrella
   let desX = 0;
   let desY = 0;
   // Sin el clic izquierdo, vas suelto: casi no frenás y te llevan las fuerzas de lo que tenés cerca (mucho más fuerte).
@@ -771,7 +772,9 @@ export function step(w: World, intent: Intent): void {
   // Al llegar a la masa de ignición, se enciende la fusión: cinemática de la ignición (una sola vez).
   if (!w.ignited && w.phase === PHASE_PLAY && s.mass >= IGNITION_MASS) { w.phase = PHASE_IGNITION; w.phaseTime = 0; w.ignitions++; releaseLaunch(w); }
   const st = stageFor(s.mass);
-  if (st > w.stage) { w.stage = st; w.stageUps++; if (c.upgrades && w.phase === PHASE_PLAY) offerUpgrades(w); }
+  if (st > w.stage) { w.stage = st; w.stageUps++; }
+  // Mejoras en hitos de masa repartidos (no por etapa: al principio las etapas son muy seguidas y al final muy espaciadas).
+  if (c.upgrades && w.phase === PHASE_PLAY && w.nextUpgrade < UPGRADE_AT.length && s.mass >= UPGRADE_AT[w.nextUpgrade]!) { w.nextUpgrade++; offerUpgrades(w); }
   if (hunting) {
     w.phaseTime += DT;
     if (w.phaseTime >= c.huntTimeLimit) w.over = OVER_ESCAPED;

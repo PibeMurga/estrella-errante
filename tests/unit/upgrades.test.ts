@@ -8,9 +8,9 @@ const cfg = { ...DEFAULT_CONFIG, asteroidCount: 0, planetCount: 0, blackHole: fa
 const idle: Intent = { targetX: 0, targetY: 0, hasTarget: false };
 
 describe('mejoras: elegir una entre tres al subir de etapa', () => {
-  it('al subir de etapa se ofrecen tres distintas y la partida espera', () => {
+  it('al llegar a un hito de masa se ofrecen tres distintas y la partida espera', () => {
     const w = createWorld(cfg, 4, 20);
-    w.star.mass = 8.5;
+    w.star.mass = 6.5;
     step(w, idle);
     expect(w.choosing).toBe(true);
     const o = Array.from(w.offer);
@@ -30,7 +30,7 @@ describe('mejoras: elegir una entre tres al subir de etapa', () => {
     const w = createWorld(cfg, 4, 20);
     w.upg[U_BOLT] = UPGRADE_MAX;
     for (let n = 0; n < 30; n++) {
-      w.star.mass += 50; step(w, idle);
+      w.star.mass += 40; step(w, idle);
       if (w.choosing) { expect(Array.from(w.offer)).not.toContain(U_BOLT); chooseUpgrade(w, 0); }
     }
   });

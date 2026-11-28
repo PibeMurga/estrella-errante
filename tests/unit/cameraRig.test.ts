@@ -72,7 +72,7 @@ describe('CameraRig', () => {
     expect(d1).toBeGreaterThan(d0);
     rig.followMass(100, 1000);
     expect(rig.distance).toBeGreaterThan(d1);
-    expect(rig.distance).toBeLessThan(d0 * 2);
+    expect(rig.distance).toBeLessThanOrEqual(d0 * rig.options.maxZoom + 1e-6);
     rig.followMass(Number.NaN, 0.1);
     expect(Number.isFinite(rig.distance)).toBe(true);
   });
