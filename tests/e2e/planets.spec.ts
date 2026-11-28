@@ -7,7 +7,8 @@ test('marcas de peligro alrededor de los planetas cercanos, y el visor del siste
   // Acercar a la estrella un planeta de cada escalón (sin que la toquen).
   await page.evaluate(() => {
     const w = window.__GAME__!.world; const s = w.star; const E = s.mass < 30 ? 0.6 + Math.sqrt(s.mass) + 0.13 * s.mass : 11 + 0.75 * Math.sqrt(s.mass);
-    const set = (k: number, dx: number, dy: number, r: number): void => { const p = w.planets[k]!; w.x[p] = w.prevX[p] = s.x + dx; w.y[p] = w.prevY[p] = s.y + dy; w.vx[p] = 0; w.vy[p] = 0; w.radius[p] = r; w.mass[p] = r ** 3; };
+    const free: number[] = []; for (let q = 0; q < w.planets.length && free.length < 3; q++) { const p = w.planets[q]!; if (w.state[p] === 0 && w.parent[p] === -1) free.push(p); }
+    const set = (k: number, dx: number, dy: number, r: number): void => { const p = free[k]!; w.x[p] = w.prevX[p] = s.x + dx; w.y[p] = w.prevY[p] = s.y + dy; w.vx[p] = 0; w.vy[p] = 0; w.radius[p] = r; w.mass[p] = r ** 3; };
     set(0, 22, 0, E * 0.8); set(1, -24, 0, E * 1.3); set(2, 0, 26, E * 1.8);
   });
   // Las marcas aparecen de a poco: se espera a que estén (con la máquina cargada puede tardar).
