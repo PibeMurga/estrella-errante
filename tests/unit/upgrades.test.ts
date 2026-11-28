@@ -10,7 +10,7 @@ const idle: Intent = { targetX: 0, targetY: 0, hasTarget: false };
 describe('mejoras: elegir una entre tres al subir de etapa', () => {
   it('al llegar a un hito de masa se ofrecen tres distintas y la partida espera', () => {
     const w = createWorld(cfg, 4, 20);
-    w.star.mass = 6.5;
+    w.star.mass = 14.5;
     step(w, idle);
     expect(w.choosing).toBe(true);
     const o = Array.from(w.offer);

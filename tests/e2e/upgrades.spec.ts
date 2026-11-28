@@ -5,7 +5,7 @@ test('al subir de etapa aparece la elección de mejora; con una tecla se toma y 
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/?seed=20261124&n=1');
   await page.waitForFunction(() => (window.__GAME__?.diagnostics.frames ?? 0) > 30, undefined, { timeout: 45_000 });
-  await page.evaluate(() => { window.__GAME__!.world.star.mass = 6.5; });
+  await page.evaluate(() => { window.__GAME__!.world.star.mass = 14.5; });
   await expect(page.locator('.upgrades')).toHaveClass(/on/);
   await expect(page.locator('.upgrades .card .n').first()).not.toBeEmpty();
   await page.screenshot({ path: 'artifacts/e2e/mejoras.png' });

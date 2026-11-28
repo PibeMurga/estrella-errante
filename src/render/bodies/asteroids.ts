@@ -14,7 +14,9 @@ function lumps(x: number, y: number, z: number, k: number): number {
   return Math.sin(x * 1.7 + k) * Math.cos(y * 2.3 - k * 0.7) * 0.5 + Math.sin(y * 1.9 + z * 1.3 + k * 1.3) * 0.3 + Math.cos(z * 2.1 - x * 1.1 + k * 2.1) * 0.2;
 }
 export function createRockGeometry(variant = 0): BufferGeometry {
-  const g = new IcosahedronGeometry(1, 3);
+  // Familias 8 y 9: rugosas y llenas de cráteres (más detalle de malla para que los cráteres se vean).
+  const fam = variant % 10, rough = fam >= 8;
+  const g = new IcosahedronGeometry(1, rough ? 4 : 3);
   const p = g.attributes['position'] as BufferAttribute;
   const k = variant * 3.7 + 1.3;
   const dir = (a: number, b: number): [number, number, number] => {
@@ -25,14 +27,18 @@ export function createRockGeometry(variant = 0): BufferGeometry {
   const cuts: [number, number, number, number][] = [];
   // Ocho familias de forma: anguladas (muchos cortes), redondeadas tipo Ceres, alargadas tipo Eros, bilobuladas (dos
   // rocas pegadas, como Arrokoth o Itokawa), montones de escombros con bultos chicos (Bennu) y fragmentos chatos.
-  const fam = variant % 8;
-  const nCuts = [5, 1, 3, 2, 3, 6, 2, 4][fam]!;
-  const lumpA = [0.28, 0.14, 0.3, 0.26, 0.22, 0.2, 0.36, 0.24][fam]!;
-  const rubble = fam === 4 ? 0.14 : fam === 6 ? 0.06 : 0.03;
+  const nCuts = [5, 1, 3, 2, 3, 6, 2, 4, 2, 3][fam]!;
+  const lumpA = [0.28, 0.14, 0.3, 0.26, 0.22, 0.2, 0.36, 0.24, 0.24, 0.3][fam]!;
+  const rubble = fam === 4 ? 0.14 : fam === 6 ? 0.06 : rough ? 0.05 : 0.03;
   for (let c = 0; c < nCuts; c++) { const [a, b, cc] = dir(c, 11); cuts.push([a, b, cc, 0.5 + h3(c, 12, 3, k) * 0.32]); }
   // Cráteres: cuencas hundidas con borde levantado.
   const craters: [number, number, number, number][] = [];
-  for (let c = 0; c < 6; c++) { const [a, b, cc] = dir(c, 1); craters.push([a, b, cc, 0.2 + h3(c, 5, 6, k) * 0.3]); }
+  const nCr = rough ? 22 : 6;
+  for (let c = 0; c < nCr; c++) {
+    const [a, b, cc] = dir(c, 1), u = h3(c, 5, 6, k);
+    craters.push([a, b, cc, rough ? 0.1 + u * u * 0.42 : 0.2 + u * 0.3]);   // en las rugosas: muchos chicos y pocos grandes
+  }
+  const crDepth = rough ? 0.55 : 0.3;
   let sx = 1.05 + 0.4 * h3(7, 7, 7, k), sy = 0.6 + 0.25 * h3(8, 8, 8, k), sz = 0.75 + 0.3 * h3(9, 9, 9, k);
   if (fam === 1) { sx = 1; sy = 0.92; sz = 0.96; }          // casi redonda
   if (fam === 2) { sx = 1.6; sy = 0.6; sz = 0.7; }          // alargada
@@ -42,10 +48,11 @@ export function createRockGeometry(variant = 0): BufferGeometry {
     const x0 = p.getX(i), y0 = p.getY(i), z0 = p.getZ(i);
     let d = 1 + lumpA * lumps(x0 * 1.1, y0 * 1.1, z0 * 1.1, k) + 0.1 * lumps(x0 * 2.7, y0 * 2.7, z0 * 2.7, k + 5)
       + rubble * (lumps(x0 * 6.1, y0 * 6.1, z0 * 6.1, k + 2) + 0.6 * lumps(x0 * 9.7, y0 * 9.7, z0 * 9.7, k + 7));
-    if (fam === 3) d *= 1 - 0.3 * Math.exp(-x0 * x0 * 9);   // cintura entre los dos lóbulos
+    if (fam === 3) d *= 1 - 0.3 * Math.exp(-x0 * x0 * 9);
+    if (rough) d += 0.05 * (1 - Math.abs(lumps(x0 * 5.3, y0 * 5.3, z0 * 5.3, k + 4))) - 0.025 + 0.025 * lumps(x0 * 13, y0 * 13, z0 * 13, k + 6);   // crestas y aspereza   // cintura entre los dos lóbulos
     for (const [cx, cy, cz, cr] of craters) {
       const t = Math.hypot(x0 - cx, y0 - cy, z0 - cz) / cr;
-      if (t < 1.4) d += t < 1 ? -0.3 * cr * (1 - t * t) : 0.07 * cr * (1 - (t - 1) / 0.4);
+      if (t < 1.4) d += t < 1 ? -crDepth * cr * (1 - t * t) : (rough ? 0.14 : 0.07) * cr * (1 - (t - 1) / 0.4);
     }
     let x = x0 * d, y = y0 * d, z = z0 * d;
     for (const [nx, ny, nz, o] of cuts) {
@@ -119,7 +126,7 @@ export function createAsteroidLayer(world: World, rng: Rng): Layer {
   let k = 0;
   for (let i = 0; i < world.count; i++) if (world.kind[i] === KIND_ASTEROID) indices[k++] = i;
 
-  const VAR = 8, mat = rockMaterial();
+  const VAR = 10, mat = rockMaterial();
   const meshes: InstancedMesh[] = [];
   const seedAttrs: InstancedBufferAttribute[] = [];
   const group = new Group();

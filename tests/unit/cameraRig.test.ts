@@ -66,7 +66,7 @@ describe('CameraRig', () => {
     rig.snap(0, 0);
     const d0 = rig.distance;
     rig.followMass(1, 1000);
-    expect(rig.distance).toBeCloseTo(d0 * 0.62, 6);   // siendo chico, la cámara está más cerca
+    expect(rig.distance).toBeCloseTo(d0 * 0.62 * 1.3, 6);   // siendo chico, la cámara está más cerca (con el zoom del jugador en lo más lejos)
     const dSmall = rig.distance;
     rig.followMass(100, 0.1);
     const d1 = rig.distance;

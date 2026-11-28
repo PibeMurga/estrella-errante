@@ -22,7 +22,7 @@ export class CameraRig {
   aspect = 16 / 9;
   private opts: CameraRigOptions;
   private zoom = 1;   // multiplica la distancia: crece con la masa de la estrella (y con el zoom del jugador)
-  private userWant = 1;   // zoom pedido por el jugador (rueda del mouse o LB/RB): de 0,7 (cerca) a 1,3 (lejos)
+  private userWant = 1.3;   // zoom pedido por el jugador (rueda del mouse o LB/RB): de 0,7 (cerca) a 1,3 (lejos); arranca en lo más lejos
 
   constructor(opts: Partial<CameraRigOptions> = {}) {
     this.opts = { ...DEFAULT_RIG, ...opts };
