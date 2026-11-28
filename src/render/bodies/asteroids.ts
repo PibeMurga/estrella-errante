@@ -1,4 +1,4 @@
-import { type BufferAttribute, type BufferGeometry, Color, Frustum, Group, IcosahedronGeometry, InstancedMesh, Matrix4, MeshStandardMaterial, Quaternion, Sphere, Vector3 } from 'three';
+import { type BufferAttribute, type BufferGeometry, Color, Frustum, Group, IcosahedronGeometry, InstancedBufferAttribute, InstancedMesh, Matrix4, MeshStandardMaterial, Quaternion, Sphere, Vector3 } from 'three';
 import type { Rng } from '../../sim/rng';
 import { DEAD, GATHERING, KIND_ASTEROID, ORBITING, type World } from '../../sim/world';
 import type { Layer } from '../layer';
@@ -23,15 +23,26 @@ export function createRockGeometry(variant = 0): BufferGeometry {
   };
   // Fracturas: 3 a 5 planos que rebanan la roca (caras planas y aristas).
   const cuts: [number, number, number, number][] = [];
-  const nCuts = 3 + (variant % 3);
+  // Ocho familias de forma: anguladas (muchos cortes), redondeadas tipo Ceres, alargadas tipo Eros, bilobuladas (dos
+  // rocas pegadas, como Arrokoth o Itokawa), montones de escombros con bultos chicos (Bennu) y fragmentos chatos.
+  const fam = variant % 8;
+  const nCuts = [5, 1, 3, 2, 3, 6, 2, 4][fam]!;
+  const lumpA = [0.28, 0.14, 0.3, 0.26, 0.22, 0.2, 0.36, 0.24][fam]!;
+  const rubble = fam === 4 ? 0.14 : fam === 6 ? 0.06 : 0.03;
   for (let c = 0; c < nCuts; c++) { const [a, b, cc] = dir(c, 11); cuts.push([a, b, cc, 0.5 + h3(c, 12, 3, k) * 0.32]); }
   // Cráteres: cuencas hundidas con borde levantado.
   const craters: [number, number, number, number][] = [];
   for (let c = 0; c < 6; c++) { const [a, b, cc] = dir(c, 1); craters.push([a, b, cc, 0.2 + h3(c, 5, 6, k) * 0.3]); }
-  const sx = 1.05 + 0.4 * h3(7, 7, 7, k), sy = 0.6 + 0.25 * h3(8, 8, 8, k), sz = 0.75 + 0.3 * h3(9, 9, 9, k);
+  let sx = 1.05 + 0.4 * h3(7, 7, 7, k), sy = 0.6 + 0.25 * h3(8, 8, 8, k), sz = 0.75 + 0.3 * h3(9, 9, 9, k);
+  if (fam === 1) { sx = 1; sy = 0.92; sz = 0.96; }          // casi redonda
+  if (fam === 2) { sx = 1.6; sy = 0.6; sz = 0.7; }          // alargada
+  if (fam === 3) { sx = 1.55; sy = 0.75; sz = 0.8; }        // bilobulada
+  if (fam === 5) { sx = 1.2; sy = 0.42; sz = 1.0; }         // fragmento chato
   for (let i = 0; i < p.count; i++) {
     const x0 = p.getX(i), y0 = p.getY(i), z0 = p.getZ(i);
-    let d = 1 + 0.32 * lumps(x0 * 1.1, y0 * 1.1, z0 * 1.1, k) + 0.1 * lumps(x0 * 2.7, y0 * 2.7, z0 * 2.7, k + 5);
+    let d = 1 + lumpA * lumps(x0 * 1.1, y0 * 1.1, z0 * 1.1, k) + 0.1 * lumps(x0 * 2.7, y0 * 2.7, z0 * 2.7, k + 5)
+      + rubble * (lumps(x0 * 6.1, y0 * 6.1, z0 * 6.1, k + 2) + 0.6 * lumps(x0 * 9.7, y0 * 9.7, z0 * 9.7, k + 7));
+    if (fam === 3) d *= 1 - 0.3 * Math.exp(-x0 * x0 * 9);   // cintura entre los dos lóbulos
     for (const [cx, cy, cz, cr] of craters) {
       const t = Math.hypot(x0 - cx, y0 - cy, z0 - cz) / cr;
       if (t < 1.4) d += t < 1 ? -0.3 * cr * (1 - t * t) : 0.07 * cr * (1 - (t - 1) / 0.4);
@@ -65,15 +76,28 @@ function rockMaterial(): MeshStandardMaterial {
   const m = new MeshStandardMaterial({ color: 0xffffff, roughness: 0.97, metalness: 0.02 });
   m.onBeforeCompile = (sh) => {
     sh.vertexShader = sh.vertexShader.replace('#include <common>', `#include <common>
-varying vec3 vRockP;`)
+varying vec3 vRockP; attribute float aSeed; varying float vSeed;`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
-vRockP = position;`);
+vRockP = position; vSeed = aSeed;`);
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
-varying vec3 vRockP;
+varying vec3 vRockP; varying float vSeed;
 ` + NOISE_GLSL)
       .replace('#include <color_fragment>', `#include <color_fragment>
-      float rs = snoise(vRockP * 1.6 + 7.) * .5 + .5, rm = snoise(vRockP * 3.4 + 2.) * .5 + .5;
-      diffuseColor.rgb *= .72 + .4 * rs + .12 * (rm - .5);`);
+      // Cada roca tiene su propia superficie (aSeed): manchas de otro mineral, cráteres frescos más claros, vetas
+      // oscuras, una cara más clara que la otra (como Vesta o Iapetus) o un tono parejo.
+      vec3 o = vRockP + vSeed * 37.;
+      float rs = snoise(o * 1.6 + 7.) * .5 + .5, rm = snoise(o * 3.4 + 2.) * .5 + .5;
+      float sty = fract(vSeed * 7.13);
+      float shade = .72 + .4 * rs + .12 * (rm - .5);
+      if (sty < .22) shade *= 1. + .55 * smoothstep(.72, .8, snoise(o * 2.2 + 11.) * .5 + .5);             // cráteres frescos, claros
+      else if (sty < .42) shade *= 1. - .3 * smoothstep(.07, .0, abs(snoise(o * vec3(.7, 2.6, .9) + 5.)) - .03); // vetas oscuras
+      else if (sty < .58) shade *= mix(.65, 1.25, smoothstep(-.35, .35, dot(normalize(vRockP), normalize(vec3(sin(vSeed*40.), .4, cos(vSeed*40.)))))); // dos caras
+      else if (sty < .75) diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.35, 1.0, .72), smoothstep(.5, .75, rm) * .7);   // manchas de otro mineral
+      diffuseColor.rgb *= shade;`)
+      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+      roughnessFactor = mix(.97, .6, step(.93, fract(vSeed * 3.71)));   // algunas metálicas (tipo M): más lisas y con brillo`)
+      .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>
+      metalnessFactor = mix(.02, .55, step(.93, fract(vSeed * 3.71)));`);
   };
   return m;
 }
@@ -95,14 +119,20 @@ export function createAsteroidLayer(world: World, rng: Rng): Layer {
   let k = 0;
   for (let i = 0; i < world.count; i++) if (world.kind[i] === KIND_ASTEROID) indices[k++] = i;
 
-  const VAR = 4, mat = rockMaterial();
+  const VAR = 8, mat = rockMaterial();
   const meshes: InstancedMesh[] = [];
+  const seedAttrs: InstancedBufferAttribute[] = [];
   const group = new Group();
   for (let g = 0; g < VAR; g++) {
-    const mm = new InstancedMesh(createRockGeometry(g), mat, Math.max(1, Math.ceil(n / VAR) + 1));
+    const cap = Math.max(1, Math.ceil(n / VAR) + 1);
+    const geo = createRockGeometry(g);
+    const sa = new InstancedBufferAttribute(new Float32Array(cap), 1);
+    geo.setAttribute('aSeed', sa);
+    const mm = new InstancedMesh(geo, mat, cap);
     mm.count = 0; mm.frustumCulled = false;
-    meshes.push(mm); group.add(mm);
+    meshes.push(mm); seedAttrs.push(sa); group.add(mm);
   }
+  const seeds = new Float32Array(n);
   const vCount = new Int32Array(VAR);
   const axes = new Float32Array(n * 3);
   const spin = new Float32Array(n);
@@ -124,6 +154,7 @@ export function createAsteroidLayer(world: World, rng: Rng): Layer {
     axes[s * 3] = axis.x; axes[s * 3 + 1] = axis.y; axes[s * 3 + 2] = axis.z;
     spin[s] = rng.range(0.2, 1.5);
     lift[s] = rng.range(-0.8, 0.8);
+    seeds[s] = rng.next();
   }
 
   return {
@@ -147,6 +178,7 @@ export function createAsteroidLayer(world: World, rng: Rng): Layer {
         m4.compose(pos, q, scl);
         const mesh = meshes[s % VAR]!, v = vCount[s % VAR]!;
         mesh.setMatrixAt(v, m4);
+        seedAttrs[s % VAR]!.setX(v, seeds[s]!);
         // Lo que gira a tu alrededor está más cerca de tu estrella: se ve más iluminado.
         // (de a poco: nada de cambios de luz repentinos)
         const want = w.state[i] === ORBITING || w.state[i] === GATHERING ? 1.35 : 1;
@@ -161,6 +193,7 @@ export function createAsteroidLayer(world: World, rng: Rng): Layer {
         mesh.count = vCount[g]!;
         mesh.instanceMatrix.needsUpdate = true;
         if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        seedAttrs[g]!.needsUpdate = true;
       }
     },
   };

@@ -39,7 +39,7 @@ export class CameraRig {
     if (!Number.isFinite(mass) || !(dt > 0)) return;
     // Se aleja según tu tamaño real, para que ocupes una parte parecida de la pantalla: siendo chico, la cámara está
     // cerca (y todo lo demás se ve inmenso); siendo enorme, lejos (y ves tu sistema y lo que lo rodea).
-    const want = Math.min(this.opts.maxZoom, Math.max(1, starSize(mass) / 9) * this.userWant);
+    const want = Math.min(this.opts.maxZoom, Math.max(0.62, starSize(mass) / 9) * this.userWant);
     this.zoom += (want - this.zoom) * (1 - Math.exp(-2.5 * dt));
     this.recompute();
   }

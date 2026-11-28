@@ -32,7 +32,7 @@ export function buildLayers(deps: LayerDeps): BuiltLayers {
   const planets = createPlanetsLayer(deps.world, deps.quality.planetSegments, deps.quality.planetOctaves, deps.rng, sunPos);
   const marks = createDangerMarksLayer(deps.world);
   // Relleno muy tenue (cielo frío arriba, casi nada abajo): el lado oscuro de las cosas no es negro absoluto.
-  const ambient: Layer = { object: new HemisphereLight(0x3a4866, 0x0c0907, 0.35), update() {} };
+  const ambient: Layer = { object: new HemisphereLight(0x4a5878, 0x14100c, 0.6), update() {} };
   return {
     layers: [
       createSky(deps.quality, deps.rng),

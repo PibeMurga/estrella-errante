@@ -66,10 +66,11 @@ describe('CameraRig', () => {
     rig.snap(0, 0);
     const d0 = rig.distance;
     rig.followMass(1, 1000);
-    expect(rig.distance).toBeCloseTo(d0, 6);
+    expect(rig.distance).toBeCloseTo(d0 * 0.62, 6);   // siendo chico, la cámara está más cerca
+    const dSmall = rig.distance;
     rig.followMass(100, 0.1);
     const d1 = rig.distance;
-    expect(d1).toBeGreaterThan(d0);
+    expect(d1).toBeGreaterThan(dSmall);
     rig.followMass(100, 1000);
     expect(rig.distance).toBeGreaterThan(d1);
     expect(rig.distance).toBeLessThanOrEqual(d0 * rig.options.maxZoom + 1e-6);
@@ -93,8 +94,8 @@ describe('zoom del jugador', () => {
     const d0 = rig.distance;
     rig.nudgeZoom(-10);   // acercar todo lo posible
     for (let k = 0; k < 300; k++) rig.followMass(1, 1 / 60);
-    expect(rig.distance).toBeLessThan(d0 * 0.8);
-    expect(rig.distance).toBeGreaterThan(d0 * 0.6);
+    expect(rig.distance).toBeLessThan(d0 * 0.62 * 0.8);
+    expect(rig.distance).toBeGreaterThan(d0 * 0.62 * 0.6);
     rig.nudgeZoom(10);    // alejar todo lo posible
     for (let k = 0; k < 600; k++) rig.followMass(1e6, 1 / 60);
     expect(rig.distance).toBeLessThanOrEqual(rig.options.distance * rig.options.maxZoom + 1e-6);

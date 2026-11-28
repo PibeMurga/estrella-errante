@@ -20,19 +20,42 @@ uniform float uHeat; uniform float uGlow; uniform float uCore; uniform float uFa
 varying vec3 vN; varying vec3 vO; varying vec3 vP; varying vec3 vV;
 void main(){
   vec3 p = normalize(vO), n = normalize(vN);
-  float lat = p.y;
-  // Bandas que fluyen (cada latitud a su ritmo) con turbulencia en los bordes y una tormenta oval.
-  float flow = fbm(vec3(p.x*1.4 + uTime*.05, lat*7., p.z*1.4 - uTime*.035) + uSeed, 4);
-  float band = sin(lat*15. + flow*3.2 + uSeed*3.);
-  float turb = fbm(p*7. + vec3(uTime*.06, 0., -uTime*.04) + uSeed, 3)*.5+.5;
-  vec3 alb = mix(uA, uB, smoothstep(-.55, .55, band));
-  alb = mix(alb, uC, smoothstep(.55, .85, turb) * .45);
-  float storm = 1. - smoothstep(.0, .16, length(vec2((atan(p.z, p.x) - 1.1 - uTime*.02)*.6, (lat + .28)*2.2)));
-  alb = mix(alb, uC*1.1, storm*.6);
+  float lat = p.y, lon = atan(p.z, p.x);
+  // Rotación diferencial: cada franja de latitud gira a su propio ritmo (chorros alternados, como en Júpiter).
+  float jet = sin(lat * 19. + uSeed) * .5 + sin(lat * 7.3 + uSeed * 2.) * .5;
+  float lonF = lon + uTime * (.03 + .05 * jet);
+  vec3 q = vec3(cos(lonF) * sqrt(1. - lat*lat), lat, sin(lonF) * sqrt(1. - lat*lat));
+  // Deformación de las franjas: remolinos y festones a lo largo de los bordes.
+  float warp = fbm(vec3(q.x * 2.6, lat * 9., q.z * 2.6) + uSeed, 4);
+  float warp2 = fbm(vec3(q.x * 6., lat * 24., q.z * 6.) + uSeed * 1.7 + vec3(0., 0., uTime * .02), 3);
+  float y = lat + warp * .045 + warp2 * .018;
+  // Perfil de bandas de ancho desparejo: zonas claras anchas y cinturones oscuros, con franjitas finas.
+  float prof = fbm(vec3(0., y * 5.5, uSeed * .3), 4) * .5 + .5;
+  float fine = sin(y * 85. + warp * 6.) * .5 + .5;
+  vec3 alb = mix(uC, uA, smoothstep(.25, .5, prof));
+  alb = mix(alb, uB, smoothstep(.52, .72, prof));
+  alb *= .9 + .14 * fine;
+  // Turbulencia en los bordes de las bandas (donde el perfil cambia rápido).
+  float edge = abs(fract(prof * 3.) - .5);
+  float turb = fbm(q * 9. + vec3(uTime * .04, 0., 0.) + uSeed, 3) * .5 + .5;
+  alb = mix(alb, mix(uB, uC, turb), (1. - smoothstep(.0, .12, edge)) * .35);
+  float band = prof * 2. - 1.;
+  // Una gran tormenta oval y algunos óvalos blancos chicos.
+  float storm = 1. - smoothstep(.0, .16, length(vec2((lon - 1.1 - uTime*.02)*.6, (lat + .28)*2.2)));
+  alb = mix(alb, uC * 1.15 + vec3(.06, .02, 0.), storm * .65);
+  for (int k = 0; k < 4; k++) {
+    float fk = float(k);
+    vec2 c = vec2(fract(uSeed * .37 + fk * .29) * 6.283 - 3.14, -.55 + fk * .32 + sin(uSeed + fk) * .05);
+    float ov = 1. - smoothstep(.0, .05, length(vec2((lon - c.x - uTime * (.015 + .01 * fk)) * .7, (lat - c.y) * 2.4)));
+    alb = mix(alb, uB * 1.12, ov * .7);
+  }
+  // Polos más oscuros y apagados.
+  alb = mix(alb, uC * .6, smoothstep(.72, .95, abs(lat)) * .6);
   vec3 L = normalize(uSunPos - vP);
   float ndl = dot(n, L), lit = max(ndl, 0.) * smoothstep(-.05, .15, ndl);
   float mu = clamp(dot(n, normalize(vV)), 0., 1.);
-  vec3 col = alb * uLight * lit + alb * .006;
+  // Oscurecimiento hacia el borde (la luz atraviesa más atmósfera) y un relleno tenue del lado oscuro.
+  vec3 col = alb * uLight * lit * (.6 + .4 * pow(mu, .45)) + alb * .035;
   // Atmósfera en el borde, del lado iluminado.
   col += uA * pow(1. - mu, 3.) * (.15 + .85*max(ndl + .2, 0.)) * .35 * uLight;
   // Gigantes calientes (magenta, brasa): brillan un poco por su propio calor, más en las bandas.
