@@ -275,7 +275,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   ignitionTime: 4,
   planetPhaseGain: 0.6,
   starPhaseGain: 1,
-  starGainFalloff: 1e9,
+  starGainFalloff: 0,
   planetPullMul: 0.35,
   orbitSpinGrowth: 1.3,
   planetGravity: 2.2,

@@ -175,7 +175,7 @@ export function massGain(w: World, i: number): number {
   // un poco menos que el total, así la etapa de estrella dura más.
   // Siendo estrella, cuanto más grande, menos suma cada cosa: cada etapa cuesta más que la anterior (aunque atrapes un
   // cinturón entero, el progreso se aprecia).
-  const late = w.ignited ? w.config.starGainFalloff / (w.config.starGainFalloff + Math.max(0, w.star.mass - 30)) : 1;
+  const F = w.config.starGainFalloff, late = w.ignited && F > 0 ? F / (F + Math.max(0, w.star.mass - 30)) : 1;
   return w.mass[i] * (k >= KIND_ROCKY && k <= KIND_GAS ? w.config.planetMassGain : w.config.bodyMassGain) * (w.ignited ? w.config.starPhaseGain * late : w.config.planetPhaseGain);
 }
 
