@@ -18,7 +18,7 @@ export const UPGRADES: readonly UpgradeInfo[] = [
   { name: 'CARGA RÁPIDA', desc: 'Juntás asteroides un 40 % más rápido' },
   { name: 'CORAZA', desc: 'Perdés un 22 % menos en los choques' },
   { name: 'REGENERACIÓN', desc: 'La resistencia se recarga un 60 % más rápido' },
-  { name: 'HONDA PESADA', desc: 'La honda hace el doble de daño' },
+  { name: 'DISPARO PESADO', desc: 'Cada disparo simple hace el doble de daño' },
   { name: 'MASA DENSA', desc: 'Cada cuerpo que atrapás suma un 15 % más de masa' },
   { name: 'ESTELA', desc: 'Te movés un 12 % más rápido' },
   { name: 'ANCLA', desc: 'El agujero negro te tira un 20 % menos' },

@@ -43,7 +43,7 @@ export function createHud(parent: HTMLElement): Hud {
     <div class="banner"><b>SOS UN AGUJERO NEGRO</b><span>ATRAPÁ AL RIVAL ANTES DE QUE ESCAPE</span></div>
     <div class="clock"><span class="time">00:00</span><br><span class="dim mass">MASA 0 M☉</span></div>
     <div class="bhinfo">AGUJERO NEGRO<br><span class="bhdist"></span></div>
-    <div class="bottom"><span class="sling">HONDA ●</span><span class="worlds">EN ÓRBITA 000</span><span class="sys">PLANETAS 00/00</span></div>
+    <div class="bottom"><span class="sling">DISPARO ●</span><span class="worlds">EN ÓRBITA 000</span><span class="sys">PLANETAS 00/00</span></div>
     <div class="log">${'<div></div>'.repeat(LOG_LINES)}</div>
     <div class="arrow"><svg width="22" height="22" viewBox="-11 -11 22 22"><path d="M-6 -8 L7 0 L-6 8" fill="none" stroke="currentColor" stroke-width="2.4"/></svg><span class="adist"></span></div>
     <div class="brackets"><i></i><i></i><i></i><i></i></div>`;
@@ -195,7 +195,7 @@ export function createHud(parent: HTMLElement): Hud {
       const bText = huntOn ? 1 : tipOn ? 2 : 0;
       if (bText !== bannerKind && bText > 0) {
         bannerB.textContent = bText === 1 ? 'SOS UN AGUJERO NEGRO' : 'YA PODÉS DISPARAR';
-        bannerS.textContent = bText === 1 ? 'ATRAPÁ AL RIVAL ANTES DE QUE ESCAPE' : 'CLIC DERECHO: UN TOQUE ES LA HONDA · MANTENELO PARA CARGAR · ESPACIO: ESCUDO DE PLANETAS';
+        bannerS.textContent = bText === 1 ? 'ATRAPÁ AL RIVAL ANTES DE QUE ESCAPE' : 'CLIC DERECHO: UN TOQUE DISPARA · MANTENELO PARA CARGAR UN BÓLIDO · ESPACIO: ESCUDO DE PLANETAS';
       }
       if (bText !== bannerKind) bannerKind = bText;
       const bOn = bText > 0;
@@ -211,7 +211,7 @@ export function createHud(parent: HTMLElement): Hud {
         lastBhDist = d;
       } else bhInfo.style.display = 'none';
 
-      slingEl.textContent = w.shielding ? 'ESCUDO DE PLANETAS' : !w.ignited ? 'HONDA · SE ENCIENDE CON LA IGNICIÓN' : w.charge >= w.config.tapTime ? `BÓLIDO ×${w.gathered}` : w.slingCd > 0 ? 'HONDA ○' : 'HONDA ●';
+      slingEl.textContent = w.shielding ? 'ESCUDO DE PLANETAS' : !w.ignited ? 'DISPARO · SE ENCIENDE CON LA IGNICIÓN' : w.charge >= w.config.tapTime ? `BÓLIDO ×${w.gathered}` : w.slingCd > 0 ? 'DISPARO ○' : 'DISPARO ●';
       slingEl.className = w.orbitingCount > 0 ? 'sling' : 'sling off';
       worldsEl.textContent = `EN ÓRBITA ${pad(w.orbitingCount, 3)}`;
       // Tu sistema: planetas en órbita contra el próximo umbral de habilidad, y la habilidad activa.
