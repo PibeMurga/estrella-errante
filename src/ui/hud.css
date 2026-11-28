@@ -114,3 +114,9 @@
 .hud .bottom span { white-space: nowrap; }
 .hud .path .ptrack { display: inline-flex; flex-direction: column; gap: 6px; align-self: flex-start; }
 .hud .race .kinds .ku { opacity: .5; }
+.hud .bhvig { position: absolute; inset: 0; opacity: 0; pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 45%, #2a0a3a66 72%, #0a0010e6 100%); }
+.hud .bhmsg { position: absolute; left: 50%; top: 142px; transform: translateX(-50%); opacity: 0; white-space: nowrap; font-size: 14px; font-weight: 700;
+  letter-spacing: 5px; color: #ff6a8a; text-shadow: 0 0 6px #ff3a6acc, 0 0 18px #a020ff88; }
+.hud .arrow.near { animation: bhnear .5s ease-in-out infinite; }
+@keyframes bhnear { 50% { filter: brightness(1.8); } }

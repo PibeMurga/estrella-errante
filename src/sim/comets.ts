@@ -27,7 +27,8 @@ export function spawnComet(w: World, x: number, y: number): number {
     // Tamaños muy distintos (chiquitos y ágiles, o grandes y pesados) y dos maneras de cazar: algunos te persiguen
     // (más lentos: se les puede escapar o llevarlos contra un planeta) y la mayoría cruza de largo.
     const r = w.rng, sz = 0.4 + 1.8 * Math.pow(r.next(), 1.4);
-    cm.chase[k] = r.next() < 0.35 ? 1 : 0;
+    cm.chase[k] = r.next() < 0.2 ? 1 : 0;
+    cm.committed[k] = 0; cm.huntT[k] = 0;
     cm.size[k] = sz;
     cm.speedMul[k] = (1.35 - 0.35 * sz) * r.range(0.85, 1.15);
     cm.turnMul[k] = (1.3 - 0.5 * sz) * r.range(0.7, 1.1);
@@ -81,6 +82,13 @@ function damage(w: World, k: number, amount: number): void {
   scatterDebris(w, cm.x[k]!, cm.y[k]!, w.config.cometDebris);
 }
 
+// El cometa se fue con lo robado: eso ya no vuelve.
+function loseLoot(w: World, k: number): void {
+  if (w.comets.carry[k]! === 0) return;
+  for (let i = 0; i < w.count; i++) if (w.state[i] === CARRIED && w.parent[i] === k) { w.state[i] = DEAD; w.parent[i] = -1; }
+  w.comets.carry[k] = 0;
+}
+
 // El cometa k se lleva el cuerpo i de tu órbita.
 function steal(w: World, k: number, i: number): void {
   w.state[i] = CARRIED;
@@ -111,7 +119,7 @@ export function stepComets(w: World): void {
     // Rumbo: hacia la estrella al cazar, en contra al huir, con giro limitado.
     const hunting = cm.mode[k] === COMET_HUNT, chaser = cm.chase[k] === 1;
     // No te persigue como un misil: apunta a donde vas a estar (adelante de tu camino) y, ya cerca, deja de corregir y
-    // cruza de largo. Si no te tocó, sigue de largo, da una vuelta amplia y vuelve a pasar.
+    // cruza de largo, y se va. Los pocos que persiguen se cansan a los segundos y también siguen derecho.
     const sp0 = c.cometSpeed * cm.speedMul[k]!, lead = Math.min(3, d / Math.max(1, sp0));
     const px = dx + s.vx * lead, py = dy + s.vy * lead;
     const sway = 0.15 * Math.min(1, d / 120) * Math.sin(w.tick / 60 * 0.5 + cm.wander[k]!);
@@ -120,7 +128,12 @@ export function stepComets(w: World): void {
     let turn = want - heading;
     while (turn > Math.PI) turn -= Math.PI * 2;
     while (turn < -Math.PI) turn += Math.PI * 2;
-    const tr = c.cometTurn * cm.turnMul[k]! * (hunting && !chaser ? (d < 90 + size * 3 ? 0.08 : d < 220 ? 0.6 : 1) : 1);
+    if (hunting && cm.committed[k] === 0) {
+      cm.huntT[k] = cm.huntT[k]! + DT;
+      if ((!chaser && d < 90 + size * 3) || (chaser && cm.huntT[k]! > 9)) cm.committed[k] = 1;
+    }
+    const straight = hunting && cm.committed[k] === 1;
+    const tr = straight ? 0 : c.cometTurn * cm.turnMul[k]! * (hunting && !chaser ? (d < 220 ? 0.6 : 1) : 1);
     const h = heading + clamp(turn, -tr * DT, tr * DT);
     const sp = (hunting ? c.cometSpeed * (chaser ? 0.72 : 1) : c.cometFleeSpeed) * cm.speedMul[k]!;
     cm.vx[k] = Math.cos(h) * sp; cm.vy[k] = Math.sin(h) * sp;
@@ -132,9 +145,11 @@ export function stepComets(w: World): void {
     if (y - s.y > hh) { y -= 2 * hh; cm.prevY[k] = cm.prevY[k]! - 2 * hh; } else if (y - s.y < -hh) { y += 2 * hh; cm.prevY[k] = cm.prevY[k]! + 2 * hh; }
     cm.x[k] = x; cm.y[k] = y;
 
+    if (straight && d > 480 + size * 8) { cm.mode[k] = COMET_OFF; continue; }   // pasó de largo y se fue
     if (!hunting) {
       cm.timer[k] = cm.timer[k]! - DT;
-      if (cm.timer[k]! <= 0) cm.mode[k] = COMET_HUNT;
+      // Huye con lo que robó y se va: si no lo destruís antes, eso se pierde.
+      if (cm.timer[k]! <= 0) { loseLoot(w, k); cm.mode[k] = COMET_OFF; continue; }
     } else if (d < size + c.cometRadius) {
       // Toca la estrella: le roba de 3 a 5 cuerpos de la órbita (los más cercanos) y,
       // a veces, al azar, también el planeta más chico de tu sistema. Después huye.

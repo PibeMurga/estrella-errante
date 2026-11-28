@@ -57,6 +57,8 @@ export interface Comets {
   readonly size: Float32Array; readonly speedMul: Float32Array; readonly turnMul: Float32Array;
   readonly tint: Float32Array; readonly bright: Float32Array; readonly wander: Float32Array;
   readonly chase: Uint8Array;   // 1: te persigue (más lento); 0: cruza por donde vas a pasar y sigue de largo
+  readonly committed: Uint8Array;   // 1: ya no corrige el rumbo (pasó cerca o se cansó de perseguir): sigue derecho y se va
+  readonly huntT: Float32Array;     // segundos cazando
 }
 
 export interface World {
@@ -256,7 +258,7 @@ function makeDensity(rng: Rng, hw: number, hh: number): (x: number, y: number) =
 }
 
 export function createWorld(config: SimConfig, seed: number, extraCapacity = 0): World {
-  const capacity = config.asteroidCount + config.planetCount * (1 + MAX_MOONS + MAX_DEBRIS) + config.debrisReserve + config.planetCount + (config.artifacts ? 2 : 0) + (config.respawn ? config.spawnPool * 2 : 0) + Math.min(MAX_MAP_STARS, config.mapStars) * 8 + extraCapacity;   // + un pedazo de reserva por planeta
+  const capacity = config.asteroidCount + config.planetCount * (1 + MAX_MOONS + MAX_DEBRIS) + config.debrisReserve + config.planetCount + (config.artifacts ? 3 : 0) + (config.respawn ? config.spawnPool * 2 : 0) + Math.min(MAX_MAP_STARS, config.mapStars) * 8 + extraCapacity;   // + un pedazo de reserva por planeta
   const f = (): Float64Array => new Float64Array(capacity);
   const w: World = {
     config, capacity, tick: 0, count: 0,
@@ -270,7 +272,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       vx: new Float64Array(MAX_COMETS), vy: new Float64Array(MAX_COMETS), hp: new Float32Array(MAX_COMETS), mode: new Uint8Array(MAX_COMETS),
       timer: new Float32Array(MAX_COMETS), carry: new Int32Array(MAX_COMETS),
       size: new Float32Array(MAX_COMETS).fill(1), speedMul: new Float32Array(MAX_COMETS).fill(1), turnMul: new Float32Array(MAX_COMETS).fill(1),
-      tint: new Float32Array(MAX_COMETS), bright: new Float32Array(MAX_COMETS).fill(1), wander: new Float32Array(MAX_COMETS), chase: new Uint8Array(MAX_COMETS),
+      tint: new Float32Array(MAX_COMETS), bright: new Float32Array(MAX_COMETS).fill(1), wander: new Float32Array(MAX_COMETS), chase: new Uint8Array(MAX_COMETS), committed: new Uint8Array(MAX_COMETS), huntT: new Float32Array(MAX_COMETS),
     },
     cometClock: config.cometFirst, cometCrashes: 0, smallHits: 0, cometSteals: 0, cometKills: 0, rng: createRng(seed ^ 0x9e3779b9),
     over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, fireSlow: 0, fireSlowK: 0, fireSlowT: 1, breakFxCount: 0, breakFxX: 0, breakFxY: 0, breakFxR: 0, breakFxKind: 0, breakFxAx: 1, breakFxAy: 0, ignited: !config.planetStart, ignitions: 0, integrity: 1, fractures: 0, planetStripAcc: 0, planetSteals: 0, starBurns: 0, starsEaten: 0, coasting: false, starPullNow: 0, artifactsFound: 0, upg: new Uint8Array(12), offer: new Int8Array(3).fill(-1), choosing: false, upgradesTaken: 0, nextUpgrade: 0, spawnPool: new Int32Array(0), spawnNext: 0, spawnClock: 0, shielding: false, shieldAngle: 0, rockHits: 0, contactHits: 0, disintegrated: 0, diskGrazes: 0, inDisk: 0, tide: 0, diskStripAcc: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
@@ -368,10 +370,12 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
   }
   w.mapStars = Int32Array.from(starList);
   // Restos artificiales: muy de vez en cuando, piezas de una sonda o un satélite de otra civilización a la deriva.
-  const nArt = !config.artifacts ? 0 : rng.next() < 0.25 ? 0 : rng.next() < 0.75 ? 1 : 2;
+  // Dos o tres por mapa; el primero, no muy lejos de donde arrancás (para que se lo cruce).
+  const nArt = !config.artifacts ? 0 : rng.next() < 0.5 ? 2 : 3;
   for (let k = 0; k < nArt; k++) {
     let px = 0, py = 0;
-    do { px = rng.range(-hw * 0.9, hw * 0.9); py = rng.range(-hh * 0.9, hh * 0.9); } while (Math.hypot(px, py) < 120);
+    if (k === 0) { const a = rng.range(0, Math.PI * 2), d = rng.range(220, 420); px = Math.cos(a) * d; py = Math.sin(a) * d * 0.7; }
+    else do { px = rng.range(-hw * 0.9, hw * 0.9); py = rng.range(-hh * 0.9, hh * 0.9); } while (Math.hypot(px, py) < 120);
     const ang = rng.range(0, Math.PI * 2), sp = rng.range(0.3, 1.2);
     addBody(w, { x: px, y: py, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, radius: 0.9, kind: KIND_ARTIFACT });
   }

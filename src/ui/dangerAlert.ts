@@ -23,6 +23,12 @@ export function createDangerAlert(root: HTMLElement): DangerAlert {
   msg.className = 'dmsg';
   msg.textContent = 'PELIGRO · ESE PLANETA TE DESTRUYE';
   root.append(vig, msg);
+  // Agujero negro cerca: los bordes se oscurecen hacia un violeta profundo (la luz se curva y se apaga) y un cartel
+  // pide alejarse. Crece a medida que te acercás; la flecha del borde late.
+  const bhVig = document.createElement('div'); bhVig.className = 'bhvig';
+  const bhMsg = document.createElement('div'); bhMsg.className = 'bhmsg';
+  root.append(bhVig, bhMsg);
+  let bhLevel = 0, bhShown = -1, bhText = '';
   const arrows: HTMLElement[] = [];
   for (let k = 0; k < ARROWS; k++) {
     const a = document.createElement('div');
@@ -40,6 +46,7 @@ export function createDangerAlert(root: HTMLElement): DangerAlert {
   const pt = { x: 0, y: 0, ahead: true };
   let level = 0, shownLevel = -1, time = 0;
   const arrowOn = new Uint8Array(ARROWS);
+  const arrowEl = root.querySelector<HTMLElement>('.arrow');
 
   return {
     update(w, view, dt, width, height) {
@@ -69,6 +76,24 @@ export function createDangerAlert(root: HTMLElement): DangerAlert {
         vig.style.opacity = String(Math.min(1, lv * 1.1));
         msg.style.opacity = String(level > 0.35 ? Math.min(1, (level - 0.35) * 3) * pulse : 0);
       }
+
+      // Cercanía al agujero negro.
+      const bh = w.bh;
+      let near = 0;
+      if (playing && bh.active) {
+        const d = Math.hypot(bh.x - s.x, bh.y - s.y), tidal = bh.radius * w.config.bhTidalR, far = tidal + 380 + E * 6;
+        near = Math.max(0, Math.min(1, 1 - (d - tidal) / (far - tidal)));
+      }
+      bhLevel += (near - bhLevel) * Math.min(1, dt * 3);
+      const bl = Math.round(bhLevel * (0.85 + 0.15 * Math.sin(time * (3 + bhLevel * 6))) * 100) / 100;
+      if (bl !== bhShown) {
+        bhShown = bl;
+        bhVig.style.opacity = String(Math.min(1, bl * 1.2));
+        bhMsg.style.opacity = String(bhLevel > 0.25 ? Math.min(1, (bhLevel - 0.25) * 2.5) : 0);
+        arrowEl?.classList.toggle('near', bhLevel > 0.25);
+      }
+      const want = bhLevel > 0.75 ? 'AGUJERO NEGRO · SU MAREA TE VA A DESHACER · ALÉJATE YA' : w.ignited ? 'AGUJERO NEGRO CERCA · TE ATRAE · ALÉJATE' : 'AGUJERO NEGRO CERCA · NO TE ACERQUES';
+      if (want !== bhText) { bhText = want; bhMsg.textContent = want; }
 
       // Rótulos: el planeta marcado más cercano de cada clase.
       best.fill(-1); bestD.fill(Infinity);

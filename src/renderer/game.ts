@@ -101,7 +101,7 @@ if (!view.ok) {
     if (w.smallHits > ev.small) sfx.rockHit();
     // El rugido del agujero negro: crece al acercarte a su zona de marea.
     const bh = w.bh, d = Math.hypot(bh.x - w.star.x, bh.y - w.star.y), reach = bh.radius * w.config.bhTidalR * 2.2;
-    sfx.rumble(bh.active && w.ignited && w.phase === 0 && w.over === 0 ? Math.max(w.tide, 1 - d / reach) : 0);
+    sfx.rumble(bh.active && w.phase === 0 && w.over === 0 ? Math.max(w.tide, 1 - d / reach) : 0);
     syncEv();
   };
   let lastIgn = world.ignitions;

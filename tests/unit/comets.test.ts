@@ -39,7 +39,7 @@ describe('cometa cazador', () => {
     expect(Math.hypot(w.comets.x[k]! - w.star.x, w.comets.y[k]! - w.star.y)).toBeLessThan(d0 - 20);
   });
 
-  it('al tocarla le roba varios cuerpos (de 2 a 20, según su tamaño), los arrastra en fila y huye; después vuelve a cazar', () => {
+  it('al tocarla le roba varios cuerpos (de 2 a 20, según su tamaño), los arrastra en fila y huye; si no lo destruís, se va con lo robado', () => {
     const w = createWorld(cfg(), 2, 20);
     withOrbit(w, 8);
     const k = spawnComet(w, 3, 0);
@@ -53,7 +53,9 @@ describe('cometa cazador', () => {
     for (let s = 0; s < 60; s++) step(w, IDLE);
     for (let i = 0; i < w.count; i++) if (w.state[i] === CARRIED) expect(Math.hypot(w.x[i] - w.comets.x[k]!, w.y[i] - w.comets.y[k]!)).toBeLessThan(6 + 1.6 * n);
     for (let s = 0; s < DEFAULT_CONFIG.cometFleeTime * 60; s++) step(w, IDLE);
-    expect(w.comets.mode[k]).toBe(1);
+    // Se fue con lo robado: eso ya no vuelve.
+    expect(w.comets.mode[k]).toBe(0);
+    for (let i = 0; i < w.count; i++) expect(w.state[i]).not.toBe(CARRIED);
   });
 
   it('a veces, al azar, también se lleva un planeta de tu órbita (sin importar la habilidad)', () => {
