@@ -19,17 +19,21 @@ export function createPathTrack(root: HTMLElement): PathTrack {
   const el = document.createElement('div');
   el.className = 'path';
   const n = STAGES.length + 1;   // y el agujero negro al final
-  let html = '<div class="ph">TU CAMINO</div><div class="pr">';
+  // Se muestra un tramo por vez: siendo planeta, de planeta a estrella; ya encendido, de estrella a agujero negro.
+  // Arriba, tu forma actual; abajo, de dónde partís y adónde vas.
+  let html = '<div class="ph"><span>FORMA ACTUAL</span><b></b></div><div class="ptrack"><div class="pr">';
   for (let k = 0; k < n; k++) {
     const sz = 5 + k * 1.3, col = k < STAGES.length ? COLORS[k] ?? '#fff' : '#000';
     html += `<i class="${k === n - 1 ? 'bh' : ''}" style="width:${sz}px;height:${sz}px;--c:${col}"></i>`;
     if (k < n - 1) html += '<s></s>';
   }
-  html += '</div><div class="pn"></div>';
+  html += '</div><div class="pends"><span class="pa"></span><span class="pb"></span></div></div>';
   el.innerHTML = html;
   root.appendChild(el);
   const dots = Array.from(el.querySelectorAll<HTMLElement>('.pr i'));
-  const name = el.querySelector<HTMLElement>('.pn')!;
+  const links = Array.from(el.querySelectorAll<HTMLElement>('.pr s'));
+  const name = el.querySelector<HTMLElement>('.ph b')!, endA = el.querySelector<HTMLElement>('.pa')!, endB = el.querySelector<HTMLElement>('.pb')!;
+  let shownSeg = -1;
   const tf = document.createElement('div');
   tf.className = 'tform';
   tf.innerHTML = '<span>TRANSFORMACIÓN</span><b></b><i></i>';
@@ -50,8 +54,16 @@ export function createPathTrack(root: HTMLElement): PathTrack {
         tf.classList.add('on'); tfT = 3.6;
       }
       shown = at;
+      const seg = at < 3 ? 0 : 1, a = seg === 0 ? 0 : 3, b = seg === 0 ? 3 : n - 1;
+      if (seg !== shownSeg) {
+        shownSeg = seg;
+        for (let k = 0; k < n; k++) dots[k]!.style.display = k >= a && k <= b ? '' : 'none';
+        for (let k = 0; k < n - 1; k++) links[k]!.style.display = k >= a && k < b ? '' : 'none';
+        endA.textContent = seg === 0 ? 'PLANETA' : 'ESTRELLA';
+        endB.textContent = seg === 0 ? 'ESTRELLA' : 'AGUJERO NEGRO';
+      }
       for (let k = 0; k < n; k++) dots[k]!.className = (k === n - 1 ? 'bh ' : '') + (k < at ? 'done' : k === at ? 'now' : '');
-      name.textContent = (hole ? 'AGUJERO NEGRO' : STAGES[at]!.name) + (at < n - 1 ? '  →  ' + (at + 1 < STAGES.length ? STAGES[at + 1]!.name : 'AGUJERO NEGRO') : '');
+      name.textContent = hole ? 'AGUJERO NEGRO' : STAGES[at]!.name;
     },
   };
 }

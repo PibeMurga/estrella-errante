@@ -17,7 +17,6 @@ const STEPS: readonly Step[] = [
   { target: Target.BARS, title: 'ETAPA Y RESISTENCIA', text: 'ETAPA: CUÁNTO TE FALTA PARA LA PRÓXIMA · RESIST.: TU INTEGRIDAD; BAJA AL PERDER MASA Y EN CERO TE FRACTURAS', time: 8 },
   { target: Target.RACE, title: 'LA CARRERA', text: 'TU MASA CONTRA LA DEL RIVAL · CRECE HASTA LA IGNICIÓN Y SUPÉRALO', time: 6.5 },
   { target: Target.MAP, title: 'MAPA', text: 'TÚ EN EL CENTRO · ESTRELLAS CERCANAS · EN ROJO, EL AGUJERO NEGRO', time: 6 },
-  { target: Target.SHOT, title: 'DISPARO', text: 'PRIMERO CRECE HASTA SER ESTRELLA · DESPUÉS VAS A PODER ATACAR CON LOS ASTEROIDES DE TU ÓRBITA: CLIC DERECHO', time: 7 },
 ];
 const PLANET_STEP: Step = { target: Target.PLANET, title: 'PLANETA', text: '', time: 8 };
 const COMET_STEP: Step = { target: Target.COMET, title: 'COMETA', text: 'VIENE A ROBARTE CUERPOS DE LA ÓRBITA · DISPÁRALE: LO QUE SE LLEVA QUEDA SUELTO', time: 7 };
