@@ -103,3 +103,7 @@
 .hud .tform span { font-size: 10px; letter-spacing: 6px; opacity: .7; }
 .hud .tform b { font-size: 22px; letter-spacing: 6px; color: #fff; text-shadow: 0 0 8px #7af5c9, 0 0 22px #7af5c988; }
 .hud .tform i { font-style: normal; font-size: 11px; letter-spacing: 3px; opacity: .85; }
+.hud .race .barw { display: flex; flex-direction: column; gap: 4px; position: relative; top: 7px; }
+.hud .race .kinds { display: flex; justify-content: space-between; font-size: 9px; letter-spacing: 3px; }
+.hud .race .kinds .mk { opacity: .85; }
+.hud .race .kinds .rk { color: var(--am); text-shadow: 0 0 5px #ffb000aa; }

@@ -39,7 +39,7 @@ export function createHud(parent: HTMLElement): Hud {
       <div class="vb"><div class="seg">${'<i class="o"></i>'.repeat(SEGMENTS)}</div><span>ETAPA</span></div>
       <div class="vb res"><i class="rbar"><i class="rcover"></i></i><span>RESIST.</span></div>
     </div>
-    <div class="race"><span class="me"><span class="pname">TU ESTRELLA</span> <b class="mv">0000</b></span><div class="bar"><i class="mb"></i><i class="rb"></i></div><span class="rv"><b class="rvv">0000</b> RIVAL</span></div>
+    <div class="race"><span class="me"><span class="pname">TU ESTRELLA</span> <b class="mv">0000</b></span><div class="barw"><div class="bar"><i class="mb"></i><i class="rb"></i></div><div class="kinds"><span class="mk">PLANETA GASEOSO</span><span class="rk">RIVAL: ESTRELLA</span></div></div><span class="rv"><b class="rvv">0000</b> RIVAL</span></div>
     <div class="note am"></div>
     <div class="tag"><b class="tn"></b><span class="ts"></span></div>
     <div class="banner"><b>SOS UN AGUJERO NEGRO</b><span>ATRAPÁ AL RIVAL ANTES DE QUE ESCAPE</span></div>
@@ -74,6 +74,9 @@ export function createHud(parent: HTMLElement): Hud {
   const pnameEl = q<HTMLElement>('.pname');
   pnameEl.textContent = playerName();
   const race = q<HTMLElement>('.race'), mvEl = q<HTMLElement>('.mv'), rvEl = q<HTMLElement>('.rvv');
+  // Debajo de la barra, qué es cada uno: vos (tu etapa) de un lado y el rival (una estrella) del otro.
+  const mkEl = q<HTMLElement>('.mk');
+  let mkStage = -1;
   const mb = q<HTMLElement>('.mb'), rb = q<HTMLElement>('.rb'), note = q<HTMLElement>('.note');
   const banner = q<HTMLElement>('.banner');
   let bannerOn = false, lastHunting = false, bannerKind = 0, tipT = 0, ignSeen = 0;
@@ -181,7 +184,8 @@ export function createHud(parent: HTMLElement): Hud {
       const sm = solarMasses(me), sr = solarMasses(rv);
       const f = Math.round((sm / Math.max(1e-9, sm + sr)) * 1000) / 10;
       if (f !== lastRace) { mb.style.width = `${f}%`; rb.style.width = `${100 - f}%`; lastRace = f; }
-      mvEl.textContent = formatSolar(me); rvEl.textContent = formatLike(rv, me);   // las dos en la misma unidad
+      mvEl.textContent = formatSolar(me); rvEl.textContent = formatLike(rv, me);
+      if (w.stage !== mkStage) { mkStage = w.stage; mkEl.textContent = 'VOS: ' + STAGES[w.stage]!.name; }   // las dos en la misma unidad
       let nt = '';
       if (w.phase === PHASE_HUNT) {
         const left = Math.max(0, w.config.huntTimeLimit - w.phaseTime);
