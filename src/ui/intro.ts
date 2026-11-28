@@ -9,7 +9,7 @@ interface Entity { readonly name: string; readonly note: string; readonly size: 
 const ENTITIES: readonly Entity[] = [
   { name: 'ASTEROIDE', note: 'ROCA SUELTA · SUMALA Y CRECÉS', size: 12, kind: 'asteroid' },
   { name: 'COMETA', note: 'CHICO, PERO TE ROBA LO QUE JUNTASTE', size: 10, kind: 'comet', danger: true },
-  { name: 'LUNA', note: 'GIRA ALREDEDOR DE UN PLANETA', size: 16, kind: 'moon' },
+  { name: 'SATÉLITE', note: 'GIRA ALREDEDOR DE UN PLANETA', size: 16, kind: 'moon' },
   { name: 'PLANETA ROCOSO', note: 'SÓLIDO · SI ES MÁS CHICO, SE PARTE', size: 20, kind: 'rocky' },
   { name: 'PLANETA HELADO', note: 'HIELO Y ROCA', size: 23, kind: 'ice' },
   { name: 'PLANETA GASEOSO', note: 'VOS, AL EMPEZAR', size: 28, kind: 'gas', you: true },

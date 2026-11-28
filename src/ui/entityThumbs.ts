@@ -51,7 +51,8 @@ export function drawThumb(kind: ThumbKind, size: number): HTMLCanvasElement {
   cv.width = cv.height = S * 2; cv.style.width = cv.style.height = `${S}px`;
   const c = cv.getContext('2d')!;
   c.scale(2, 2);
-  const x = S / 2, y = S / 2, r = size / 2;
+  let x = S / 2, y = S / 2;
+  const r = size / 2;
   seed = 7 + kind.length * 131;
   switch (kind) {
     case 'asteroid': {
@@ -65,13 +66,27 @@ export function drawThumb(kind: ThumbKind, size: number): HTMLCanvasElement {
       break;
     }
     case 'comet': {
-      // Núcleo chico y helado, con la cola que se abre hacia atrás (lejos de la luz).
-      const g = c.createLinearGradient(x, y, x + 18, y + 12);
-      g.addColorStop(0, 'rgba(190,230,255,0.75)'); g.addColorStop(1, 'rgba(190,230,255,0)');
-      c.fillStyle = g; c.beginPath(); c.moveTo(x - 1, y - r * 0.8); c.lineTo(x + 20, y + 8); c.lineTo(x + 14, y + 15); c.lineTo(x - r * 0.6, y + r * 0.9); c.closePath(); c.fill();
-      const h = c.createRadialGradient(x, y, 0, x, y, r * 2.2); h.addColorStop(0, 'rgba(220,245,255,0.9)'); h.addColorStop(1, 'rgba(220,245,255,0)');
-      c.fillStyle = h; c.beginPath(); c.arc(x, y, r * 2.2, 0, Math.PI * 2); c.fill();
-      sphere(c, x, y, r * 0.7, '#ffffff', '#cfe4f0', '#7d95a6');
+      x -= 13; y -= 8;   // el núcleo arriba a la izquierda: así entra la cola
+      // Como los cometas fotografiados: cola de polvo ancha y curva (blanco amarillento) y cola de iones recta y fina
+      // (azulada), las dos hacia el lado contrario a la luz; una coma difusa y el núcleo, un punto.
+      const ax = 1, ay = 0.55, L = Math.hypot(ax, ay), ux = ax / L, uy = ay / L;   // hacia abajo a la derecha
+      const len = 34;
+      c.save();
+      const dust = c.createLinearGradient(x, y, x + ux * len, y + uy * len);
+      dust.addColorStop(0, 'rgba(255,244,215,0.75)'); dust.addColorStop(0.5, 'rgba(255,236,200,0.25)'); dust.addColorStop(1, 'rgba(255,236,200,0)');
+      c.fillStyle = dust; c.beginPath();
+      c.moveTo(x - uy * 1.5, y + ux * 1.5);
+      c.quadraticCurveTo(x + ux * len * 0.5 - uy * 2, y + uy * len * 0.5 + ux * 2 + 4, x + ux * len - uy * 1 , y + uy * len + 9);
+      c.lineTo(x + ux * len + uy * 7, y + uy * len - ux * 7 + 5);
+      c.quadraticCurveTo(x + ux * len * 0.5 + uy * 3, y + uy * len * 0.5 - ux * 3, x + uy * 1.5, y - ux * 1.5);
+      c.closePath(); c.fill();
+      const ion = c.createLinearGradient(x, y, x + ux * (len + 6), y + uy * (len + 6));
+      ion.addColorStop(0, 'rgba(150,200,255,0.85)'); ion.addColorStop(1, 'rgba(150,200,255,0)');
+      c.strokeStyle = ion; c.lineWidth = 1; c.beginPath(); c.moveTo(x, y); c.lineTo(x + ux * (len + 6) - uy * 4, y + uy * (len + 6) + ux * 4 - 3); c.stroke();
+      c.restore();
+      const coma = c.createRadialGradient(x, y, 0, x, y, 5.5); coma.addColorStop(0, 'rgba(235,250,255,1)'); coma.addColorStop(0.35, 'rgba(190,235,230,0.55)'); coma.addColorStop(1, 'rgba(160,220,210,0)');
+      c.fillStyle = coma; c.beginPath(); c.arc(x, y, 5.5, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#fff'; c.beginPath(); c.arc(x, y, 1.1, 0, Math.PI * 2); c.fill();
       break;
     }
     case 'moon': sphere(c, x, y, r, '#e4dfd6', '#a8a299', '#4a4641'); craters(c, x, y, r, 6); night(c, x, y, r); break;
@@ -103,18 +118,23 @@ export function drawThumb(kind: ThumbKind, size: number): HTMLCanvasElement {
       break;
     }
     case 'hole': {
-      // Disco de acreción inclinado (atrás y adelante), el anillo de fotones y la sombra negra.
-      const ring = (front: boolean): void => {
-        const g = c.createLinearGradient(x - r * 1.9, y, x + r * 1.9, y);
-        g.addColorStop(0, 'rgba(255,120,40,0.25)'); g.addColorStop(0.3, 'rgba(255,190,110,0.95)'); g.addColorStop(0.7, 'rgba(255,150,70,0.8)'); g.addColorStop(1, 'rgba(255,100,30,0.2)');
-        c.strokeStyle = g; c.lineWidth = 2.4;
-        c.beginPath(); c.ellipse(x, y, r * 1.85, r * 0.42, -0.2, front ? 0 : Math.PI, front ? Math.PI : Math.PI * 2); c.stroke();
-      };
-      ring(false);
-      const h = c.createRadialGradient(x, y, r * 0.55, x, y, r * 0.95); h.addColorStop(0, 'rgba(255,170,90,0)'); h.addColorStop(0.8, 'rgba(255,170,90,0.85)'); h.addColorStop(1, 'rgba(255,170,90,0)');
-      c.fillStyle = h; c.beginPath(); c.arc(x, y, r * 0.95, 0, Math.PI * 2); c.fill();
-      c.fillStyle = '#000'; c.beginPath(); c.arc(x, y, r * 0.62, 0, Math.PI * 2); c.fill();
-      ring(true);
+      // Como la imagen del Event Horizon Telescope y las simulaciones: una sombra negra grande, un anillo de luz fino y
+      // brillante a su alrededor (más fuerte de un lado, por el giro), y el disco de gas visto casi de canto que cruza por
+      // delante; la parte de atrás del disco se ve curvada por encima de la sombra (la luz se dobla).
+      const R = r * 1.05;
+      const glow = c.createRadialGradient(x, y, R * 0.9, x, y, R * 1.9); glow.addColorStop(0, 'rgba(255,150,60,0.35)'); glow.addColorStop(1, 'rgba(255,120,40,0)');
+      c.fillStyle = glow; c.beginPath(); c.arc(x, y, R * 1.9, 0, Math.PI * 2); c.fill();
+      // Anillo de luz doblada: grueso arriba (el disco de atrás) y fino abajo; más brillante a la izquierda.
+      const ringG = c.createLinearGradient(x - R, y, x + R, y); ringG.addColorStop(0, '#fff1c8'); ringG.addColorStop(0.5, '#ffb055'); ringG.addColorStop(1, '#b8501e');
+      c.strokeStyle = ringG;
+      c.lineWidth = 3.2; c.beginPath(); c.arc(x, y, R * 1.02, Math.PI * 1.05, Math.PI * 1.95); c.stroke();
+      c.lineWidth = 1.3; c.beginPath(); c.arc(x, y, R * 1.0, 0, Math.PI * 2); c.stroke();
+      c.fillStyle = '#000'; c.beginPath(); c.arc(x, y, R * 0.93, 0, Math.PI * 2); c.fill();
+      // Disco por delante, casi de canto.
+      const disk = c.createLinearGradient(x - R * 2.1, y, x + R * 2.1, y);
+      disk.addColorStop(0, 'rgba(255,170,90,0)'); disk.addColorStop(0.2, 'rgba(255,236,190,0.95)'); disk.addColorStop(0.5, 'rgba(255,170,80,0.9)');
+      disk.addColorStop(0.85, 'rgba(190,80,30,0.6)'); disk.addColorStop(1, 'rgba(160,60,20,0)');
+      c.fillStyle = disk; c.beginPath(); c.ellipse(x, y + R * 0.05, R * 2.1, R * 0.17, 0, 0, Math.PI * 2); c.fill();
       break;
     }
   }

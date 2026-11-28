@@ -22,7 +22,7 @@ const STEPS: readonly Step[] = [
 const PLANET_STEP: Step = { target: Target.PLANET, title: 'PLANETA', text: '', time: 8 };
 const COMET_STEP: Step = { target: Target.COMET, title: 'COMETA', text: 'VIENE A ROBARTE CUERPOS DE LA ÓRBITA · DISPARALE: LO QUE SE LLEVA QUEDA SUELTO', time: 7 };
 
-const PLANET_NAME: Record<number, string> = { [KIND_ROCKY]: 'PLANETA ROCOSO', [KIND_ICE]: 'PLANETA HELADO', [KIND_GAS]: 'PLANETA GASEOSO', [KIND_MOON]: 'LUNA' };
+const PLANET_NAME: Record<number, string> = { [KIND_ROCKY]: 'PLANETA ROCOSO', [KIND_ICE]: 'PLANETA HELADO', [KIND_GAS]: 'PLANETA GASEOSO', [KIND_MOON]: 'SATÉLITE' };
 
 export interface Guide { update(w: World, view: HudView, dt: number, width: number, height: number, active: boolean): void }
 
@@ -108,7 +108,7 @@ export function createGuide(parent: HTMLElement): Guide {
         title = PLANET_NAME[w.kind[target]!] ?? 'PLANETA';
         const r = w.radius[target]!, me = starSize(w.star.mass);
         text = (r < me ? 'MÁS CHICO QUE VOS: LO PODÉS CAPTURAR' : r > me * 2 ? 'TE DOBLA EN TAMAÑO: SI LO CHOCÁS, TE DESTRUYE' : 'PARECIDO A VOS: UN CHOQUE TE DAÑA')
-          + ' · HAY ROCOSOS, HELADOS Y GASEOSOS; LAS LUNAS GIRAN A SU ALREDEDOR';
+          + ' · HAY ROCOSOS, HELADOS Y GASEOSOS; LOS SATÉLITES GIRAN A SU ALREDEDOR';
       }
       if (title !== shownTitle) { boxT.textContent = title; boxS.textContent = text; shownTitle = title; }
       // El cartel va hacia el centro de la pantalla desde el blanco, unido con una línea.
