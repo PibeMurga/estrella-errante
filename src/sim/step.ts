@@ -316,6 +316,8 @@ function crossDisk(w: World, dd: number): void {
 
 // Se acomoda en su órbita (o cae a la estrella si la está absorbiendo) a velocidad limitada:
 // se lo ve acercarse e imantarse, no saltar. La franja sigue el tamaño de la estrella.
+const SIZE_1 = starSize(1);
+
 function moveOrbiting(w: World, i: number, absorbing: boolean, size: number, holeR = 0): void {
   const c = w.config, s = w.star;
   if (holeR > 0) {
@@ -363,7 +365,11 @@ function moveOrbiting(w: World, i: number, absorbing: boolean, size: number, hol
   if (absorbing && r <= size * 0.8) { w.state[i] = DEAD; return; }
   // Cuanto más crecés, más fuerte gira tu sistema: todo lo que te orbita va un poco más rápido.
   // Y gira más rápido cuanto más crecés y cuantos más cuerpos lo forman: se siente la intensidad.
-  const wOrbit = c.orbitSpeedK * Math.pow(c.orbitMin / Math.max(r, 1e-6), 1.5) * (1 + c.orbitSpinGrowth * Math.min(1, Math.sqrt(Math.max(0, s.mass) / 310))) * (1 + 0.5 * Math.min(1, w.orbitingCount / 140)) * (1 + 0.25 * upg(w, U_SPIN)) * (w.ignited ? 1.4 : 1);   // siendo estrella, todo gira más rápido
+  // La distancia se mide en relación con tu tamaño: al crecer, tu órbita se abre pero no se vuelve lenta; y cuanto más
+  // grande, más rápido (los asteroides más que los planetas, que son pesados).
+  const sizeK = Math.pow(Math.max(1, size / SIZE_1), planet ? 0.25 : 0.5);
+  const grow = 1 + c.orbitSpinGrowth * Math.min(1, Math.sqrt(Math.max(0, s.mass) / 310)) * (planet ? 0.7 : 1);
+  const wOrbit = c.orbitSpeedK * Math.pow(c.orbitMin * sizeK / Math.max(r, 1e-6), 1.5) * grow * (1 + 0.5 * Math.min(1, w.orbitingCount / 140)) * (1 + 0.25 * upg(w, U_SPIN)) * (w.ignited ? 1.4 : 1);   // siendo estrella, todo gira más rápido
   // Al entrar se frena (gira más lento) y recupera el ritmo de la órbita al acoplarse.
   const a = w.orbitAngle[i] + (k >= 1 ? wOrbit : w.orbitW[i] + (wOrbit - w.orbitW[i]) * k) * DT;
   w.orbitAngle[i] = a;

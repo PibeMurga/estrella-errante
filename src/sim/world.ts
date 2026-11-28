@@ -409,7 +409,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     else do { px = rng.range(-hw * 0.9, hw * 0.9); py = rng.range(-hh * 0.9, hh * 0.9); } while (Math.hypot(px, py) < 120);
     const ang = rng.range(0, Math.PI * 2), sp = rng.range(0.3, 1.2);
     // Grandes (se ven de lejos), pero huecos: pesan poco y se pueden atrapar igual.
-    const ai = addBody(w, { x: px, y: py, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, radius: rng.range(2.4, 3.6), kind: KIND_ARTIFACT });
+    const ai = addBody(w, { x: px, y: py, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, radius: rng.range(1.3, 2.0), kind: KIND_ARTIFACT });
     if (ai >= 0) w.mass[ai] = 2;
   }
   // Reserva de planetas para repoblar el espacio más adelante (muertos hasta que los revive el spawner).

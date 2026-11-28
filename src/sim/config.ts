@@ -275,7 +275,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   planetPhaseGain: 0.6,
   starPhaseGain: 1,
   planetPullMul: 0.35,
-  orbitSpinGrowth: 0.8,
+  orbitSpinGrowth: 1.3,
   planetGravity: 2.2,
   lethalRatio: 2,
   starGravity: 5,
