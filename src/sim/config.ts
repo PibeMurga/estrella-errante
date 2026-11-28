@@ -100,7 +100,8 @@ export interface SimConfig {
   planetStart: boolean;          // la partida arranca como planeta (sin disparo, agujero dormido y sin cometas hasta la ignición)
   ignitionTime: number;
   planetPhaseGain: number;
-  starPhaseGain: number;         // ídem siendo estrella: la etapa de estrella dura más
+  starPhaseGain: number;
+  starGainFalloff: number;       // siendo estrella, lo que suma cada cosa cae como F/(F + masa−30): cada etapa cuesta más         // ídem siendo estrella: la etapa de estrella dura más
   planetPullMul: number;
   orbitSpinGrowth: number;
   planetGravity: number;
@@ -274,6 +275,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   ignitionTime: 4,
   planetPhaseGain: 0.6,
   starPhaseGain: 1,
+  starGainFalloff: 1e9,
   planetPullMul: 0.35,
   orbitSpinGrowth: 1.3,
   planetGravity: 2.2,
@@ -336,4 +338,4 @@ export const DEFAULT_CONFIG: SimConfig = {
 // La partida de verdad: arranca como planeta gaseoso y se enciende con la ignición. (La base arranca como estrella, para
 // las pruebas y los bancos que miden otras cosas.)
 export const GAME_CONFIG: SimConfig = { ...DEFAULT_CONFIG, planetStart: true, mapStars: 3, artifacts: true, upgrades: true, respawn: true,
-  planetCount: 140, respawnPlanets: 7, asteroidBelts: 6, asteroidVoids: 4, planetPhaseGain: 0.9, starPhaseGain: 1.22 };   // más planetas a la vista desde el principio
+  planetCount: 140, respawnPlanets: 7, asteroidBelts: 6, asteroidVoids: 4, planetPhaseGain: 0.9, starPhaseGain: 1.5, starGainFalloff: 110 };   // más planetas a la vista desde el principio

@@ -173,7 +173,10 @@ export function massGain(w: World, i: number): number {
   const k = w.kind[i]!;
   // Cuánto suma en cada etapa: siendo planeta, algo menos (la etapa dura lo suyo sin alargarse); siendo estrella, también
   // un poco menos que el total, así la etapa de estrella dura más.
-  return w.mass[i] * (k >= KIND_ROCKY && k <= KIND_GAS ? w.config.planetMassGain : w.config.bodyMassGain) * (w.ignited ? w.config.starPhaseGain : w.config.planetPhaseGain);
+  // Siendo estrella, cuanto más grande, menos suma cada cosa: cada etapa cuesta más que la anterior (aunque atrapes un
+  // cinturón entero, el progreso se aprecia).
+  const late = w.ignited ? w.config.starGainFalloff / (w.config.starGainFalloff + Math.max(0, w.star.mass - 30)) : 1;
+  return w.mass[i] * (k >= KIND_ROCKY && k <= KIND_GAS ? w.config.planetMassGain : w.config.bodyMassGain) * (w.ignited ? w.config.starPhaseGain * late : w.config.planetPhaseGain);
 }
 
 // Tamaño (radio) de la estrella según su masa. Lo usan la simulación y el dibujo.
