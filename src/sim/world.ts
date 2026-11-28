@@ -296,8 +296,9 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     if (rng.next() * 3 > density(px, py)) continue;
     // Tamaños y velocidades desparejos: muchas piedras chicas, pocas grandes; la mayoría lentas y algunas veloces
     // (las chicas, en promedio, más rápidas).
-    const ang = rng.range(0, Math.PI * 2), u = rng.next(), radius = 0.25 + 1.2 * Math.pow(rng.next(), 2.2);
-    const speed = (0.4 + 6 * u * u) * (1.25 - 0.35 * (radius - 0.25) / 1.2);
+    // (Menos piedritas y más rocas grandes que antes.)
+    const ang = rng.range(0, Math.PI * 2), u = rng.next(), radius = 0.32 + 1.3 * Math.pow(rng.next(), 1.7);
+    const speed = (0.4 + 6 * u * u) * (1.25 - 0.35 * (radius - 0.25) / 1.3);
     addBody(w, { x: px, y: py, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, radius, kind: KIND_ASTEROID });
     placed++;
   }

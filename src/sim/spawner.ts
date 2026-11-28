@@ -31,7 +31,7 @@ export function stepSpawner(w: World): void {
       const ra = r.range(0, Math.PI * 2), rd = 40 * Math.sqrt(r.next());
       w.x[i] = w.prevX[i] = cx + Math.cos(ra) * rd; w.y[i] = w.prevY[i] = cy + Math.sin(ra) * rd;
       w.vx[i] = Math.cos(va) * vs + r.range(-0.5, 0.5); w.vy[i] = Math.sin(va) * vs + r.range(-0.5, 0.5);
-      w.radius[i] = 0.25 + 1.2 * Math.pow(r.next(), 2.2); w.mass[i] = w.radius[i] ** 3;
+      w.radius[i] = 0.32 + 1.3 * Math.pow(r.next(), 1.7); w.mass[i] = w.radius[i] ** 3;
       w.parent[i] = -1; w.noCatch[i] = 0; w.state[i] = FREE;
       left--;
     }
