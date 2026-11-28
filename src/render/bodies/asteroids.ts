@@ -1,4 +1,4 @@
-import { type BufferAttribute, type BufferGeometry, Color, Frustum, Group, IcosahedronGeometry, InstancedBufferAttribute, InstancedMesh, Matrix4, MeshStandardMaterial, Quaternion, Sphere, Vector3 } from 'three';
+import { type BufferAttribute, type BufferGeometry, Color, Frustum, Group, Float32BufferAttribute, IcosahedronGeometry, InstancedBufferAttribute, InstancedMesh, Matrix4, MeshStandardMaterial, Quaternion, Sphere, Vector3 } from 'three';
 import type { Rng } from '../../sim/rng';
 import { DEAD, GATHERING, KIND_ASTEROID, ORBITING, type World } from '../../sim/world';
 import type { Layer } from '../layer';
@@ -14,8 +14,9 @@ function lumps(x: number, y: number, z: number, k: number): number {
   return Math.sin(x * 1.7 + k) * Math.cos(y * 2.3 - k * 0.7) * 0.5 + Math.sin(y * 1.9 + z * 1.3 + k * 1.3) * 0.3 + Math.cos(z * 2.1 - x * 1.1 + k * 2.1) * 0.2;
 }
 export function createRockGeometry(variant = 0): BufferGeometry {
-  // Familias 8 y 9: rugosas y llenas de cráteres (más detalle de malla para que los cráteres se vean).
-  const fam = variant % 10, rough = fam >= 8;
+  // Familias 8 a 15: rugosas, muy irregulares y llenas de cráteres (más detalle de malla para que se vean). Son más
+  // de la mitad: así son la mayoría de los asteroides reales.
+  const fam = variant % 16, rough = fam >= 8;
   const g = new IcosahedronGeometry(1, rough ? 4 : 3);
   const p = g.attributes['position'] as BufferAttribute;
   const k = variant * 3.7 + 1.3;
@@ -27,32 +28,38 @@ export function createRockGeometry(variant = 0): BufferGeometry {
   const cuts: [number, number, number, number][] = [];
   // Ocho familias de forma: anguladas (muchos cortes), redondeadas tipo Ceres, alargadas tipo Eros, bilobuladas (dos
   // rocas pegadas, como Arrokoth o Itokawa), montones de escombros con bultos chicos (Bennu) y fragmentos chatos.
-  const nCuts = [5, 1, 3, 2, 3, 6, 2, 4, 2, 3][fam]!;
-  const lumpA = [0.28, 0.14, 0.3, 0.26, 0.22, 0.2, 0.36, 0.24, 0.24, 0.3][fam]!;
+  const nCuts = [5, 1, 3, 2, 3, 6, 2, 4, 2, 3, 4, 1, 5, 3, 2, 4][fam]!;
+  const lumpA = [0.28, 0.14, 0.3, 0.26, 0.22, 0.2, 0.36, 0.24, 0.34, 0.4, 0.3, 0.42, 0.32, 0.38, 0.45, 0.35][fam]!;
   const rubble = fam === 4 ? 0.14 : fam === 6 ? 0.06 : rough ? 0.05 : 0.03;
   for (let c = 0; c < nCuts; c++) { const [a, b, cc] = dir(c, 11); cuts.push([a, b, cc, 0.5 + h3(c, 12, 3, k) * 0.32]); }
   // Cráteres: cuencas hundidas con borde levantado.
   const craters: [number, number, number, number][] = [];
-  const nCr = rough ? 22 : 6;
+  const nCr = rough ? 20 + (fam % 3) * 6 : 6;
   for (let c = 0; c < nCr; c++) {
     const [a, b, cc] = dir(c, 1), u = h3(c, 5, 6, k);
-    craters.push([a, b, cc, rough ? 0.1 + u * u * 0.42 : 0.2 + u * 0.3]);   // en las rugosas: muchos chicos y pocos grandes
+    craters.push([a, b, cc, rough ? (c < 3 ? 0.38 + u * 0.2 : 0.1 + u * u * 0.32) : 0.2 + u * 0.3]);   // tres grandes y muchos chicos   // en las rugosas: muchos chicos y pocos grandes
   }
-  const crDepth = rough ? 0.55 : 0.3;
+  const crDepth = rough ? 0.8 : 0.35;
   let sx = 1.05 + 0.4 * h3(7, 7, 7, k), sy = 0.6 + 0.25 * h3(8, 8, 8, k), sz = 0.75 + 0.3 * h3(9, 9, 9, k);
   if (fam === 1) { sx = 1; sy = 0.92; sz = 0.96; }          // casi redonda
   if (fam === 2) { sx = 1.6; sy = 0.6; sz = 0.7; }          // alargada
   if (fam === 3) { sx = 1.55; sy = 0.75; sz = 0.8; }        // bilobulada
   if (fam === 5) { sx = 1.2; sy = 0.42; sz = 1.0; }         // fragmento chato
+  if (fam === 10 || fam === 13) { sx = 1.5; sy = 0.62; sz = 0.72; }   // rugosas alargadas
+  if (fam === 12) { sx = 1.35; sy = 0.5; sz = 0.95; }       // rugosa chata
+  const shade = new Float32Array(p.count).fill(1);   // fondo de cráter más oscuro, borde más claro (color de vértice)
   for (let i = 0; i < p.count; i++) {
     const x0 = p.getX(i), y0 = p.getY(i), z0 = p.getZ(i);
     let d = 1 + lumpA * lumps(x0 * 1.1, y0 * 1.1, z0 * 1.1, k) + 0.1 * lumps(x0 * 2.7, y0 * 2.7, z0 * 2.7, k + 5)
       + rubble * (lumps(x0 * 6.1, y0 * 6.1, z0 * 6.1, k + 2) + 0.6 * lumps(x0 * 9.7, y0 * 9.7, z0 * 9.7, k + 7));
-    if (fam === 3) d *= 1 - 0.3 * Math.exp(-x0 * x0 * 9);
-    if (rough) d += 0.05 * (1 - Math.abs(lumps(x0 * 5.3, y0 * 5.3, z0 * 5.3, k + 4))) - 0.025 + 0.025 * lumps(x0 * 13, y0 * 13, z0 * 13, k + 6);   // crestas y aspereza   // cintura entre los dos lóbulos
+    if (fam === 3 || fam === 14) d *= 1 - 0.3 * Math.exp(-x0 * x0 * 9);
+    if (rough) d += 0.07 * (1 - Math.abs(lumps(x0 * 5.3, y0 * 5.3, z0 * 5.3, k + 4))) - 0.035 + 0.03 * lumps(x0 * 13, y0 * 13, z0 * 13, k + 6);   // crestas y aspereza
     for (const [cx, cy, cz, cr] of craters) {
       const t = Math.hypot(x0 - cx, y0 - cy, z0 - cz) / cr;
-      if (t < 1.4) d += t < 1 ? -crDepth * cr * (1 - t * t) : (rough ? 0.14 : 0.07) * cr * (1 - (t - 1) / 0.4);
+      if (t < 1.4) {
+        d += t < 1 ? -crDepth * cr * (1 - t * t) : (rough ? 0.14 : 0.07) * cr * (1 - (t - 1) / 0.4);
+        shade[i] = shade[i]! * (t < 0.85 ? 0.55 + 0.4 * t : t < 1.2 ? 1.2 : 1);
+      }
     }
     let x = x0 * d, y = y0 * d, z = z0 * d;
     for (const [nx, ny, nz, o] of cuts) {
@@ -61,6 +68,11 @@ export function createRockGeometry(variant = 0): BufferGeometry {
     }
     p.setXYZ(i, x * sx, y * sy, z * sz);
   }
+  const col = new Float32Array(p.count * 3);
+  for (let i = 0; i < p.count; i++) { const v = Math.min(1.3, Math.max(0.5, shade[i]!)); col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = v; }
+  g.setAttribute('color', new Float32BufferAttribute(col, 3));
+  // Cuánto se marcan los cráteres pintados en la superficie (las rugosas, mucho; las lisas, poco).
+  g.setAttribute('aRough', new Float32BufferAttribute(new Float32Array(p.count).fill(rough ? 1 : 0.35), 1));
   // Normales promediadas por posición (la geometría viene con los vértices repetidos por cara).
   g.computeVertexNormals();
   const nrm = g.attributes['normal'] as BufferAttribute;
@@ -77,18 +89,36 @@ export function createRockGeometry(variant = 0): BufferGeometry {
   return g;
 }
 
+// Cráteres por celdas: cada celda tiene un punto al azar; cerca de él, un hoyo (más oscuro hacia el centro) con un
+// borde más claro. Sólo depende de la posición en la roca: no titila ni hace ruido de píxeles.
+const CRATER_GLSL = /* glsl */ `
+vec3 crHash(vec3 p) { p = vec3(dot(p, vec3(127.1, 311.7, 74.7)), dot(p, vec3(269.5, 183.3, 246.1)), dot(p, vec3(113.5, 271.9, 124.6))); return fract(sin(p) * 43758.5453); }
+float craterShade(vec3 p) {
+  vec3 i = floor(p), f = fract(p);
+  float s = 1.;
+  for (int z = -1; z <= 1; z++) for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+    vec3 g = vec3(float(x), float(y), float(z)), h = crHash(i + g);
+    float r = .18 + .3 * h.x;
+    if (h.y > .65) continue;                    // no todas las celdas tienen cráter
+    float d = length(g + h * .8 + .1 - f) / r;
+    if (d < 1.) s *= .55 + .45 * d * d;          // hoyo: oscuro al centro
+    else if (d < 1.3) s *= 1. + .35 * (1. - (d - 1.) / .3);   // borde claro
+  }
+  return s;
+}`;
+
 // Material de roca: manchas grandes de distinto tono (regolito más claro y más oscuro) y rugosidad pareja, en el espacio
 // del objeto (acompañan al asteroide cuando gira). Nada de grano fino: a esta distancia se ve como ruido.
 function rockMaterial(): MeshStandardMaterial {
-  const m = new MeshStandardMaterial({ color: 0xffffff, roughness: 0.97, metalness: 0.02 });
+  const m = new MeshStandardMaterial({ color: 0xffffff, roughness: 0.97, metalness: 0.02, vertexColors: true });
   m.onBeforeCompile = (sh) => {
     sh.vertexShader = sh.vertexShader.replace('#include <common>', `#include <common>
-varying vec3 vRockP; attribute float aSeed; varying float vSeed;`)
+varying vec3 vRockP; attribute float aSeed; varying float vSeed; attribute float aRough; varying float vRough;`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
-vRockP = position; vSeed = aSeed;`);
+vRockP = position; vSeed = aSeed; vRough = aRough;`);
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
-varying vec3 vRockP; varying float vSeed;
-` + NOISE_GLSL)
+varying vec3 vRockP; varying float vSeed; varying float vRough;
+` + NOISE_GLSL + CRATER_GLSL)
       .replace('#include <color_fragment>', `#include <color_fragment>
       // Cada roca tiene su propia superficie (aSeed): manchas de otro mineral, cráteres frescos más claros, vetas
       // oscuras, una cara más clara que la otra (como Vesta o Iapetus) o un tono parejo.
@@ -100,7 +130,12 @@ varying vec3 vRockP; varying float vSeed;
       else if (sty < .42) shade *= 1. - .3 * smoothstep(.07, .0, abs(snoise(o * vec3(.7, 2.6, .9) + 5.)) - .03); // vetas oscuras
       else if (sty < .58) shade *= mix(.65, 1.25, smoothstep(-.35, .35, dot(normalize(vRockP), normalize(vec3(sin(vSeed*40.), .4, cos(vSeed*40.)))))); // dos caras
       else if (sty < .75) diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.35, 1.0, .72), smoothstep(.5, .75, rm) * .7);   // manchas de otro mineral
-      diffuseColor.rgb *= shade;`)
+      diffuseColor.rgb *= shade;
+      // Cráteres pintados: hoyo oscuro con borde claro, en dos tamaños. Se apagan cuando la roca se ve diminuta.
+      float px = length(fwidth(vRockP));
+      float fadeC = (1. - smoothstep(.06, .16, px)) * vRough;
+      diffuseColor.rgb *= mix(1., craterShade(vRockP * 3.2 + vSeed * 11.), fadeC);
+      diffuseColor.rgb *= mix(1., craterShade(vRockP * 7.5 + vSeed * 23.), fadeC * (1. - smoothstep(.03, .07, px)) * .8);`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
       roughnessFactor = mix(.97, .6, step(.93, fract(vSeed * 3.71)));   // algunas metálicas (tipo M): más lisas y con brillo`)
       .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>
@@ -126,7 +161,7 @@ export function createAsteroidLayer(world: World, rng: Rng): Layer {
   let k = 0;
   for (let i = 0; i < world.count; i++) if (world.kind[i] === KIND_ASTEROID) indices[k++] = i;
 
-  const VAR = 10, mat = rockMaterial();
+  const VAR = 16, mat = rockMaterial();
   const meshes: InstancedMesh[] = [];
   const seedAttrs: InstancedBufferAttribute[] = [];
   const group = new Group();

@@ -223,7 +223,7 @@ export function createHud(parent: HTMLElement): Hud {
         lastBhDist = d;
       } else bhInfo.style.display = 'none';
 
-      slingEl.textContent = w.shielding ? 'ESCUDO DE PLANETAS' : !w.ignited ? 'CRECÉ HASTA SER ESTRELLA · AHÍ VAS A PODER ATACAR CON LOS ASTEROIDES DE TU ÓRBITA' : w.charge >= w.config.tapTime ? `BÓLIDO ×${w.gathered}` : w.slingCd > 0 ? 'DISPARO ○' : 'DISPARO ●';
+      slingEl.textContent = w.shielding ? 'ESCUDO DE PLANETAS' : !w.ignited ? 'CRECÉ HASTA SER ESTRELLA · DESPUÉS ATACÁS CON TU ÓRBITA' : w.charge >= w.config.tapTime ? `BÓLIDO ×${w.gathered}` : w.slingCd > 0 ? 'DISPARO ○' : 'DISPARO ●';
       slingEl.className = w.orbitingCount > 0 ? 'sling' : 'sling off';
       worldsEl.textContent = `EN ÓRBITA ${pad(w.orbitingCount, 3)}`;
       // Tu sistema: planetas en órbita contra el próximo umbral de habilidad, y la habilidad activa.

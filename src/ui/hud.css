@@ -27,7 +27,7 @@
 .hud .bottom { position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%); display: flex; gap: 30px; align-items: center; }
 .hud .bottom .off { opacity: .35; }
 
-.hud .log { position: absolute; left: 30px; bottom: 118px; display: flex; flex-direction: column-reverse; gap: 4px; font-size: 11px; }
+.hud .log { position: absolute; left: 30px; bottom: 140px; display: flex; flex-direction: column-reverse; gap: 4px; font-size: 11px; }
 
 /* Rumbo al agujero negro: flecha en el borde cuando está fuera de pantalla, corchetes cuando está a la vista. */
 .hud .arrow { position: absolute; left: 0; top: 0; display: none; align-items: center; gap: 8px; will-change: transform; color: var(--bh); font-size: 15px; font-weight: 700; letter-spacing: 3px;
@@ -86,7 +86,7 @@
 .hud .plabel.hrt { color: #ff8a2a; text-shadow: 0 0 5px #ff8a2aaa; }
 .hud .plabel.grv { color: #ff4a3d; text-shadow: 0 0 6px #ff4a3dcc; font-size: 11px; }
 /* Tu camino: de planeta gaseoso a agujero negro. */
-.hud .path { position: absolute; left: 30px; bottom: 30px; display: flex; flex-direction: column; gap: 6px; }
+.hud .path { position: absolute; left: 30px; bottom: 62px; display: flex; flex-direction: column; gap: 6px; }
 .hud .path .ph { font-size: 9px; letter-spacing: 3px; opacity: .6; }
 .hud .path .pr { display: flex; align-items: center; gap: 0; }
 .hud .path .pr s { display: block; width: 12px; height: 1px; background: #7af5c955; }
@@ -107,3 +107,4 @@
 .hud .race .kinds { display: flex; justify-content: space-between; font-size: 9px; letter-spacing: 3px; }
 .hud .race .kinds .mk { opacity: .85; }
 .hud .race .kinds .rk { color: var(--am); text-shadow: 0 0 5px #ffb000aa; }
+.hud .bottom span { white-space: nowrap; }
