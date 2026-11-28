@@ -295,7 +295,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   bhDiskDrain: 0.25,
   bhDiskDrag: 1.6,
   rockHitSpeed: 22,
-  rockHitSize: 1.35,
+  rockHitSize: 1.25,
   rockHitIntegrity: 0.035,
   rockBounceChance: 0.05,
   rockShatterChance: 0.9,
@@ -330,4 +330,4 @@ export const DEFAULT_CONFIG: SimConfig = {
 // La partida de verdad: arranca como planeta gaseoso y se enciende con la ignición. (La base arranca como estrella, para
 // las pruebas y los bancos que miden otras cosas.)
 export const GAME_CONFIG: SimConfig = { ...DEFAULT_CONFIG, planetStart: true, mapStars: 3, artifacts: true, upgrades: true, respawn: true,
-  planetCount: 140, respawnPlanets: 7, asteroidCount: 4200 };   // más planetas a la vista; menos asteroides, pero más grandes
+  planetCount: 140, respawnPlanets: 7 };   // más planetas a la vista desde el principio
