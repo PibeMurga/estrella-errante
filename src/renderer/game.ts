@@ -14,6 +14,7 @@ import { FixedStepper } from '../sim/loop';
 import { step } from '../sim/step';
 import { createWorld, PHASE_COLLAPSE, PHASE_MERGE } from '../sim/world';
 import { createGameOver } from '../ui/gameOver';
+import { createGuide } from '../ui/guide';
 import { createHud } from '../ui/hud';
 import { createCinematic } from '../ui/cinematic';
 import { createPause } from '../ui/pause';
@@ -37,6 +38,7 @@ if (!view.ok) {
   const stepper = new FixedStepper();
   const governor = new QualityGovernor('high');
   const hud = createHud(document.body);
+  const guide = createGuide(document.body);
   const cine = createCinematic(document.body);
   hud.reset(world);
   // Nueva partida: se recarga con otra semilla (mapa nuevo). Las capas del dibujo arman sus índices al empezar.
@@ -115,6 +117,7 @@ if (!view.ok) {
     view.render();
     hud.setVisible(world.over === 0 && world.phase !== PHASE_COLLAPSE && world.phase !== PHASE_MERGE);
     hud.update(world, view, elapsed, window.innerWidth, window.innerHeight);
+    guide.update(world, view, elapsed, window.innerWidth, window.innerHeight, named && !pause.paused);
     music.setGrowth(stageFor(world.star.mass) / STAGE_HYPER);
     if (world.ignitions > lastIgn) { lastIgn = world.ignitions; music.swell(); }
     playEvents();

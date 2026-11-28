@@ -39,13 +39,13 @@ describe('cometa cazador', () => {
     expect(Math.hypot(w.comets.x[k]! - w.star.x, w.comets.y[k]! - w.star.y)).toBeLessThan(d0 - 20);
   });
 
-  it('al tocarla le roba de 3 a 5 cuerpos, los arrastra en fila y huye; después vuelve a cazar', () => {
+  it('al tocarla le roba varios cuerpos (de 3 a 15, según su tamaño), los arrastra en fila y huye; después vuelve a cazar', () => {
     const w = createWorld(cfg(), 2, 20);
     withOrbit(w, 8);
     const k = spawnComet(w, 3, 0);
     step(w, IDLE);
     const n = w.comets.carry[k]!;
-    expect(n).toBeGreaterThanOrEqual(3); expect(n).toBeLessThanOrEqual(5);
+    expect(n).toBeGreaterThanOrEqual(3); expect(n).toBeLessThanOrEqual(15);
     expect(w.lastStealCount).toBe(n);
     expect(w.orbitingCount).toBe(8 - n);
     expect(w.cometSteals).toBe(1);
