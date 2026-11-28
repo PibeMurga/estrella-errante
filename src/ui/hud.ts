@@ -1,6 +1,6 @@
 import { ABILITY_NAMES, planetsAlive } from '../sim/abilities';
 import { playerName } from './playerName';
-import { formatEarth, solarMasses } from './solarMass';
+import { formatEarth, formatEarthNumber, solarMasses } from './solarMass';
 import { starSize } from '../sim/world';
 import { createMinimap } from './minimap';
 import { createDangerAlert } from './dangerAlert';
@@ -41,7 +41,7 @@ export function createHud(parent: HTMLElement): Hud {
       <div class="vb"><div class="seg">${'<i class="o"></i>'.repeat(SEGMENTS)}</div><span>ETAPA</span></div>
       <div class="vb res"><i class="rbar"><i class="rcover"></i></i><span>RESIST.</span></div>
     </div>
-    <div class="race"><span class="me"><span class="pname">TU ESTRELLA</span> <b class="mv">0000</b></span><div class="barw"><div class="bar">${'<i></i>'.repeat(RACE_BOXES)}</div><div class="kinds"><span class="mk">PLANETA GASEOSO</span><span class="rk">RIVAL: ESTRELLA</span></div></div><span class="rv"><b class="rvv">0000</b> RIVAL</span></div>
+    <div class="race"><span class="me"><span class="pname">TU ESTRELLA</span> <b class="mv">0000</b></span><div class="barw"><div class="bar">${'<i></i>'.repeat(RACE_BOXES)}</div><div class="kinds"><span class="mk">PLANETA GASEOSO</span><span class="ku">MASA EN TIERRAS</span><span class="rk">RIVAL: ESTRELLA</span></div></div><span class="rv"><b class="rvv">0000</b> RIVAL</span></div>
     <div class="note am"></div>
     <div class="tag"><b class="tn"></b><span class="ts"></span></div>
     <div class="banner"><b>SOS UN AGUJERO NEGRO</b><span>ATRAPÁ AL RIVAL ANTES DE QUE ESCAPE</span></div>
@@ -188,7 +188,7 @@ export function createHud(parent: HTMLElement): Hud {
       // Por recuadros, como la barra de etapa: los tuyos en verde desde la izquierda, los del rival en ámbar.
       const mine = Math.max(sm > 0 ? 1 : 0, Math.min(RACE_BOXES - 1, Math.round((f / 100) * RACE_BOXES)));
       if (mine !== lastRace) { for (let k = 0; k < RACE_BOXES; k++) raceBoxes[k]!.className = k < mine ? 'm' : ''; lastRace = mine; }
-      mvEl.textContent = formatEarth(me); rvEl.textContent = formatEarth(rv);
+      mvEl.textContent = formatEarthNumber(me); rvEl.textContent = formatEarthNumber(rv);   // la unidad va una vez, debajo
       if (w.stage !== mkStage) { mkStage = w.stage; mkEl.textContent = 'TÚ: ' + STAGES[w.stage]!.name; }   // las dos en la misma unidad
       let nt = '';
       if (w.phase === PHASE_HUNT) {

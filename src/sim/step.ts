@@ -160,6 +160,8 @@ function rockHitsStar(w: World, i: number, dx: number, dy: number): void {
   const slot = (w.impactCount % MAX_IMPACTS) * 4;
   w.impacts[slot] = -1; w.impacts[slot + 1] = Math.atan2(dy, dx); w.impacts[slot + 2] = 0.5 + 0.5 * Math.min(1, w.radius[i]); w.impactCount++;
   w.rockHits++;
+  // El golpe de una roca también te cuesta un poquito de resistencia (más si es grande o venía rápido).
+  if (w.invuln <= 0) damageBody(w, c.rockHitIntegrity * (0.6 + Math.min(1.4, w.radius[i])) * Math.min(1.6, Math.hypot(w.vx[i] - s.vx, w.vy[i] - s.vy) / c.rockHitSpeed));
   let lose = Math.round((w.radius[i] > c.rockHitSize ? 2 : 1) * smallness(w));   // más si sos chico
   for (let j = 0; j < w.count && lose > 0; j++) {
     if (w.state[j] !== ORBITING || isPlanetKind(w.kind[j]!)) continue;

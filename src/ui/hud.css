@@ -113,3 +113,4 @@
 .hud .race .kinds .rk { color: var(--am); text-shadow: 0 0 5px #ffb000aa; }
 .hud .bottom span { white-space: nowrap; }
 .hud .path .ptrack { display: inline-flex; flex-direction: column; gap: 6px; align-self: flex-start; }
+.hud .race .kinds .ku { opacity: .5; }

@@ -121,6 +121,14 @@ describe('captura', () => {
     expect(w.rockHits).toBe(1);
     expect(w.star.mass).toBeGreaterThan(m0);
   });
+  it('el golpe de una roca te baja un poquito la resistencia', () => {
+    const w = emptyWorld();
+    addBody(w, { ...rock(3, 0, 1.6), vx: -24, vy: 0 });
+    step(w, NO_INPUT);
+    expect(w.rockHits).toBe(1);
+    expect(w.integrity).toBeLessThan(1);
+    expect(w.integrity).toBeGreaterThan(0.8);
+  });
   it('un asteroide veloz tampoco se suma: pasa de largo si no te toca', () => {
     const w = emptyWorld();
     const i = addBody(w, { ...rock(9, 0, 0.5), vx: 0, vy: 8 });
