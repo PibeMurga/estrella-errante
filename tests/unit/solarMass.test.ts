@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatSolar, solarMasses } from '../../src/ui/solarMass';
+import { formatEarth, formatSolar, solarMasses } from '../../src/ui/solarMass';
 
 describe('masa en masas solares', () => {
   it('valores reales por etapa y siempre creciente', () => {
@@ -14,5 +14,10 @@ describe('masa en masas solares', () => {
     expect(formatSolar(29)).toMatch(/ M♃$/);
     expect(formatSolar(30)).toMatch(/^0,08 M☉$/);
     expect(formatSolar(310)).toBe('100 M☉');
+  });
+  it('el visor muestra masas de la Tierra, abreviadas', () => {
+    expect(formatEarth(1)).toMatch(/^\d+ TIERRAS$/);          // al empezar: unos cientos
+    expect(formatEarth(30)).toMatch(/^27 k TIERRAS$/);       // ignición: 0,08 soles
+    expect(formatEarth(310)).toMatch(/^33,3 M TIERRAS$/);      // hipergigante: 100 soles
   });
 });

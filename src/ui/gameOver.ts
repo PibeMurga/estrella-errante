@@ -1,5 +1,5 @@
 import { playerName } from './playerName';
-import { formatSolar } from './solarMass';
+import { formatEarth } from './solarMass';
 import { OVER_ESCAPED, OVER_SHATTERED, OVER_SWALLOWED, OVER_WON, type World } from '../sim/world';
 import { STAGES } from '../sim/stages';
 import './gameOver.css';
@@ -64,7 +64,7 @@ export function createGameOver(parent: HTMLElement, onRestart: () => void): Game
       const secs = w.tick / 60;
       stats.innerHTML = `
         <div><span>TIEMPO</span><b>${pad(secs / 60, 2)}:${pad(secs % 60, 2)}</b></div>
-        <div><span>MASA MÁXIMA</span><b>${formatSolar(w.maxMass)}</b></div>
+        <div><span>MASA MÁXIMA</span><b>${formatEarth(w.maxMass)}</b></div>
         <div><span>ETAPA</span><b>${STAGES[w.stage]!.name}</b></div>
         <div><span>BÓLIDOS</span><b>${w.bolts}</b></div>
         <div><span>COMETAS DESTRUIDOS</span><b>${w.cometKills}</b></div>`;

@@ -1,6 +1,6 @@
 import { ABILITY_NAMES, planetsAlive } from '../sim/abilities';
 import { playerName } from './playerName';
-import { formatLike, formatSolar, solarMasses } from './solarMass';
+import { formatEarth, solarMasses } from './solarMass';
 import { starSize } from '../sim/world';
 import { createMinimap } from './minimap';
 import { createDangerAlert } from './dangerAlert';
@@ -45,7 +45,7 @@ export function createHud(parent: HTMLElement): Hud {
     <div class="note am"></div>
     <div class="tag"><b class="tn"></b><span class="ts"></span></div>
     <div class="banner"><b>SOS UN AGUJERO NEGRO</b><span>ATRAPÁ AL RIVAL ANTES DE QUE ESCAPE</span></div>
-    <div class="clock"><span class="time">00:00</span><br><span class="dim mass">MASA 0 M☉</span></div>
+    <div class="clock"><span class="time">00:00</span><br><span class="dim mass">MASA 0 TIERRAS</span></div>
     <div class="bhinfo">AGUJERO NEGRO<br><span class="bhdist"></span></div>
     <div class="bottom"><span class="sling">DISPARO ●</span><span class="worlds">EN ÓRBITA 000</span><span class="sys">PLANETAS 00/00</span></div>
     <div class="log">${'<div></div>'.repeat(LOG_LINES)}</div>
@@ -171,7 +171,7 @@ export function createHud(parent: HTMLElement): Hud {
 
       const secs = w.tick / 60;
       timeEl.textContent = `${pad(secs / 60, 2)}:${pad(secs % 60, 2)}`;
-      massEl.textContent = `MASA ${formatSolar(s.mass)}`;
+      massEl.textContent = `MASA ${formatEarth(s.mass)}`;
       minimap.draw(w);
       // Resistencia: baja rápido con los golpes, se recarga despacio; roja cuando queda poca.
       const res = Math.round(w.integrity * 100);
@@ -188,7 +188,7 @@ export function createHud(parent: HTMLElement): Hud {
       // Por recuadros, como la barra de etapa: los tuyos en verde desde la izquierda, los del rival en ámbar.
       const mine = Math.max(sm > 0 ? 1 : 0, Math.min(RACE_BOXES - 1, Math.round((f / 100) * RACE_BOXES)));
       if (mine !== lastRace) { for (let k = 0; k < RACE_BOXES; k++) raceBoxes[k]!.className = k < mine ? 'm' : ''; lastRace = mine; }
-      mvEl.textContent = formatSolar(me); rvEl.textContent = formatLike(rv, me);
+      mvEl.textContent = formatEarth(me); rvEl.textContent = formatEarth(rv);
       if (w.stage !== mkStage) { mkStage = w.stage; mkEl.textContent = 'TÚ: ' + STAGES[w.stage]!.name; }   // las dos en la misma unidad
       let nt = '';
       if (w.phase === PHASE_HUNT) {

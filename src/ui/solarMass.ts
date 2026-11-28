@@ -37,3 +37,14 @@ export function formatSolar(mass: number): string {
   const txt = planet ? (v < 10 ? v.toFixed(1) : Math.round(v).toString()) : v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : Math.round(v).toString();
   return `${txt.replace('.', ',')} ${planet ? 'M♃' : 'M☉'}`;
 }
+
+// Lo que muestra el visor: masas de la Tierra, una sola unidad para todo el juego (1 M♃ ≈ 318 Tierras;
+// 1 M☉ ≈ 333.000 Tierras). Los números grandes se abrevian: k = mil, M = millón.
+const EARTH_PER_SUN = 333000;
+export function earthMasses(mass: number): number { return solarMasses(mass) * EARTH_PER_SUN; }
+export function formatEarth(mass: number): string {
+  const v = earthMasses(mass);
+  const dec = (x: number): string => (x < 10 ? x.toFixed(1) : Math.round(x).toString()).replace('.', ',');
+  const txt = v < 1000 ? Math.round(v).toString() : v < 1e6 ? `${dec(v / 1000)} k` : `${dec(v / 1e6)} M`;
+  return `${txt} ${txt === '1' ? 'TIERRA' : 'TIERRAS'}`;
+}
