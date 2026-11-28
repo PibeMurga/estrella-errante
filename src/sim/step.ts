@@ -2,6 +2,7 @@ import { stepComets } from './comets';
 import { breakPlanet } from './tidal';
 import { damageBody, loseMass, stepIntegrity } from './integrity';
 import { stepRockImpacts } from './rockImpacts';
+import { stepSpawner } from './spawner';
 import { offerUpgrades, UPGRADE_AT, U_ANCHOR, U_DENSE, U_MAGNET, U_SPIN, U_TIDE, U_WAKE, upg } from './upgrades';
 import { OWN_LIST, ownPlanets } from './ownPlanets';
 import { stepEncounters, stepOwnPlanetRams, stepStarFlybys } from './encounters';
@@ -505,7 +506,9 @@ export function step(w: World, intent: Intent): void {
   if (w.fireSlow > 0) w.fireSlow = Math.max(0, w.fireSlow - DT);
   // Movimiento con inercia: acelera hacia una velocidad deseada y frena para llegar sin pasarse.
   // La masa te hace más pesado, pero con tope: siendo enorme seguís siendo manejable.
-  const acc = hunting ? c.starAccel : c.starAccel / (1 + c.starMassInertia * Math.min(s.mass, 220));   // siendo agujero negro ya no cargás con la inercia de la estrella
+  // Y cuanto más grande, más rápido en absoluto: en pantalla (con la cámara más lejos) te movés parecido.
+  const bigK = 1 + 0.04 * Math.max(0, starSize(s.mass) - 2);
+  const acc = (hunting ? c.starAccel : c.starAccel / (1 + c.starMassInertia * Math.min(s.mass, 90))) * bigK;   // siendo agujero negro ya no cargás con la inercia de la estrella
   let desX = 0;
   let desY = 0;
   // Sin el clic izquierdo, vas suelto: casi no frenás y te llevan las fuerzas de lo que tenés cerca (mucho más fuerte).
@@ -518,7 +521,7 @@ export function step(w: World, intent: Intent): void {
     const dist = Math.hypot(dx, dy);
     if (dist > 1e-6) {
       // Siendo agujero negro en la caza no frenás al acercarte: vas a fondo hacia lo que apuntás.
-      const vmax = c.starMaxSpeed * (1 + 0.12 * upg(w, U_WAKE));   // estela
+      const vmax = c.starMaxSpeed * (1 + 0.12 * upg(w, U_WAKE)) * bigK;   // estela
       const speed = hunting ? (dist > 1 ? vmax : 0) : Math.min(vmax, Math.sqrt(2 * acc * 0.8 * dist), (vmax * dist) / c.starSlowRadius);
       // Recién disparaste: la marcha deseada vuelve de a poco a la normal.
       const slow = w.fireSlow > 0 ? 1 - w.fireSlowK * (w.fireSlow / w.fireSlowT) : 1;
@@ -576,7 +579,7 @@ export function step(w: World, intent: Intent): void {
   if (coasting && strongest >= 0 && strongestA > w.starPullNow) couple(w, w.x[strongest], w.y[strongest], w.vx[strongest], w.vy[strongest], w.radius[strongest], c.starCouple * 1.6, 5);
   const anchor = 1 - 0.2 * upg(w, U_ANCHOR);   // ancla
   s.vx += bhPullX * (coasting ? 1.6 : 1) * anchor; s.vy += bhPullY * (coasting ? 1.6 : 1) * anchor;
-  const vcap = c.starMaxSpeed * (1 + 0.12 * upg(w, U_WAKE));
+  const vcap = c.starMaxSpeed * (1 + 0.12 * upg(w, U_WAKE)) * bigK;
   if (sp > vcap) { s.vx *= vcap / sp; s.vy *= vcap / sp; }
   s.x += s.vx * DT;
   s.y += s.vy * DT;
@@ -749,6 +752,7 @@ export function step(w: World, intent: Intent): void {
 
   separateOwnPlanets(w);
   stepEncounters(w);
+  stepSpawner(w);
   stepOwnPlanetRams(w);
   stepRockImpacts(w);
   if (!hunting) stepStarFlybys(w);

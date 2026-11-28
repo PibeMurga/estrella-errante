@@ -3,7 +3,7 @@ import { starSize } from '../sim/world';
 // Cámara inclinada que sigue a la estrella. Matemática pura (sin three) para poder probarla.
 // maxZoom: tope del alejamiento, para que la cámara nunca alcance a ver la costura donde el mapa da la vuelta.
 export interface CameraRigOptions { tiltDeg: number; distance: number; fovDeg: number; follow: number; maxZoom: number }
-export const DEFAULT_RIG: CameraRigOptions = { tiltDeg: 35, distance: 150, fovDeg: 36, follow: 1.6, maxZoom: 2.65 };
+export const DEFAULT_RIG: CameraRigOptions = { tiltDeg: 35, distance: 150, fovDeg: 36, follow: 1.6, maxZoom: 4.5 };
 
 interface V3 { x: number; y: number; z: number }
 
@@ -38,7 +38,7 @@ export class CameraRig {
   followMass(mass: number, dt: number): void {
     if (!Number.isFinite(mass) || !(dt > 0)) return;
     // Se aleja según tu tamaño real: siendo enorme ves tu sistema y lo que lo rodea.
-    const want = Math.min(this.opts.maxZoom, (1 + 0.075 * (starSize(mass) - starSize(1))) * this.userWant);
+    const want = Math.min(this.opts.maxZoom, (1 + 0.15 * (starSize(mass) - starSize(1))) * this.userWant);
     this.zoom += (want - this.zoom) * (1 - Math.exp(-2.5 * dt));
     this.recompute();
   }

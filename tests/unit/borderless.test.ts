@@ -17,7 +17,7 @@ function starAt(w: World, x: number, y: number): void {
 describe('espacio sin bordes', () => {
   it('la estrella no frena contra ningún borde', () => {
     const w = createWorld(cfg(), 1, 10);
-    for (let k = 0; k < 4000; k++) step(w, { targetX: w.star.x + 1000, targetY: w.star.y - 1000, hasTarget: true });
+    for (let k = 0; k < 9000; k++) step(w, { targetX: w.star.x + 1000, targetY: w.star.y - 1000, hasTarget: true });
     expect(w.star.x).toBeGreaterThan(hw * 1.5);
     expect(w.star.y).toBeLessThan(-hh * 1.5);
   });

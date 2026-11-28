@@ -95,6 +95,9 @@ export interface World {
   choosing: boolean;   // la partida está en pausa esperando que elijas una mejora
   upgradesTaken: number;
   nextUpgrade: number;   // índice del próximo hito de masa con mejora
+  spawnPool: Int32Array;   // planetas de reserva para repoblar
+  spawnNext: number;
+  spawnClock: number;
   rockHits: number;
   contactHits: number;
   disintegrated: number;   // planetas o pedazos que se desintegraron contra la estrella (evento)  // choques pesados entre planetas (evento)    // asteroides veloces o grandes que golpearon la estrella (evento)
@@ -248,7 +251,7 @@ function makeDensity(rng: Rng, hw: number, hh: number): (x: number, y: number) =
 }
 
 export function createWorld(config: SimConfig, seed: number, extraCapacity = 0): World {
-  const capacity = config.asteroidCount + config.planetCount * (1 + MAX_MOONS + MAX_DEBRIS) + config.debrisReserve + config.planetCount + (config.artifacts ? 2 : 0) + Math.min(MAX_MAP_STARS, config.mapStars) * 8 + extraCapacity;   // + un pedazo de reserva por planeta
+  const capacity = config.asteroidCount + config.planetCount * (1 + MAX_MOONS + MAX_DEBRIS) + config.debrisReserve + config.planetCount + (config.artifacts ? 2 : 0) + (config.respawn ? config.spawnPool * 2 : 0) + Math.min(MAX_MAP_STARS, config.mapStars) * 8 + extraCapacity;   // + un pedazo de reserva por planeta
   const f = (): Float64Array => new Float64Array(capacity);
   const w: World = {
     config, capacity, tick: 0, count: 0,
@@ -265,7 +268,7 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
       tint: new Float32Array(MAX_COMETS), bright: new Float32Array(MAX_COMETS).fill(1), wander: new Float32Array(MAX_COMETS),
     },
     cometClock: config.cometFirst, cometSteals: 0, cometKills: 0, rng: createRng(seed ^ 0x9e3779b9),
-    over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, fireSlow: 0, fireSlowK: 0, fireSlowT: 1, breakFxCount: 0, breakFxX: 0, breakFxY: 0, breakFxR: 0, breakFxKind: 0, breakFxAx: 1, breakFxAy: 0, ignited: !config.planetStart, ignitions: 0, integrity: 1, fractures: 0, planetStripAcc: 0, planetSteals: 0, starBurns: 0, starsEaten: 0, coasting: false, starPullNow: 0, artifactsFound: 0, upg: new Uint8Array(12), offer: new Int8Array(3).fill(-1), choosing: false, upgradesTaken: 0, nextUpgrade: 0, rockHits: 0, contactHits: 0, disintegrated: 0, diskGrazes: 0, inDisk: 0, tide: 0, diskStripAcc: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
+    over: OVER_NONE, phase: PHASE_PLAY, phaseTime: 0, mergeR: 0, mergeA: 0, invuln: 0, hits: 0, slingCd: 0, fireSlow: 0, fireSlowK: 0, fireSlowT: 1, breakFxCount: 0, breakFxX: 0, breakFxY: 0, breakFxR: 0, breakFxKind: 0, breakFxAx: 1, breakFxAy: 0, ignited: !config.planetStart, ignitions: 0, integrity: 1, fractures: 0, planetStripAcc: 0, planetSteals: 0, starBurns: 0, starsEaten: 0, coasting: false, starPullNow: 0, artifactsFound: 0, upg: new Uint8Array(12), offer: new Int8Array(3).fill(-1), choosing: false, upgradesTaken: 0, nextUpgrade: 0, spawnPool: new Int32Array(0), spawnNext: 0, spawnClock: 0, rockHits: 0, contactHits: 0, disintegrated: 0, diskGrazes: 0, inDisk: 0, tide: 0, diskStripAcc: 0, shots: 0, charge: 0, gathered: 0, boltAngle: 0, bolts: 0, lastBoltSize: 0, boltHitsBh: 0, bhSlow: 0,
     x: f(), y: f(), prevX: f(), prevY: f(), vx: f(), vy: f(), radius: f(), mass: f(),
     orbitR: f(), orbitTarget: f(), orbitAngle: f(), orbitW: f(),
     parent: new Int32Array(capacity).fill(-1),
@@ -362,6 +365,17 @@ export function createWorld(config: SimConfig, seed: number, extraCapacity = 0):
     do { px = rng.range(-hw * 0.9, hw * 0.9); py = rng.range(-hh * 0.9, hh * 0.9); } while (Math.hypot(px, py) < 120);
     const ang = rng.range(0, Math.PI * 2), sp = rng.range(0.3, 1.2);
     addBody(w, { x: px, y: py, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, radius: 0.9, kind: KIND_ARTIFACT });
+  }
+  // Reserva de planetas para repoblar el espacio más adelante (muertos hasta que los revive el spawner).
+  if (config.respawn) {
+    const pool: number[] = [];
+    for (let k = 0; k < config.spawnPool; k++) {
+      const i = addBody(w, { x: 0, y: 0, vx: 0, vy: 0, radius: 4, kind: KIND_ROCKY + (k % 3) });
+      if (i < 0) break;
+      w.state[i] = DEAD;
+      pool.push(i);
+    }
+    w.spawnPool = Int32Array.from(pool);
   }
   // Reserva de asteroides muertos: los cometas los reviven como escombros al morir.
   for (let k = 0; k < config.debrisReserve; k++) {

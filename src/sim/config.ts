@@ -8,7 +8,11 @@ export interface SimConfig {
   planetCount: number;
   planetMaxRadius: number;
   mapStars: number;
-  upgrades: boolean;             // al subir de etapa se elige una mejora entre tres
+  upgrades: boolean;
+  respawn: boolean;              // el espacio se repuebla fuera de cuadro
+  spawnPool: number;             // planetas de reserva para repoblar
+  respawnPlanets: number;        // si quedan menos planetas sueltos cerca, aparece uno nuevo
+  respawnAsteroids: number;      // ídem con los asteroides (aparece un cúmulo)             // al subir de etapa se elige una mejora entre tres
   artifacts: boolean;            // restos artificiales muy raros (0 a 2 por mapa)              // estrellas del mapa (chicas y grandes, algunas con planetas)       // el planeta más grande del mapa (muchos medianos, pocos inmensos)
   spawnClearRadius: number;
   starStartMass: number;
@@ -159,13 +163,17 @@ export interface SimConfig {
 }
 
 export const DEFAULT_CONFIG: SimConfig = {
-  arenaHalfWidth: 730,
-  arenaHalfHeight: 470,
-  asteroidCount: 3600,
-  planetCount: 58,
+  arenaHalfWidth: 1240,
+  arenaHalfHeight: 800,
+  asteroidCount: 5000,
+  planetCount: 90,
   planetMaxRadius: 16,
   mapStars: 0,
   upgrades: false,
+  respawn: false,
+  spawnPool: 60,
+  respawnPlanets: 16,
+  respawnAsteroids: 500,
   artifacts: false,
   spawnClearRadius: 15,
   starStartMass: 1,
@@ -317,4 +325,4 @@ export const DEFAULT_CONFIG: SimConfig = {
 
 // La partida de verdad: arranca como planeta gaseoso y se enciende con la ignición. (La base arranca como estrella, para
 // las pruebas y los bancos que miden otras cosas.)
-export const GAME_CONFIG: SimConfig = { ...DEFAULT_CONFIG, planetStart: true, mapStars: 3, artifacts: true, upgrades: true };
+export const GAME_CONFIG: SimConfig = { ...DEFAULT_CONFIG, planetStart: true, mapStars: 3, artifacts: true, upgrades: true, respawn: true };
