@@ -171,8 +171,9 @@ export const MAX_MAP_STARS = 6;
 // Suma sólo una parte (un planeta, una décima; un asteroide, tres cuartos): el enjambre se ve grande pero la masa crece despacio.
 export function massGain(w: World, i: number): number {
   const k = w.kind[i]!;
-  // Siendo planeta crece más despacio: la etapa de planeta dura lo suyo (uno a dos minutos).
-  return w.mass[i] * (k >= KIND_ROCKY && k <= KIND_GAS ? w.config.planetMassGain : w.config.bodyMassGain) * (w.ignited ? 1 : w.config.planetPhaseGain);
+  // Cuánto suma en cada etapa: siendo planeta, algo menos (la etapa dura lo suyo sin alargarse); siendo estrella, también
+  // un poco menos que el total, así la etapa de estrella dura más.
+  return w.mass[i] * (k >= KIND_ROCKY && k <= KIND_GAS ? w.config.planetMassGain : w.config.bodyMassGain) * (w.ignited ? w.config.starPhaseGain : w.config.planetPhaseGain);
 }
 
 // Tamaño (radio) de la estrella según su masa. Lo usan la simulación y el dibujo.
