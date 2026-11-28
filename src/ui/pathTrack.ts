@@ -4,7 +4,7 @@ import { PHASE_COLLAPSE, PHASE_HUNT, PHASE_MERGE, type World } from '../sim/worl
 // Tu camino, abajo a la izquierda: de planeta gaseoso a agujero negro, una etapa por punto (cada uno del color y del
 // tamaño de lo que vas a ser). Lo recorrido queda encendido, lo que viene apagado, y tu etapa late con su nombre.
 
-const COLORS = ['#d9b07c', '#e3b98a', '#8a3a3c', '#ff6a3a', '#ffd27a', '#f4f6ff', '#9cc4ff', '#ffb0a0', '#ff8a6a'];
+const COLORS = ['#d9b07c', '#e3b98a', '#8a3a3c', '#ff6a3a', '#ffd27a', '#f4f6ff', '#9cc4ff', '#ffb0a0', '#ff8a6a'];   // (el color de cada etapa, en el borde de su recuadro)
 
 // Al transformarte, un cartel grande en el centro: qué sos ahora y qué significa.
 const WHAT = [
@@ -22,16 +22,16 @@ export function createPathTrack(root: HTMLElement): PathTrack {
   // Se muestra un tramo por vez: siendo planeta, de planeta a estrella; ya encendido, de estrella a agujero negro.
   // Arriba, tu forma actual; abajo, de dónde partís y adónde vas.
   let html = '<div class="ph"><span>FORMA ACTUAL</span><b></b></div><div class="ptrack"><div class="pr">';
+  // Recuadros como los de la barra de etapa, cada uno más alto que el anterior (se nota que es un orden que crece), y una
+  // flecha al final hacia la meta del tramo.
   for (let k = 0; k < n; k++) {
-    const sz = 5 + k * 1.3, col = k < STAGES.length ? COLORS[k] ?? '#fff' : '#000';
-    html += `<i class="${k === n - 1 ? 'bh' : ''}" style="width:${sz}px;height:${sz}px;--c:${col}"></i>`;
-    if (k < n - 1) html += '<s></s>';
+    const col = k < STAGES.length ? COLORS[k] ?? '#fff' : '#000';
+    html += `<i class="${k === n - 1 ? 'bh' : ''}" style="--c:${col}"></i>`;
   }
-  html += '</div><div class="pends"><span class="pa"></span><span class="pb"></span></div></div>';
+  html += '<svg class="parr" width="16" height="16" viewBox="0 0 16 16"><path d="M2 3 L13 8 L2 13 Z" fill="currentColor"/></svg></div><div class="pends"><span class="pa"></span><span class="pb"></span></div></div>';
   el.innerHTML = html;
   root.appendChild(el);
   const dots = Array.from(el.querySelectorAll<HTMLElement>('.pr i'));
-  const links = Array.from(el.querySelectorAll<HTMLElement>('.pr s'));
   const name = el.querySelector<HTMLElement>('.ph b')!, endA = el.querySelector<HTMLElement>('.pa')!, endB = el.querySelector<HTMLElement>('.pb')!;
   let shownSeg = -1;
   const tf = document.createElement('div');
@@ -57,8 +57,10 @@ export function createPathTrack(root: HTMLElement): PathTrack {
       const seg = at < 3 ? 0 : 1, a = seg === 0 ? 0 : 3, b = seg === 0 ? 3 : n - 1;
       if (seg !== shownSeg) {
         shownSeg = seg;
-        for (let k = 0; k < n; k++) dots[k]!.style.display = k >= a && k <= b ? '' : 'none';
-        for (let k = 0; k < n - 1; k++) links[k]!.style.display = k >= a && k < b ? '' : 'none';
+        for (let k = 0; k < n; k++) {
+          dots[k]!.style.display = k >= a && k <= b ? '' : 'none';
+          dots[k]!.style.height = `${8 + (k - a) * (seg === 0 ? 5 : 3)}px`;   // cada etapa, un escalón más alta
+        }
         endA.textContent = seg === 0 ? 'PLANETA' : 'ESTRELLA';
         endB.textContent = seg === 0 ? 'ESTRELLA' : 'AGUJERO NEGRO';
       }

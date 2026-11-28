@@ -30,6 +30,8 @@ const UNIT = 100;       // unidades de la simulación por "UA" mostrada
 const pad = (n: number, w: number): string => String(Math.max(0, Math.floor(n))).padStart(w, '0');
 const ua = (d: number): string => (d / UNIT).toFixed(1).replace('.', ',');
 
+const RACE_BOXES = 40;
+
 export function createHud(parent: HTMLElement): Hud {
   const root = document.createElement('div');
   root.className = 'hud';
@@ -39,7 +41,7 @@ export function createHud(parent: HTMLElement): Hud {
       <div class="vb"><div class="seg">${'<i class="o"></i>'.repeat(SEGMENTS)}</div><span>ETAPA</span></div>
       <div class="vb res"><i class="rbar"><i class="rcover"></i></i><span>RESIST.</span></div>
     </div>
-    <div class="race"><span class="me"><span class="pname">TU ESTRELLA</span> <b class="mv">0000</b></span><div class="barw"><div class="bar"><i class="mb"></i><i class="rb"></i></div><div class="kinds"><span class="mk">PLANETA GASEOSO</span><span class="rk">RIVAL: ESTRELLA</span></div></div><span class="rv"><b class="rvv">0000</b> RIVAL</span></div>
+    <div class="race"><span class="me"><span class="pname">TU ESTRELLA</span> <b class="mv">0000</b></span><div class="barw"><div class="bar">${'<i></i>'.repeat(RACE_BOXES)}</div><div class="kinds"><span class="mk">PLANETA GASEOSO</span><span class="rk">RIVAL: ESTRELLA</span></div></div><span class="rv"><b class="rvv">0000</b> RIVAL</span></div>
     <div class="note am"></div>
     <div class="tag"><b class="tn"></b><span class="ts"></span></div>
     <div class="banner"><b>SOS UN AGUJERO NEGRO</b><span>ATRAPÁ AL RIVAL ANTES DE QUE ESCAPE</span></div>
@@ -77,7 +79,7 @@ export function createHud(parent: HTMLElement): Hud {
   // Debajo de la barra, qué es cada uno: vos (tu etapa) de un lado y el rival (una estrella) del otro.
   const mkEl = q<HTMLElement>('.mk');
   let mkStage = -1;
-  const mb = q<HTMLElement>('.mb'), rb = q<HTMLElement>('.rb'), note = q<HTMLElement>('.note');
+  const raceBoxes = Array.from(root.querySelectorAll<HTMLElement>('.race .bar i')), note = q<HTMLElement>('.note');
   const banner = q<HTMLElement>('.banner');
   let bannerOn = false, lastHunting = false, bannerKind = 0, tipT = 0, ignSeen = 0;
   const bannerB = banner.querySelector('b') as HTMLElement, bannerS = banner.querySelector('span') as HTMLElement;
@@ -183,7 +185,9 @@ export function createHud(parent: HTMLElement): Hud {
       // La barra en la misma escala que los números (masas reales), así lo que dice y lo que muestra coinciden.
       const sm = solarMasses(me), sr = solarMasses(rv);
       const f = Math.round((sm / Math.max(1e-9, sm + sr)) * 1000) / 10;
-      if (f !== lastRace) { mb.style.width = `${f}%`; rb.style.width = `${100 - f}%`; lastRace = f; }
+      // Por recuadros, como la barra de etapa: los tuyos en verde desde la izquierda, los del rival en ámbar.
+      const mine = Math.max(sm > 0 ? 1 : 0, Math.min(RACE_BOXES - 1, Math.round((f / 100) * RACE_BOXES)));
+      if (mine !== lastRace) { for (let k = 0; k < RACE_BOXES; k++) raceBoxes[k]!.className = k < mine ? 'm' : ''; lastRace = mine; }
       mvEl.textContent = formatSolar(me); rvEl.textContent = formatLike(rv, me);
       if (w.stage !== mkStage) { mkStage = w.stage; mkEl.textContent = 'TÚ: ' + STAGES[w.stage]!.name; }   // las dos en la misma unidad
       let nt = '';
